@@ -17,9 +17,17 @@ SaaS multi-tenant para barbearias. Leia ORIENTACAO-BARBERSAAS.md antes de qualqu
 - `cd web && npm run lint && npm run typecheck` — rodar antes de finalizar qualquer tarefa
 
 ## Estado atual
-- Fase: 0 (fundação) concluída — Next.js + Tailwind + TS criado, Supabase linkado ao projeto remoto
-  `smphmeoljjgakghsnvpb`, migrations (enums, núcleo, domínio, RLS) aplicadas, seed com 1 barbearia demo,
-  clients Supabase (browser/server/service-role) criados, CI básico (lint+typecheck).
-- Próxima tarefa: Fase 1 (ver checklist na ORIENTACAO-BARBERSAAS.md seção 8) — auth/onboarding da
-  barbearia, CRUDs, RPC `slots_disponiveis`, página pública de agendamento, agenda do painel, billing
-  Asaas, WhatsApp, painel admin mínimo.
+- Fase 0 (fundação): concluída.
+- Fase 1, onda 1 (núcleo de agendamento): concluída — auth + onboarding (RPC `onboarding_criar_barbearia`,
+  trigger `handle_new_user`), CRUDs do painel (serviços, profissionais+jornadas+vínculo de serviços,
+  bloqueios, clientes), RPC `slots_disponiveis` com testes em `supabase/tests/slots_disponiveis.sql`,
+  agenda do painel (dia/semana, agendamento manual, cancelar/concluir/no-show), página pública
+  `/b/{slug}` + fluxo de agendamento (modo `no_local`, via RPC `criar_agendamento_publico`) + página de
+  gerenciamento por token (`/b/{slug}/meus-agendamentos/{token}`, ver+cancelar). `middleware.ts` foi
+  renomeado para `proxy.ts` (convenção do Next.js 16). Fluxo completo validado ponta a ponta.
+  Simplificações assumidas: 1 barbearia por owner, sem troca de barbearia ativa; sem "remarcar" (só
+  cancelar); sem rate limiting real na RPC pública; visão "semana" da agenda é uma lista simplificada,
+  não um grid completo.
+- Próxima onda da Fase 1 (ver seção 8 da ORIENTACAO-BARBERSAAS.md): billing da plataforma via Asaas
+  (aguardando decisão do usuário sobre gateway — seção 13, item 3), painel admin mínimo, e WhatsApp
+  (Cloud API + links wa.me) por último, como o usuário pediu.

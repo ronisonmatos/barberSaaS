@@ -840,8 +840,81 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      agendamento_por_token: {
+        Args: { p_token: string }
+        Returns: {
+          agendamento_id: string
+          barbearia_nome: string
+          barbearia_slug: string
+          cliente_nome: string
+          fim: string
+          inicio: string
+          preco_centavos: number
+          profissional_nome: string
+          servico_nome: string
+          status: Database["public"]["Enums"]["status_agendamento"]
+        }[]
+      }
+      cancelar_agendamento_via_token: {
+        Args: { p_agendamento_id: string; p_token: string }
+        Returns: undefined
+      }
+      criar_agendamento_publico: {
+        Args: {
+          p_barbearia_id: string
+          p_email?: string
+          p_inicio: string
+          p_nome: string
+          p_profissional_id: string
+          p_servico_id: string
+          p_telefone: string
+        }
+        Returns: {
+          agendamento_id: string
+          token_acesso: string
+        }[]
+      }
       eh_super_admin: { Args: never; Returns: boolean }
       minhas_barbearias: { Args: never; Returns: string[] }
+      onboarding_criar_barbearia: {
+        Args: { p_nome: string; p_slug: string }
+        Returns: {
+          asaas_customer_id: string | null
+          asaas_subconta_id: string | null
+          ativacao_manual: boolean
+          config: Json
+          created_at: string
+          descricao: string | null
+          endereco: Json | null
+          id: string
+          logo_url: string | null
+          nome: string
+          plano_plataforma_id: string | null
+          slug: string
+          status: Database["public"]["Enums"]["status_barbearia"]
+          telefone_whatsapp: string | null
+          timezone: string
+          trial_ate: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "barbearias"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      slots_disponiveis: {
+        Args: {
+          p_barbearia_id: string
+          p_data: string
+          p_profissional_id: string
+          p_servico_id: string
+        }
+        Returns: {
+          fim: string
+          inicio: string
+        }[]
+      }
     }
     Enums: {
       metodo_pagamento:

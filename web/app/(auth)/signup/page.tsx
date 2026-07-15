@@ -13,12 +13,13 @@ export default function SignupPage() {
 
       <div className="flex flex-col gap-1">
         <label htmlFor="nome" className="text-sm font-medium">
-          Nome
+          Seu nome
         </label>
         <input
           id="nome"
           name="nome"
           required
+          placeholder="Nome do dono/responsável"
           className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
         />
       </div>

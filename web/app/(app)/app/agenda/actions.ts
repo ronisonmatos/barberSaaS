@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getBarbeariaAtiva } from "@/lib/barbearia-ativa";
+import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { normalizePhoneBR } from "@/lib/phone";
 
 export async function buscarSlotsDisponiveis(
@@ -11,10 +11,10 @@ export async function buscarSlotsDisponiveis(
   servicoId: string,
   data: string
 ) {
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
   const { data: slots, error } = await supabase.rpc("slots_disponiveis", {
-    p_barbearia_id: barbearia.id,
+    p_estabelecimento_id: estabelecimento.id,
     p_profissional_id: profissionalId,
     p_servico_id: servicoId,
     p_data: data,
@@ -40,7 +40,7 @@ export async function criarAgendamentoManual(
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
 
   let clienteId = parsed.data.clienteId;
@@ -54,8 +54,8 @@ export async function criarAgendamentoManual(
     const { data: cliente, error: clienteError } = await supabase
       .from("clientes")
       .upsert(
-        { barbearia_id: barbearia.id, nome: parsed.data.clienteNome, telefone },
-        { onConflict: "barbearia_id,telefone" }
+        { estabelecimento_id: estabelecimento.id, nome: parsed.data.clienteNome, telefone },
+        { onConflict: "estabelecimento_id,telefone" }
       )
       .select("id")
       .single();
@@ -74,7 +74,7 @@ export async function criarAgendamentoManual(
   const fim = new Date(inicio.getTime() + servico.duracao_minutos * 60_000);
 
   const { error } = await supabase.from("agendamentos").insert({
-    barbearia_id: barbearia.id,
+    estabelecimento_id: estabelecimento.id,
     cliente_id: clienteId,
     profissional_id: parsed.data.profissionalId,
     servico_id: parsed.data.servicoId,

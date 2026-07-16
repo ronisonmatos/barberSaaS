@@ -5,14 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { normalizePhoneBR } from "@/lib/phone";
 
 export async function buscarSlotsPublico(
-  barbeariaId: string,
+  estabelecimentoId: string,
   profissionalId: string,
   servicoId: string,
   data: string
 ) {
   const supabase = await createClient();
   const { data: slots, error } = await supabase.rpc("slots_disponiveis", {
-    p_barbearia_id: barbeariaId,
+    p_estabelecimento_id: estabelecimentoId,
     p_profissional_id: profissionalId,
     p_servico_id: servicoId,
     p_data: data,
@@ -22,7 +22,7 @@ export async function buscarSlotsPublico(
 }
 
 const schema = z.object({
-  barbeariaId: z.string().uuid(),
+  estabelecimentoId: z.string().uuid(),
   profissionalId: z.string().uuid(),
   servicoId: z.string().uuid(),
   inicio: z.string().min(1),
@@ -46,7 +46,7 @@ export async function criarAgendamentoPublico(
   const supabase = await createClient();
   const { data, error } = await supabase
     .rpc("criar_agendamento_publico", {
-      p_barbearia_id: parsed.data.barbeariaId,
+      p_estabelecimento_id: parsed.data.estabelecimentoId,
       p_profissional_id: parsed.data.profissionalId,
       p_servico_id: parsed.data.servicoId,
       p_inicio: parsed.data.inicio,

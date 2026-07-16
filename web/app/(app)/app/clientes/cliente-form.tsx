@@ -3,6 +3,9 @@
 import { useActionState } from "react";
 import { salvarCliente } from "./actions";
 import type { Database } from "@/lib/supabase/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormError } from "@/components/ui/form-error";
 
 type Cliente = Database["public"]["Tables"]["clientes"]["Row"];
 
@@ -15,66 +18,47 @@ export function ClienteForm({ cliente, onDone }: { cliente?: Cliente | null; onD
         await action(formData);
         onDone?.();
       }}
-      className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
+      className="flex flex-col gap-3 rounded-md border border-linha bg-marfim-2 p-4"
     >
       {cliente && <input type="hidden" name="id" value={cliente.id} />}
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Nome</label>
-          <input
-            name="nome"
-            required
-            defaultValue={cliente?.nome}
-            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
-          />
+          <Input name="nome" required defaultValue={cliente?.nome} />
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Telefone (WhatsApp)</label>
-          <input
+          <Input
             name="telefone"
             required
             placeholder="(47) 99999-9999"
             defaultValue={cliente?.telefone}
-            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
           />
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">E-mail</label>
-          <input
-            name="email"
-            type="email"
-            defaultValue={cliente?.email ?? ""}
-            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
-          />
+          <Input name="email" type="email" defaultValue={cliente?.email ?? ""} />
         </div>
         <div className="col-span-2 flex flex-col gap-1">
           <label className="text-sm font-medium">Observações</label>
           <textarea
             name="observacoes"
             defaultValue={cliente?.observacoes ?? ""}
-            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
+            className="rounded-sm border border-linha bg-marfim-2 px-3 py-2 text-carvao placeholder:text-cinza-300 focus:border-latao focus:outline-none focus:ring-2 focus:ring-latao/30"
           />
         </div>
       </div>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <FormError>{state.error}</FormError>}
 
       <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-        >
+        <Button type="submit" disabled={pending} className="text-sm">
           {pending ? "Salvando..." : "Salvar"}
-        </button>
+        </Button>
         {cliente && (
-          <button
-            type="button"
-            onClick={onDone}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700"
-          >
+          <Button type="button" variant="secondary" onClick={onDone} className="text-sm">
             Cancelar
-          </button>
+          </Button>
         )}
       </div>
     </form>

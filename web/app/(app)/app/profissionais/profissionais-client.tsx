@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { UserSquare2 } from "lucide-react";
 import { ProfissionalForm } from "./profissional-form";
 import { alternarAtivoProfissional } from "./actions";
 import type { Database } from "@/lib/supabase/types";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 type Servico = Database["public"]["Tables"]["servicos"]["Row"];
@@ -35,52 +38,52 @@ export function ProfissionaisClient({
           onDone={() => setEditando(null)}
         />
       ) : (
-        <button
-          onClick={() => setEditando("novo")}
-          className="w-fit rounded-md bg-neutral-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-neutral-900"
-        >
+        <Button onClick={() => setEditando("novo")} className="w-fit text-sm">
           Novo profissional
-        </button>
+        </Button>
       )}
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
-            <th className="py-2">Nome</th>
-            <th>Comissão</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {profissionais.map((p) => (
-            <tr key={p.id} className="border-b border-neutral-100 dark:border-neutral-900">
-              <td className="py-2">{p.nome}</td>
-              <td>{p.comissao_percentual}%</td>
-              <td>{p.ativo ? "Ativo" : "Inativo"}</td>
-              <td className="flex gap-2 py-2 text-right">
-                <button className="underline" onClick={() => setEditando(p)}>
-                  Editar
-                </button>
-                <button
-                  disabled={isPending}
-                  className="underline"
-                  onClick={() => startTransition(() => alternarAtivoProfissional(p.id, !p.ativo))}
-                >
-                  {p.ativo ? "Desativar" : "Ativar"}
-                </button>
-              </td>
+      {profissionais.length === 0 ? (
+        <EmptyState
+          icon={UserSquare2}
+          titulo="Nenhum profissional cadastrado ainda"
+          descricao="Use o botão acima para cadastrar o primeiro profissional."
+        />
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-linha text-left text-cinza-600">
+              <th className="py-2 font-medium">Nome</th>
+              <th className="font-medium">Comissão</th>
+              <th className="font-medium">Status</th>
+              <th></th>
             </tr>
-          ))}
-          {profissionais.length === 0 && (
-            <tr>
-              <td colSpan={4} className="py-4 text-center text-neutral-500">
-                Nenhum profissional cadastrado ainda.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {profissionais.map((p) => (
+              <tr key={p.id} className="border-b border-linha text-carvao hover:bg-marfim">
+                <td className="py-2">{p.nome}</td>
+                <td className="tabular-nums">{p.comissao_percentual}%</td>
+                <td className={p.ativo ? "text-sucesso" : "text-cinza-600"}>
+                  {p.ativo ? "Ativo" : "Inativo"}
+                </td>
+                <td className="flex gap-2 py-2 text-right">
+                  <Button variant="ghost" onClick={() => setEditando(p)}>
+                    Editar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    disabled={isPending}
+                    onClick={() => startTransition(() => alternarAtivoProfissional(p.id, !p.ativo))}
+                  >
+                    {p.ativo ? "Desativar" : "Ativar"}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

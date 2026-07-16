@@ -5,7 +5,7 @@ especificação completa (arquitetura, modelo de dados, regras de negócio e roa
 
 ## Estrutura
 
-- `web/` — Next.js (App Router) + TypeScript + Tailwind. Os três painéis (público, barbearia, admin).
+- `web/` — Next.js (App Router) + TypeScript + Tailwind. Os três painéis (público, estabelecimento, admin).
 - `supabase/` — migrations SQL, seed e Edge Functions.
 
 ## Setup local

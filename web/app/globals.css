@@ -1,26 +1,142 @@
 @import "tailwindcss";
 
+/* Não existe mais modo escuro automático no app — painéis são sempre claros (DESIGN.md seção 1)
+   e a página pública usa temas por tenant via [data-tema], não prefers-color-scheme. Redefinir a
+   variante "dark" para uma classe que nunca é aplicada neutraliza qualquer `dark:` residual que
+   ainda não tenha sido removido, em vez de deixá-lo reagir ao SO do usuário. */
+@custom-variant dark (&:where(.forcar-escuro, .forcar-escuro *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  /* Paleta Navalha & Latão (ver DESIGN.md) */
+  --carvao: #17191c;
+  --carvao-2: #22262a;
+  --marfim: #f4f2ed;
+  --marfim-2: #ffffff;
+  --latao: #c9a15c;
+  --latao-escuro: #a8834a;
+  --cedro: #2e4038;
+  --cinza-600: #6e6961;
+  --cinza-300: #b9b3a8;
+  --linha: #e5e1d8;
+  --linha-escuro: #2e3237;
+
+  --sucesso: #3e7c4f;
+  --erro: #b04a3e;
+  --aviso: #b98a2e;
+
+  /* Painéis são sempre no tema claro (marfim) — ver DESIGN.md seção 1 */
+  --background: var(--marfim);
+  --foreground: var(--carvao);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-carvao: var(--carvao);
+  --color-carvao-2: var(--carvao-2);
+  --color-marfim: var(--marfim);
+  --color-marfim-2: var(--marfim-2);
+  --color-latao: var(--latao);
+  --color-latao-escuro: var(--latao-escuro);
+  --color-cedro: var(--cedro);
+  --color-cinza-600: var(--cinza-600);
+  --color-cinza-300: var(--cinza-300);
+  --color-linha: var(--linha);
+  --color-linha-escuro: var(--linha-escuro);
+  --color-sucesso: var(--sucesso);
+  --color-erro: var(--erro);
+  --color-aviso: var(--aviso);
+
+  /* Cores do tenant ativo na página pública — só resolvem dentro de [data-tema] */
+  --color-tenant-bg: var(--tenant-bg);
+  --color-tenant-bg-2: var(--tenant-bg-2);
+  --color-tenant-fg: var(--tenant-fg);
+  --color-tenant-linha: var(--tenant-linha);
+  --color-tenant-acento: var(--tenant-acento);
+  --color-tenant-acento-fg: var(--tenant-acento-fg);
+
+  --font-display: var(--font-marcellus);
+  --font-sans: var(--font-instrument-sans);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  /* Escala tipográfica (DESIGN.md seção 3): 12/13.5/15(base)/18/22/28/36 */
+  --text-xs: 12px;
+  --text-xs--line-height: 1.5;
+  --text-sm: 13.5px;
+  --text-sm--line-height: 1.5;
+  --text-base: 15px;
+  --text-base--line-height: 1.5;
+  --text-lg: 18px;
+  --text-lg--line-height: 1.5;
+  --text-xl: 22px;
+  --text-xl--line-height: 1.2;
+  --text-2xl: 28px;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 36px;
+  --text-3xl--line-height: 1.2;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Elemento-assinatura: fio de latão sob eyebrows/títulos de seção (DESIGN.md seção 4) */
+.fio::after {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 1px;
+  background: var(--latao);
+  margin-top: 6px;
+}
+
+/* Temas da página pública por tenant (DESIGN.md seção 5) */
+[data-tema="classica"] {
+  color-scheme: dark;
+  --tenant-bg: var(--carvao);
+  --tenant-bg-2: var(--carvao-2);
+  --tenant-fg: var(--marfim);
+  --tenant-linha: var(--linha-escuro);
+  --tenant-acento: var(--latao);
+  --tenant-acento-fg: var(--carvao);
+}
+
+[data-tema="moderna"] {
+  --tenant-bg: var(--marfim);
+  --tenant-bg-2: var(--marfim-2);
+  --tenant-fg: var(--carvao);
+  --tenant-linha: var(--linha);
+  --tenant-acento: var(--carvao);
+  --tenant-acento-fg: var(--marfim);
+}
+
+[data-tema="delicada"] {
+  --tenant-bg: #faf7f4;
+  --tenant-bg-2: #ffffff;
+  --tenant-fg: #3a3330;
+  --tenant-linha: #ecdfd9;
+  --tenant-acento: #b4826e;
+  --tenant-acento-fg: #faf7f4;
+}
+
+[data-tema] {
+  background: var(--tenant-bg);
+  color: var(--tenant-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

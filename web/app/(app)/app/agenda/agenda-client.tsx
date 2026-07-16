@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { UserSquare2 } from "lucide-react";
 import { NovoAgendamentoDialog } from "./novo-agendamento-dialog";
 import { AgendamentoCard, type AgendamentoDetalhado } from "./agendamento-card";
 import type { Database } from "@/lib/supabase/types";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 type Servico = Database["public"]["Tables"]["servicos"]["Row"];
@@ -26,39 +29,41 @@ export function AgendaClient({
 
   return (
     <div className="flex flex-col gap-4">
-      <button
-        onClick={() => setDialogAberto({})}
-        className="w-fit rounded-md bg-neutral-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-neutral-900"
-      >
+      <Button onClick={() => setDialogAberto({})} className="w-fit text-sm">
         Novo agendamento
-      </button>
+      </Button>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${profissionais.length || 1}, minmax(220px, 1fr))` }}>
-        {profissionais.map((p) => (
-          <div key={p.id} className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <p className="font-medium">{p.nome}</p>
-              <button
-                onClick={() => setDialogAberto({ profissionalId: p.id })}
-                className="text-sm text-neutral-500 underline"
-              >
-                + agendar
-              </button>
+      {profissionais.length === 0 ? (
+        <EmptyState
+          icon={UserSquare2}
+          titulo="Nenhum profissional ativo"
+          descricao="Cadastre um profissional para começar a agendar."
+          acao={{ label: "Cadastrar profissional", href: "/app/profissionais" }}
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {profissionais.map((p) => (
+            <div key={p.id} className="flex flex-col gap-2 rounded-md border border-linha bg-marfim-2 p-3">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-carvao">{p.nome}</p>
+                <Button variant="ghost" className="text-sm" onClick={() => setDialogAberto({ profissionalId: p.id })}>
+                  + agendar
+                </Button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {(agendamentosPorProfissional[p.id] ?? []).map((ag) => (
+                  <AgendamentoCard key={ag.id} agendamento={ag} />
+                ))}
+                {(agendamentosPorProfissional[p.id] ?? []).length === 0 && (
+                  <div className="rounded-sm border border-dashed border-linha p-2 text-sm text-cinza-300">
+                    Sem agendamentos
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col gap-2">
-              {(agendamentosPorProfissional[p.id] ?? []).map((ag) => (
-                <AgendamentoCard key={ag.id} agendamento={ag} />
-              ))}
-              {(agendamentosPorProfissional[p.id] ?? []).length === 0 && (
-                <p className="text-sm text-neutral-400">Sem agendamentos</p>
-              )}
-            </div>
-          </div>
-        ))}
-        {profissionais.length === 0 && (
-          <p className="text-neutral-500">Cadastre um profissional para começar a agendar.</p>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {dialogAberto && (
         <NovoAgendamentoDialog

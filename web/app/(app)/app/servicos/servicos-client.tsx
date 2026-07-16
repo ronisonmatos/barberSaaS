@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Scissors } from "lucide-react";
 import { ServicoForm } from "./servico-form";
 import { alternarAtivoServico } from "./actions";
 import { centavosToBRL } from "@/lib/money";
 import type { Database } from "@/lib/supabase/types";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type Servico = Database["public"]["Tables"]["servicos"]["Row"];
 
@@ -21,54 +24,54 @@ export function ServicosClient({ servicos }: { servicos: Servico[] }) {
           onDone={() => setEditando(null)}
         />
       ) : (
-        <button
-          onClick={() => setEditando("novo")}
-          className="w-fit rounded-md bg-neutral-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-neutral-900"
-        >
+        <Button onClick={() => setEditando("novo")} className="w-fit text-sm">
           Novo serviço
-        </button>
+        </Button>
       )}
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
-            <th className="py-2">Nome</th>
-            <th>Duração</th>
-            <th>Preço</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {servicos.map((s) => (
-            <tr key={s.id} className="border-b border-neutral-100 dark:border-neutral-900">
-              <td className="py-2">{s.nome}</td>
-              <td>{s.duracao_minutos}min</td>
-              <td>{centavosToBRL(s.preco_centavos)}</td>
-              <td>{s.ativo ? "Ativo" : "Inativo"}</td>
-              <td className="flex gap-2 py-2 text-right">
-                <button className="underline" onClick={() => setEditando(s)}>
-                  Editar
-                </button>
-                <button
-                  disabled={isPending}
-                  className="underline"
-                  onClick={() => startTransition(() => alternarAtivoServico(s.id, !s.ativo))}
-                >
-                  {s.ativo ? "Desativar" : "Ativar"}
-                </button>
-              </td>
+      {servicos.length === 0 ? (
+        <EmptyState
+          icon={Scissors}
+          titulo="Nenhum serviço cadastrado ainda"
+          descricao="Use o botão acima para cadastrar o primeiro serviço."
+        />
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-linha text-left text-cinza-600">
+              <th className="py-2 font-medium">Nome</th>
+              <th className="font-medium">Duração</th>
+              <th className="font-medium">Preço</th>
+              <th className="font-medium">Status</th>
+              <th></th>
             </tr>
-          ))}
-          {servicos.length === 0 && (
-            <tr>
-              <td colSpan={5} className="py-4 text-center text-neutral-500">
-                Nenhum serviço cadastrado ainda.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {servicos.map((s) => (
+              <tr key={s.id} className="border-b border-linha text-carvao hover:bg-marfim">
+                <td className="py-2">{s.nome}</td>
+                <td>{s.duracao_minutos}min</td>
+                <td className="tabular-nums">{centavosToBRL(s.preco_centavos)}</td>
+                <td className={s.ativo ? "text-sucesso" : "text-cinza-600"}>
+                  {s.ativo ? "Ativo" : "Inativo"}
+                </td>
+                <td className="flex gap-2 py-2 text-right">
+                  <Button variant="ghost" onClick={() => setEditando(s)}>
+                    Editar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    disabled={isPending}
+                    onClick={() => startTransition(() => alternarAtivoServico(s.id, !s.ativo))}
+                  >
+                    {s.ativo ? "Desativar" : "Ativar"}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

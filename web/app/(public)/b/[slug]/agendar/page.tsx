@@ -6,36 +6,36 @@ export default async function AgendarPage({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const supabase = await createClient();
 
-  const { data: barbearia } = await supabase
-    .from("barbearias")
+  const { data: estabelecimento } = await supabase
+    .from("estabelecimentos")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
-  if (!barbearia) notFound();
+  if (!estabelecimento) notFound();
 
   const [{ data: servicos }, { data: profissionais }, { data: vinculos }] = await Promise.all([
     supabase
       .from("servicos")
       .select("*")
-      .eq("barbearia_id", barbearia.id)
+      .eq("estabelecimento_id", estabelecimento.id)
       .eq("ativo", true)
       .order("nome"),
     supabase
       .from("profissionais")
       .select("*")
-      .eq("barbearia_id", barbearia.id)
+      .eq("estabelecimento_id", estabelecimento.id)
       .eq("ativo", true)
       .order("nome"),
     supabase
       .from("profissional_servicos")
-      .select("profissional_id, servico_id, profissionais!inner(barbearia_id)")
-      .eq("profissionais.barbearia_id", barbearia.id),
+      .select("profissional_id, servico_id, profissionais!inner(estabelecimento_id)")
+      .eq("profissionais.estabelecimento_id", estabelecimento.id),
   ]);
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg px-4 py-8">
+    <div className="mx-auto min-h-screen max-w-lg px-4 py-10">
       <AgendarWizard
-        barbearia={barbearia}
+        estabelecimento={estabelecimento}
         servicos={servicos ?? []}
         profissionais={profissionais ?? []}
         vinculos={vinculos ?? []}

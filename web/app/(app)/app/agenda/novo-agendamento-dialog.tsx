@@ -4,6 +4,10 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { buscarSlotsDisponiveis, criarAgendamentoManual } from "./actions";
 import type { Database } from "@/lib/supabase/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Heading } from "@/components/ui/heading";
+import { FormError } from "@/components/ui/form-error";
 
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 type Servico = Database["public"]["Tables"]["servicos"]["Row"];
@@ -76,9 +80,9 @@ export function NovoAgendamentoDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-lg bg-white p-6 dark:bg-neutral-900">
-        <h2 className="text-lg font-semibold">Novo agendamento</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-carvao/40 p-4">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-md bg-marfim-2 p-6">
+        <Heading as="h2">Novo agendamento</Heading>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
@@ -89,7 +93,7 @@ export function NovoAgendamentoDialog({
                 setProfissionalId(e.target.value);
                 setSlotSelecionado(null);
               }}
-              className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
+              className="h-11 rounded-sm border border-linha bg-marfim-2 px-3 text-carvao focus:border-latao focus:outline-none focus:ring-2 focus:ring-latao/30"
             >
               {profissionais.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -106,7 +110,7 @@ export function NovoAgendamentoDialog({
                 setServicoId(e.target.value);
                 setSlotSelecionado(null);
               }}
-              className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
+              className="h-11 rounded-sm border border-linha bg-marfim-2 px-3 text-carvao focus:border-latao focus:outline-none focus:ring-2 focus:ring-latao/30"
             >
               {servicos.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -118,7 +122,7 @@ export function NovoAgendamentoDialog({
         </div>
 
         <div>
-          <p className="mb-2 text-sm font-medium">Horário disponível em {data}</p>
+          <p className="mb-2 text-sm font-medium text-carvao">Horário disponível em {data}</p>
           <div className="flex flex-wrap gap-2">
             {slots.map((s) => {
               const hora = new Date(s.inicio).toLocaleTimeString("pt-BR", {
@@ -130,10 +134,10 @@ export function NovoAgendamentoDialog({
                   key={s.inicio}
                   type="button"
                   onClick={() => setSlotSelecionado(s.inicio)}
-                  className={`rounded-md border px-3 py-1 text-sm ${
+                  className={`rounded-sm border px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-latao focus-visible:ring-offset-2 ${
                     slotSelecionado === s.inicio
-                      ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900"
-                      : "border-neutral-300 dark:border-neutral-700"
+                      ? "border-latao bg-latao text-carvao"
+                      : "border-linha text-carvao hover:border-latao"
                   }`}
                 >
                   {hora}
@@ -141,7 +145,7 @@ export function NovoAgendamentoDialog({
               );
             })}
             {slots.length === 0 && (
-              <p className="text-sm text-neutral-500">Nenhum horário livre nesse dia.</p>
+              <p className="text-sm text-cinza-600">Nenhum horário livre nesse dia.</p>
             )}
           </div>
         </div>
@@ -151,14 +155,14 @@ export function NovoAgendamentoDialog({
             <button
               type="button"
               onClick={() => setModoCliente("existente")}
-              className={modoCliente === "existente" ? "font-semibold underline" : "text-neutral-500"}
+              className={modoCliente === "existente" ? "font-semibold text-carvao underline" : "text-cinza-600"}
             >
               Cliente existente
             </button>
             <button
               type="button"
               onClick={() => setModoCliente("novo")}
-              className={modoCliente === "novo" ? "font-semibold underline" : "text-neutral-500"}
+              className={modoCliente === "novo" ? "font-semibold text-carvao underline" : "text-cinza-600"}
             >
               Novo cliente
             </button>
@@ -167,7 +171,7 @@ export function NovoAgendamentoDialog({
             <select
               value={clienteId}
               onChange={(e) => setClienteId(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
+              className="h-11 w-full rounded-sm border border-linha bg-marfim-2 px-3 text-carvao focus:border-latao focus:outline-none focus:ring-2 focus:ring-latao/30"
             >
               {clientes.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -177,40 +181,31 @@ export function NovoAgendamentoDialog({
             </select>
           ) : (
             <div className="flex gap-2">
-              <input
+              <Input
                 placeholder="Nome"
                 value={clienteNome}
                 onChange={(e) => setClienteNome(e.target.value)}
-                className="flex-1 rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
+                className="flex-1"
               />
-              <input
+              <Input
                 placeholder="(47) 99999-9999"
                 value={clienteTelefone}
                 onChange={(e) => setClienteTelefone(e.target.value)}
-                className="flex-1 rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
+                className="flex-1"
               />
             </div>
           )}
         </div>
 
-        {erro && <p className="text-sm text-red-600">{erro}</p>}
+        {erro && <FormError>{erro}</FormError>}
 
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700"
-          >
+          <Button type="button" variant="secondary" onClick={onClose} className="text-sm">
             Cancelar
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={confirmar}
-            className="rounded-md bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-          >
+          </Button>
+          <Button type="button" disabled={pending} onClick={confirmar} className="text-sm">
             {pending ? "Agendando..." : "Confirmar agendamento"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

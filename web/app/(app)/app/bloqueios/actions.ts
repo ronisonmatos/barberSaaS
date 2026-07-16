@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getBarbeariaAtiva } from "@/lib/barbearia-ativa";
+import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 
 export type FormState = { error?: string } | undefined;
 
@@ -31,11 +31,11 @@ export async function criarBloqueio(_prevState: FormState, formData: FormData): 
     return { error: "O fim deve ser depois do início." };
   }
 
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
 
   const { error } = await supabase.from("bloqueios").insert({
-    barbearia_id: barbearia.id,
+    estabelecimento_id: estabelecimento.id,
     profissional_id: parsed.data.profissional_id ?? null,
     inicio: inicio.toISOString(),
     fim: fim.toISOString(),

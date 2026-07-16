@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "./onboarding-form";
+import { Card } from "@/components/ui/card";
+import { Heading } from "@/components/ui/heading";
 
 export default async function OnboardingPage() {
   const supabase = await createClient();
@@ -10,8 +12,8 @@ export default async function OnboardingPage() {
   if (!user) redirect("/login");
 
   const { data: membro } = await supabase
-    .from("membros_barbearia")
-    .select("barbearia_id")
+    .from("membros_estabelecimento")
+    .select("estabelecimento_id")
     .eq("usuario_id", user.id)
     .limit(1)
     .maybeSingle();
@@ -19,14 +21,18 @@ export default async function OnboardingPage() {
   if (membro) redirect("/app");
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-4">
-      <div>
-        <h1 className="text-xl font-semibold">Vamos criar sua barbearia</h1>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Você ganha 14 dias de teste grátis a partir de agora.
-        </p>
-      </div>
-      <OnboardingForm />
+    <div className="flex min-h-screen items-center justify-center bg-marfim px-4">
+      <Card className="max-w-md">
+        <div className="flex flex-col gap-6">
+          <div>
+            <Heading>Vamos criar seu estabelecimento</Heading>
+            <p className="text-sm text-cinza-600">
+              Você ganha 14 dias de teste grátis a partir de agora.
+            </p>
+          </div>
+          <OnboardingForm />
+        </div>
+      </Card>
     </div>
   );
 }

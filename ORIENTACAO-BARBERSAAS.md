@@ -10,10 +10,10 @@
 
 SaaS multi-tenant (estilo CRM) para **barbearias e salões de beleza** no Brasil.
 
-- Cada barbearia é um **tenant** com dados 100% isolados.
-- Cada barbearia tem uma **página pública própria** (`/b/{slug}`) onde seus clientes agendam e pagam.
-- O **dono da plataforma** cobra assinatura mensal das barbearias (billing da plataforma).
-- As **barbearias** cobram seus clientes por agendamento avulso ou plano de assinatura (ex: "2 cortes/mês").
+- Cada estabelecimento é um **tenant** com dados 100% isolados.
+- Cada estabelecimento tem uma **página pública própria** (`/b/{slug}`) onde seus clientes agendam e pagam.
+- O **dono da plataforma** cobra assinatura mensal dos estabelecimentos (billing da plataforma).
+- Os **estabelecimentos** cobram seus clientes por agendamento avulso ou plano de assinatura (ex: "2 cortes/mês").
 - Comunicação com clientes via **WhatsApp** (lembretes, confirmações).
 
 ### Os três atores e suas aplicações
@@ -21,11 +21,11 @@ SaaS multi-tenant (estilo CRM) para **barbearias e salões de beleza** no Brasil
 | Ator | Aplicação | Rota base |
 |---|---|---|
 | Dono da plataforma (super admin) | Painel admin da plataforma | `/admin` |
-| Dono/staff da barbearia | Painel da barbearia | `/app` |
-| Cliente final | Página pública da barbearia | `/b/{slug}` |
+| Dono/staff do estabelecimento | Painel do estabelecimento | `/app` |
+| Cliente final | Página pública do estabelecimento | `/b/{slug}` |
 
-**Regra de ouro do isolamento:** cliente final só enxerga a(s) barbearia(s) em que foi cadastrado.
-Um mesmo telefone pode ser cliente de mais de uma barbearia — são registros de `clientes` distintos por tenant.
+**Regra de ouro do isolamento:** cliente final só enxerga o(s) estabelecimento(s) em que foi cadastrado.
+Um mesmo telefone pode ser cliente de mais de um estabelecimento — são registros de `clientes` distintos por tenant.
 
 ---
 
@@ -35,15 +35,15 @@ Um mesmo telefone pode ser cliente de mais de uma barbearia — são registros d
 |---|---|---|
 | Frontend web | **Next.js 14+ (App Router) + TypeScript + Tailwind** | SEO nas páginas públicas, um só projeto para os 3 painéis |
 | Backend/BD | **Supabase** (Postgres, Auth, RLS, Edge Functions, Storage, Realtime) | Multi-tenant via RLS, já dominado pelo time |
-| Pagamentos | **Asaas** (subcontas + split + Pix + assinaturas) | Dinheiro do cliente cai direto na conta da barbearia; plataforma retém taxa |
+| Pagamentos | **Asaas** (subcontas + split + Pix + assinaturas) | Dinheiro do cliente cai direto na conta do estabelecimento; plataforma retém taxa |
 | WhatsApp | Fase 1: links `wa.me` + **WhatsApp Cloud API** (oficial) para lembretes | Sem risco de banimento |
 | App mobile (futuro) | **Expo / React Native** consumindo o mesmo Supabase | Reaproveita backend inteiro |
 | Deploy | Vercel (Next.js) + Supabase Cloud | Simples e barato no início |
 
 **Decisões travadas (não mudar sem discutir):**
-1. Multi-tenant por coluna `barbearia_id` + RLS (não usar schema-por-tenant nem banco-por-tenant).
+1. Multi-tenant por coluna `estabelecimento_id` + RLS (não usar schema-por-tenant nem banco-por-tenant).
 2. Toda escrita sensível (pagamento, ativação de assinatura) acontece via **Edge Function/webhook**, nunca direto do client.
-3. Datas/horas sempre em `timestamptz` UTC no banco; timezone da barbearia (`America/Sao_Paulo` default) aplicado na exibição e no cálculo de agenda.
+3. Datas/horas sempre em `timestamptz` UTC no banco; timezone do estabelecimento (`America/Sao_Paulo` default) aplicado na exibição e no cálculo de agenda.
 4. Nunca versionar chaves. Usar `.env.local` (Next.js) e secrets do Supabase para Edge Functions.
 
 ---
@@ -56,8 +56,8 @@ barbersaas/
 ├── ORIENTACAO-BARBERSAAS.md      # este documento
 ├── web/                          # Next.js
 │   ├── app/
-│   │   ├── (public)/b/[slug]/    # página pública da barbearia + fluxo de agendamento
-│   │   ├── (app)/app/            # painel da barbearia (auth: owner/staff)
+│   │   ├── (public)/b/[slug]/    # página pública do estabelecimento + fluxo de agendamento
+│   │   ├── (app)/app/            # painel do estabelecimento (auth: owner/staff)
 │   │   ├── (admin)/admin/        # painel da plataforma (auth: super_admin)
 │   │   ├── api/webhooks/asaas/   # webhook de pagamentos
 │   │   └── api/webhooks/whatsapp/
@@ -84,11 +84,11 @@ barbersaas/
 Supabase Auth (e-mail/senha + OTP por telefone para cliente final).
 
 Tabela `usuarios` (profile) ligada a `auth.users`, com papel global, e tabela de vínculo
-`membros_barbearia` para papéis por tenant:
+`membros_estabelecimento` para papéis por tenant:
 
 - `super_admin` — dono da plataforma (papel global em `usuarios.papel`).
-- `owner` — dono da barbearia (em `membros_barbearia`).
-- `staff` — profissional/recepção com acesso ao painel (em `membros_barbearia`).
+- `owner` — dono do estabelecimento (em `membros_estabelecimento`).
+- `staff` — profissional/recepção com acesso ao painel (em `membros_estabelecimento`).
 - `cliente` — cliente final; vínculo é feito na tabela `clientes` (por `user_id` opcional + telefone).
 
 **Cliente final não precisa criar conta para agendar** (fase 1: agenda informando nome + WhatsApp;
@@ -107,7 +107,7 @@ recebe link de gerenciamento com token). Conta com login vira recurso da fase 2/
 ```sql
 create type papel_global as enum ('super_admin', 'usuario');
 create type papel_membro as enum ('owner', 'staff');
-create type status_barbearia as enum ('trial', 'ativa', 'inadimplente', 'suspensa', 'cancelada');
+create type status_estabelecimento as enum ('trial', 'ativa', 'inadimplente', 'suspensa', 'cancelada');
 create type status_agendamento as enum ('pendente', 'confirmado', 'concluido', 'cancelado', 'no_show');
 create type status_pagamento as enum ('pendente', 'pago', 'falhou', 'estornado', 'cancelado');
 create type metodo_pagamento as enum ('pix', 'cartao', 'dinheiro', 'no_local', 'assinatura');
@@ -127,7 +127,7 @@ create table usuarios (
   created_at timestamptz not null default now()
 );
 
--- Planos que a PLATAFORMA vende para as barbearias
+-- Planos que a PLATAFORMA vende para os estabelecimentos
 create table planos_plataforma (
   id uuid primary key default gen_random_uuid(),
   nome text not null,                      -- ex: 'Essencial', 'Pro'
@@ -138,7 +138,7 @@ create table planos_plataforma (
   created_at timestamptz not null default now()
 );
 
-create table barbearias (
+create table estabelecimentos (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
   slug text not null unique,               -- página pública /b/{slug}
@@ -147,20 +147,20 @@ create table barbearias (
   logo_url text,
   endereco jsonb,                          -- {rua, numero, bairro, cidade, uf, cep}
   timezone text not null default 'America/Sao_Paulo',
-  status status_barbearia not null default 'trial',
+  status status_estabelecimento not null default 'trial',
   trial_ate date,
   plano_plataforma_id uuid references planos_plataforma(id),
-  asaas_customer_id text,                  -- barbearia como CLIENTE da plataforma
-  asaas_subconta_id text,                  -- barbearia como RECEBEDORA dos próprios clientes
+  asaas_customer_id text,                  -- estabelecimento como CLIENTE da plataforma
+  asaas_subconta_id text,                  -- estabelecimento como RECEBEDOR dos próprios clientes
   ativacao_manual boolean not null default false,  -- true = super_admin travou o status manualmente
   config jsonb not null default '{}',      -- {modo_cobranca_default, percentual_sinal, antecedencia_min_horas, ...}
   created_at timestamptz not null default now()
 );
 
--- Assinatura da barbearia com a plataforma
+-- Assinatura do estabelecimento com a plataforma
 create table assinaturas_plataforma (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   plano_plataforma_id uuid not null references planos_plataforma(id),
   status status_assinatura not null default 'ativa',
   gateway_subscription_id text,            -- id da assinatura no Asaas
@@ -168,22 +168,22 @@ create table assinaturas_plataforma (
   created_at timestamptz not null default now()
 );
 
--- Vínculo usuário <-> barbearia (painel)
-create table membros_barbearia (
+-- Vínculo usuário <-> estabelecimento (painel)
+create table membros_estabelecimento (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   usuario_id uuid not null references usuarios(id) on delete cascade,
   papel papel_membro not null default 'staff',
-  unique (barbearia_id, usuario_id)
+  unique (estabelecimento_id, usuario_id)
 );
 ```
 
-### 5.3 Domínio da barbearia (tudo com `barbearia_id`)
+### 5.3 Domínio do estabelecimento (tudo com `estabelecimento_id`)
 
 ```sql
 create table profissionais (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   usuario_id uuid references usuarios(id),        -- opcional: profissional com login
   nome text not null,
   foto_url text,
@@ -194,7 +194,7 @@ create table profissionais (
 
 create table servicos (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   nome text not null,                             -- ex: 'Corte masculino'
   descricao text,
   duracao_minutos int not null check (duracao_minutos > 0),
@@ -214,7 +214,7 @@ create table profissional_servicos (
 -- Jornada semanal do profissional (0 = domingo ... 6 = sábado)
 create table jornadas (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   profissional_id uuid not null references profissionais(id) on delete cascade,
   dia_semana int not null check (dia_semana between 0 and 6),
   hora_inicio time not null,
@@ -223,10 +223,10 @@ create table jornadas (
 );
 -- Intervalos (almoço) = duas linhas de jornada no mesmo dia (ex: 09-12 e 13-19)
 
--- Bloqueios pontuais: folga, feriado, imprevisto (profissional_id null = barbearia inteira)
+-- Bloqueios pontuais: folga, feriado, imprevisto (profissional_id null = estabelecimento inteiro)
 create table bloqueios (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   profissional_id uuid references profissionais(id) on delete cascade,
   inicio timestamptz not null,
   fim timestamptz not null,
@@ -236,7 +236,7 @@ create table bloqueios (
 
 create table clientes (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   user_id uuid references usuarios(id),           -- preenchido quando o cliente cria conta (fase 2)
   nome text not null,
   telefone text not null,                          -- E.164: +5547999999999
@@ -244,13 +244,13 @@ create table clientes (
   observacoes text,
   token_acesso uuid not null default gen_random_uuid(),  -- link mágico de gerenciamento (fase 1)
   created_at timestamptz not null default now(),
-  unique (barbearia_id, telefone)
+  unique (estabelecimento_id, telefone)
 );
 
--- Planos que a BARBEARIA vende para os clientes dela
-create table planos_barbearia (
+-- Planos que o ESTABELECIMENTO vende para os clientes dele
+create table planos_estabelecimento (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   nome text not null,                              -- ex: 'Clube do Corte'
   preco_centavos int not null,
   descricao text,
@@ -262,9 +262,9 @@ create table planos_barbearia (
 
 create table assinaturas_clientes (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   cliente_id uuid not null references clientes(id) on delete cascade,
-  plano_id uuid not null references planos_barbearia(id),
+  plano_id uuid not null references planos_estabelecimento(id),
   status status_assinatura not null default 'ativa',
   gateway_subscription_id text,
   ciclo_inicio date not null,
@@ -275,7 +275,7 @@ create table assinaturas_clientes (
 
 create table agendamentos (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   cliente_id uuid not null references clientes(id),
   profissional_id uuid not null references profissionais(id),
   servico_id uuid not null references servicos(id),
@@ -289,7 +289,7 @@ create table agendamentos (
   created_at timestamptz not null default now(),
   check (fim > inicio)
 );
-create index idx_agendamentos_agenda on agendamentos (barbearia_id, profissional_id, inicio);
+create index idx_agendamentos_agenda on agendamentos (estabelecimento_id, profissional_id, inicio);
 
 -- Anti-overbooking no nível do banco (defesa final contra corrida):
 alter table agendamentos add constraint agendamentos_sem_conflito
@@ -301,7 +301,7 @@ alter table agendamentos add constraint agendamentos_sem_conflito
 
 create table pagamentos (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   agendamento_id uuid references agendamentos(id),
   assinatura_cliente_id uuid references assinaturas_clientes(id),
   cliente_id uuid references clientes(id),
@@ -315,7 +315,7 @@ create table pagamentos (
 
 create table mensagens_whatsapp (
   id uuid primary key default gen_random_uuid(),
-  barbearia_id uuid not null references barbearias(id) on delete cascade,
+  estabelecimento_id uuid not null references estabelecimentos(id) on delete cascade,
   cliente_id uuid references clientes(id),
   agendamento_id uuid references agendamentos(id),
   tipo text not null,                              -- lembrete_24h | confirmacao | recuperacao | manual
@@ -339,12 +339,12 @@ create table webhook_eventos (
 
 ```sql
 -- Habilitar RLS em TODAS as tabelas de domínio
-alter table barbearias enable row level security;
+alter table estabelecimentos enable row level security;
 alter table profissionais enable row level security;
 alter table servicos enable row level security;
 alter table clientes enable row level security;
 alter table agendamentos enable row level security;
--- (repetir para todas as demais tabelas com barbearia_id)
+-- (repetir para todas as demais tabelas com estabelecimento_id)
 
 -- Funções auxiliares
 create or replace function eh_super_admin() returns boolean
@@ -354,29 +354,29 @@ language sql stable security definer set search_path = public as $$
   );
 $$;
 
-create or replace function minhas_barbearias() returns setof uuid
+create or replace function meus_estabelecimentos() returns setof uuid
 language sql stable security definer set search_path = public as $$
-  select barbearia_id from membros_barbearia where usuario_id = auth.uid();
+  select estabelecimento_id from membros_estabelecimento where usuario_id = auth.uid();
 $$;
 
 -- Padrão de políticas (exemplo com 'servicos'; replicar o padrão nas demais):
 create policy "membros leem" on servicos for select
-  using (barbearia_id in (select minhas_barbearias()) or eh_super_admin());
+  using (estabelecimento_id in (select meus_estabelecimentos()) or eh_super_admin());
 
 create policy "membros escrevem" on servicos for all
-  using (barbearia_id in (select minhas_barbearias()) or eh_super_admin())
-  with check (barbearia_id in (select minhas_barbearias()) or eh_super_admin());
+  using (estabelecimento_id in (select meus_estabelecimentos()) or eh_super_admin())
+  with check (estabelecimento_id in (select meus_estabelecimentos()) or eh_super_admin());
 
 -- Página pública: leitura anônima APENAS do necessário para agendar,
--- e somente de barbearias ativas/trial:
-create policy "publico ve servicos de barbearia ativa" on servicos for select
+-- e somente de estabelecimentos ativos/trial:
+create policy "publico ve servicos de estabelecimento ativo" on servicos for select
   to anon using (
     ativo and exists (
-      select 1 from barbearias b
-      where b.id = servicos.barbearia_id and b.status in ('ativa', 'trial')
+      select 1 from estabelecimentos e
+      where e.id = servicos.estabelecimento_id and e.status in ('ativa', 'trial')
     )
   );
--- Replicar padrão público para: barbearias (select por slug), profissionais, planos_barbearia, jornadas.
+-- Replicar padrão público para: estabelecimentos (select por slug), profissionais, planos_estabelecimento, jornadas.
 
 -- Clientes/agendamentos NUNCA têm leitura anônima direta.
 -- Criação de agendamento público e consulta por token_acesso acontecem via RPC security definer
@@ -389,9 +389,9 @@ create policy "publico ve servicos de barbearia ativa" on servicos for select
 -- Retorna slots livres de um profissional para um serviço em uma data.
 -- Disponibilidade = jornada do dia − bloqueios − agendamentos (pendente/confirmado),
 -- em passos de 15 min (configurável), respeitando duração do serviço,
--- antecedência mínima e timezone da barbearia.
+-- antecedência mínima e timezone do estabelecimento.
 create or replace function slots_disponiveis(
-  p_barbearia_id uuid,
+  p_estabelecimento_id uuid,
   p_profissional_id uuid,
   p_servico_id uuid,
   p_data date
@@ -399,10 +399,10 @@ create or replace function slots_disponiveis(
 language plpgsql stable security definer set search_path = public as $$
 -- Implementar com generate_series sobre a jornada do dia, subtraindo interseções.
 -- REGRAS OBRIGATÓRIAS:
---   1. Converter p_data para o timezone da barbearia antes de montar os horários.
+--   1. Converter p_data para o timezone do estabelecimento antes de montar os horários.
 --   2. Excluir slots que colidam com tstzrange de agendamentos pendente/confirmado.
---   3. Excluir slots dentro de bloqueios (do profissional OU da barbearia inteira).
---   4. Excluir slots no passado e dentro da antecedência mínima (config da barbearia).
+--   3. Excluir slots dentro de bloqueios (do profissional OU do estabelecimento inteiro).
+--   4. Excluir slots no passado e dentro da antecedência mínima (config do estabelecimento).
 --   5. O slot só é válido se slot_inicio + duracao_servico couber antes do fim da jornada.
 $$;
 ```
@@ -415,13 +415,13 @@ horário de verão/timezone e agendamento simultâneo (constraint de exclusão d
 
 ## 6. Fluxos de negócio
 
-### 6.1 Billing da plataforma (barbearia paga o dono da plataforma)
+### 6.1 Billing da plataforma (estabelecimento paga o dono da plataforma)
 
-1. Barbearia se cadastra → status `trial` (14 dias, `trial_ate` preenchido).
+1. Estabelecimento se cadastra → status `trial` (14 dias, `trial_ate` preenchido).
 2. Ao assinar: cria customer + assinatura no Asaas → grava `gateway_subscription_id`.
 3. **Webhook Asaas** (`/api/webhooks/asaas` ou Edge Function):
    - `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED` → se `ativacao_manual = false`, status → `ativa`. **Ativação automática.**
-   - `PAYMENT_OVERDUE` → status → `inadimplente` (barbearia continua funcionando, com aviso no painel).
+   - `PAYMENT_OVERDUE` → status → `inadimplente` (estabelecimento continua funcionando, com aviso no painel).
 4. **Cron diário** (`suspender-inadimplentes`): inadimplente há mais de **5 dias de carência** → `suspensa`.
    - `suspensa`: página pública sai do ar (RLS já bloqueia via status), painel em modo somente-leitura com tela de regularização.
 5. **Controle manual (super_admin):** botão ativar/desativar no `/admin` seta o status e `ativacao_manual = true`
@@ -429,11 +429,11 @@ horário de verão/timezone e agendamento simultâneo (constraint de exclusão d
 
 Idempotência: todo webhook grava primeiro em `webhook_eventos` (unique em `evento_id_externo`); se já existe, ignora.
 
-### 6.2 Pagamento do cliente para a barbearia
+### 6.2 Pagamento do cliente para o estabelecimento
 
-- Cada barbearia tem **subconta Asaas** (`asaas_subconta_id`) criada no onboarding → dinheiro cai direto para ela.
+- Cada estabelecimento tem **subconta Asaas** (`asaas_subconta_id`) criada no onboarding → dinheiro cai direto para ela.
 - A plataforma pode configurar **split** (taxa por transação) — segunda fonte de receita, além da mensalidade.
-- Modos por barbearia (`config.modo_cobranca_default`, sobrescrevível por serviço):
+- Modos por estabelecimento (`config.modo_cobranca_default`, sobrescrevível por serviço):
   - `integral` — paga tudo ao agendar (Pix ou cartão).
   - `sinal` — paga X% ao agendar (arma anti-no-show), resto no local.
   - `no_local` — só reserva.
@@ -441,9 +441,9 @@ Idempotência: todo webhook grava primeiro em `webhook_eventos` (unique em `even
   webhook confirma → `pagamento.pago` + `agendamento.confirmado` + WhatsApp de confirmação.
 - **Expiração:** agendamento `pendente` com pagamento não confirmado em 15 min → cancelar e liberar o slot (cron ou `pg_cron`).
 
-### 6.3 Assinatura do cliente na barbearia (ex: "Clube do Corte")
+### 6.3 Assinatura do cliente no estabelecimento (ex: "Clube do Corte")
 
-1. Cliente assina plano na página pública → assinatura recorrente na subconta Asaas da barbearia.
+1. Cliente assina plano na página pública → assinatura recorrente na subconta Asaas do estabelecimento.
 2. Ao agendar, se há assinatura ativa cobrindo o serviço e saldo no ciclo (`usos_ciclo` vs `regras`),
    o agendamento sai **sem cobrança** e incrementa `usos_ciclo`.
 3. Renovação (webhook) → zera `usos_ciclo`, atualiza `ciclo_inicio/fim`. Falha de pagamento → `inadimplente` → benefícios pausam.
@@ -461,7 +461,7 @@ a intenção e conduzir o fluxo consultando `slots_disponiveis`). Diferencial co
 
 ### 6.5 Cancelamento e no-show
 
-- Cliente pode cancelar/remarcar pelo link com `token_acesso` até N horas antes (config da barbearia, default 2h).
+- Cliente pode cancelar/remarcar pelo link com `token_acesso` até N horas antes (config do estabelecimento, default 2h).
 - Painel marca `no_show`; relatório de no-show por cliente permite exigir sinal de clientes reincidentes.
 
 ---
@@ -469,12 +469,12 @@ a intenção e conduzir o fluxo consultando `slots_disponiveis`). Diferencial co
 ## 7. Páginas e telas por aplicação
 
 ### Página pública `/b/{slug}` (mobile-first — maioria dos acessos será celular)
-1. Home da barbearia: logo, descrição, endereço, serviços com preço, profissionais, avaliações (fase 2).
+1. Home do estabelecimento: logo, descrição, endereço, serviços com preço, profissionais, avaliações (fase 2).
 2. Fluxo de agendamento: serviço → profissional (ou "qualquer") → data/horário (via `slots_disponiveis`) → nome + WhatsApp → pagamento (conforme modo) → confirmação.
 3. Página de gerenciamento via token: ver/cancelar/remarcar agendamento.
-4. Página do plano de assinatura da barbearia (fase 2).
+4. Página do plano de assinatura do estabelecimento (fase 2).
 
-### Painel da barbearia `/app`
+### Painel do estabelecimento `/app`
 1. **Agenda** (visão dia/semana, por profissional, drag para reagendar) — tela principal.
 2. Agendamento manual (cliente de balcão/telefone).
 3. Clientes (lista, histórico, "sumidos há X dias").
@@ -485,10 +485,10 @@ a intenção e conduzir o fluxo consultando `slots_disponiveis`). Diferencial co
 8. Tela de regularização quando `suspensa`.
 
 ### Painel admin `/admin`
-1. Lista de barbearias com status e MRR.
+1. Lista de estabelecimentos com status e MRR.
 2. Detalhe: ativar/desativar manual (trava `ativacao_manual`), histórico de pagamentos, impersonate (fase 2).
 3. Planos da plataforma (CRUD).
-4. Métricas: MRR, churn, barbearias ativas/trial/inadimplentes.
+4. Métricas: MRR, churn, estabelecimentos ativos/trial/inadimplentes.
 
 ---
 
@@ -496,10 +496,10 @@ a intenção e conduzir o fluxo consultando `slots_disponiveis`). Diferencial co
 
 ### Fase 0 — Fundação
 - [ ] Monorepo, Next.js + TS + Tailwind, Supabase local (`supabase init`), CI básico (lint + typecheck).
-- [ ] Migrations: enums, tabelas núcleo (5.2), domínio (5.3), extensão `btree_gist`, RLS (5.4), seed com 1 barbearia demo.
+- [ ] Migrations: enums, tabelas núcleo (5.2), domínio (5.3), extensão `btree_gist`, RLS (5.4), seed com 1 estabelecimento demo.
 
 ### Fase 1 — MVP vendável
-- [ ] Auth + onboarding da barbearia (cria barbearia, vira `owner`, trial 14 dias).
+- [ ] Auth + onboarding do estabelecimento (cria estabelecimento, vira `owner`, trial 14 dias).
 - [ ] CRUD: serviços, profissionais (+ jornadas + vínculo serviço), bloqueios, clientes.
 - [ ] RPC `slots_disponiveis` + testes.
 - [ ] Página pública com fluxo de agendamento completo (modo `no_local`).
@@ -508,9 +508,9 @@ a intenção e conduzir o fluxo consultando `slots_disponiveis`). Diferencial co
 - [ ] WhatsApp: confirmação + lembrete 24h (Cloud API) + links wa.me.
 - [ ] Painel admin mínimo (lista, status, ativar/desativar).
 
-### Fase 2 — Monetização da barbearia
+### Fase 2 — Monetização do estabelecimento
 - [ ] Subcontas Asaas + split; pagamento no agendamento (integral/sinal, Pix + QR Code, expiração de pendentes).
-- [ ] Planos de assinatura da barbearia + consumo de usos no agendamento.
+- [ ] Planos de assinatura do estabelecimento + consumo de usos no agendamento.
 - [ ] Financeiro: relatórios de faturamento e comissões.
 - [ ] Recuperação de clientes sumidos; avaliação pós-atendimento; fidelidade (contador de cortes).
 - [ ] Login do cliente final (conta unificada por telefone).
@@ -518,7 +518,7 @@ a intenção e conduzir o fluxo consultando `slots_disponiveis`). Diferencial co
 ### Fase 3 — Expansão
 - [ ] App mobile Expo (cliente final primeiro; painel depois).
 - [ ] Bot de agendamento via WhatsApp com IA.
-- [ ] Lista de espera/encaixe; multi-unidade (rede de barbearias).
+- [ ] Lista de espera/encaixe; multi-unidade (rede de estabelecimentos).
 
 ---
 
@@ -552,7 +552,7 @@ Sandbox do Asaas em dev; secrets das Edge Functions via `supabase secrets set`.
 
 ## 11. Segurança (checklist permanente)
 
-- RLS habilitado em toda tabela nova — sem exceção. Teste de isolamento: usuário da barbearia A não lê nada da B.
+- RLS habilitado em toda tabela nova — sem exceção. Teste de isolamento: usuário do estabelecimento A não lê nada do B.
 - `service_role` apenas em server/Edge Functions; jamais no bundle do client.
 - Webhooks: validar token/assinatura + idempotência via `webhook_eventos`.
 - Entradas públicas (agendamento anônimo) com rate limit e validação server-side de slot (a constraint `agendamentos_sem_conflito` é a última barreira, não a única).
@@ -563,11 +563,11 @@ Sandbox do Asaas em dev; secrets das Edge Functions via `supabase secrets set`.
 ```markdown
 # BarberSaaS
 
-SaaS multi-tenant para barbearias. Leia ORIENTACAO-BARBERSAAS.md antes de qualquer tarefa.
+SaaS multi-tenant para barbearias e salões de beleza. Leia ORIENTACAO-BARBERSAAS.md antes de qualquer tarefa.
 
 ## Regras
-- Multi-tenant por barbearia_id + RLS. Toda tabela nova: coluna barbearia_id + políticas RLS + teste de isolamento.
-- Dinheiro em centavos (int). Datas em timestamptz UTC; timezone da barbearia na exibição.
+- Multi-tenant por estabelecimento_id + RLS. Toda tabela nova: coluna estabelecimento_id + políticas RLS + teste de isolamento.
+- Dinheiro em centavos (int). Datas em timestamptz UTC; timezone do estabelecimento na exibição.
 - Pagamentos/ativações só mudam de status via webhook idempotente (webhook_eventos).
 - Nunca usar service_role no client. Nunca commitar .env.
 - Schema muda só via supabase/migrations (nunca editar o banco direto).

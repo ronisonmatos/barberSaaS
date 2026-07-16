@@ -1,20 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
-import { getBarbeariaAtiva } from "@/lib/barbearia-ativa";
+import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { ProfissionaisClient } from "./profissionais-client";
+import { Heading } from "@/components/ui/heading";
 
 export default async function ProfissionaisPage() {
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
 
   const [{ data: profissionais }, { data: servicos }, { data: jornadas }, { data: vinculos }] =
     await Promise.all([
-      supabase.from("profissionais").select("*").eq("barbearia_id", barbearia.id).order("nome"),
-      supabase.from("servicos").select("*").eq("barbearia_id", barbearia.id).order("nome"),
-      supabase.from("jornadas").select("*").eq("barbearia_id", barbearia.id),
+      supabase.from("profissionais").select("*").eq("estabelecimento_id", estabelecimento.id).order("nome"),
+      supabase.from("servicos").select("*").eq("estabelecimento_id", estabelecimento.id).order("nome"),
+      supabase.from("jornadas").select("*").eq("estabelecimento_id", estabelecimento.id),
       supabase
         .from("profissional_servicos")
-        .select("profissional_id, servico_id, profissionais!inner(barbearia_id)")
-        .eq("profissionais.barbearia_id", barbearia.id),
+        .select("profissional_id, servico_id, profissionais!inner(estabelecimento_id)")
+        .eq("profissionais.estabelecimento_id", estabelecimento.id),
     ]);
 
   const jornadasPorProfissional: Record<string, { dia_semana: number; hora_inicio: string; hora_fim: string }[]> =
@@ -34,7 +35,7 @@ export default async function ProfissionaisPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Profissionais</h1>
+      <Heading>Profissionais</Heading>
       <ProfissionaisClient
         profissionais={profissionais ?? []}
         servicos={servicos ?? []}

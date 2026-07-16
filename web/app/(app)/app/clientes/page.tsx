@@ -1,22 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
-import { getBarbeariaAtiva } from "@/lib/barbearia-ativa";
+import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { ClientesClient } from "./clientes-client";
+import { Heading } from "@/components/ui/heading";
 
 export default async function ClientesPage() {
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
   const { data: clientes } = await supabase
     .from("clientes")
     .select("*")
-    .eq("barbearia_id", barbearia.id)
+    .eq("estabelecimento_id", estabelecimento.id)
     .order("nome");
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Clientes</h1>
+      <Heading>Clientes</Heading>
       <ClientesClient
         clientes={clientes ?? []}
-        slugBarbearia={barbearia.slug}
+        slugEstabelecimento={estabelecimento.slug}
         appUrl={process.env.NEXT_PUBLIC_APP_URL ?? ""}
       />
     </div>

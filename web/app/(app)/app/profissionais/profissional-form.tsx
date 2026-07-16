@@ -3,6 +3,9 @@
 import { useActionState, useState } from "react";
 import { salvarProfissional } from "./actions";
 import type { Database } from "@/lib/supabase/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormError } from "@/components/ui/form-error";
 
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 type Servico = Database["public"]["Tables"]["servicos"]["Row"];
@@ -10,6 +13,7 @@ type Servico = Database["public"]["Tables"]["servicos"]["Row"];
 type Jornada = { dia_semana: number; hora_inicio: string; hora_fim: string };
 
 const DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const HORARIO_PADRAO = { hora_inicio: "09:00", hora_fim: "18:00" };
 
 export function ProfissionalForm({
   profissional,
@@ -27,9 +31,37 @@ export function ProfissionalForm({
   const [state, action, pending] = useActionState(salvarProfissional, undefined);
   const [jornadas, setJornadas] = useState<Jornada[]>(jornadasIniciais);
   const [servicoIds, setServicoIds] = useState<string[]>(servicoIdsIniciais);
-  const [novoIntervalo, setNovoIntervalo] = useState<Record<number, { inicio: string; fim: string }>>(
-    {}
-  );
+
+  function alternarDia(dia: number, aberto: boolean) {
+    if (aberto) {
+      setJornadas((prev) => [...prev, { dia_semana: dia, ...HORARIO_PADRAO }]);
+    } else {
+      setJornadas((prev) => prev.filter((j) => j.dia_semana !== dia));
+    }
+  }
+
+  function atualizarIntervalo(idx: number, campo: "hora_inicio" | "hora_fim", valor: string) {
+    setJornadas((prev) => prev.map((j, i) => (i === idx ? { ...j, [campo]: valor } : j)));
+  }
+
+  function adicionarIntervalo(dia: number) {
+    setJornadas((prev) => [...prev, { dia_semana: dia, ...HORARIO_PADRAO }]);
+  }
+
+  function removerIntervalo(idx: number) {
+    setJornadas((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function copiarSegundaParaDiasUteis() {
+    const intervalosSegunda = jornadas.filter((j) => j.dia_semana === 1);
+    if (intervalosSegunda.length === 0) return;
+    setJornadas((prev) => [
+      ...prev.filter((j) => j.dia_semana < 2 || j.dia_semana > 5),
+      ...[2, 3, 4, 5].flatMap((dia) =>
+        intervalosSegunda.map((j) => ({ ...j, dia_semana: dia }))
+      ),
+    ]);
+  }
 
   return (
     <form
@@ -39,30 +71,24 @@ export function ProfissionalForm({
         await action(formData);
         onDone?.();
       }}
-      className="flex flex-col gap-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
+      className="flex flex-col gap-4 rounded-md border border-linha bg-marfim-2 p-4"
     >
       {profissional && <input type="hidden" name="id" value={profissional.id} />}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2 flex flex-col gap-1">
           <label className="text-sm font-medium">Nome</label>
-          <input
-            name="nome"
-            required
-            defaultValue={profissional?.nome}
-            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
-          />
+          <Input name="nome" required defaultValue={profissional?.nome} />
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Comissão (%)</label>
-          <input
+          <Input
             name="comissao_percentual"
             type="number"
             min={0}
             max={100}
             step="0.01"
             defaultValue={profissional?.comissao_percentual ?? 0}
-            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
           />
         </div>
         <div className="flex items-end gap-2">
@@ -91,97 +117,101 @@ export function ProfissionalForm({
             </label>
           ))}
           {servicos.length === 0 && (
-            <p className="text-sm text-neutral-500">Cadastre serviços primeiro.</p>
+            <p className="text-sm text-cinza-600">Cadastre serviços primeiro.</p>
           )}
         </div>
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium">Jornada semanal</p>
-        <div className="flex flex-col gap-2">
-          {DIAS.map((nomeDia, dia) => (
-            <div key={dia} className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="w-20 shrink-0">{nomeDia}</span>
-              {jornadas
-                .map((j, idx) => ({ ...j, idx }))
-                .filter((j) => j.dia_semana === dia)
-                .map((j) => (
-                  <span
-                    key={j.idx}
-                    className="flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-800"
-                  >
-                    {j.hora_inicio}–{j.hora_fim}
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-sm font-medium">Jornada semanal</p>
+          <button
+            type="button"
+            onClick={copiarSegundaParaDiasUteis}
+            className="text-xs text-latao-escuro underline hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-latao focus-visible:ring-offset-2"
+          >
+            Copiar segunda para terça–sexta
+          </button>
+        </div>
+        <p className="mb-2 text-xs text-cinza-600">
+          Marque os dias em que o profissional atende e ajuste o horário. Use &quot;+ intervalo&quot; só se
+          houver uma pausa no meio do dia (ex: almoço).
+        </p>
+        <div className="flex flex-col divide-y divide-linha rounded-md border border-linha">
+          {DIAS.map((nomeDia, dia) => {
+            const intervalosDoDia = jornadas
+              .map((j, idx) => ({ ...j, idx }))
+              .filter((j) => j.dia_semana === dia);
+            const aberto = intervalosDoDia.length > 0;
+            return (
+              <div key={dia} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-start">
+                <label className="flex w-32 shrink-0 items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={aberto}
+                    onChange={(e) => alternarDia(dia, e.target.checked)}
+                  />
+                  {nomeDia}
+                </label>
+                {aberto ? (
+                  <div className="flex flex-1 flex-col gap-2">
+                    {intervalosDoDia.map((j) => (
+                      <div key={j.idx} className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="time"
+                          value={j.hora_inicio}
+                          onChange={(e) => atualizarIntervalo(j.idx, "hora_inicio", e.target.value)}
+                          className="rounded-sm border border-linha bg-marfim-2 px-2 py-1 text-sm text-carvao focus:border-latao focus:outline-none focus:ring-2 focus:ring-latao/30"
+                        />
+                        <span className="text-sm text-cinza-600">às</span>
+                        <input
+                          type="time"
+                          value={j.hora_fim}
+                          onChange={(e) => atualizarIntervalo(j.idx, "hora_fim", e.target.value)}
+                          className="rounded-sm border border-linha bg-marfim-2 px-2 py-1 text-sm text-carvao focus:border-latao focus:outline-none focus:ring-2 focus:ring-latao/30"
+                        />
+                        {j.hora_fim <= j.hora_inicio && (
+                          <span className="text-xs text-erro">fim antes do início</span>
+                        )}
+                        {intervalosDoDia.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removerIntervalo(j.idx)}
+                            className="text-cinza-300 hover:text-erro focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-latao focus-visible:ring-offset-2"
+                            aria-label="remover intervalo"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
                     <button
                       type="button"
-                      onClick={() => setJornadas((prev) => prev.filter((_, i) => i !== j.idx))}
-                      className="text-red-600"
-                      aria-label="remover intervalo"
+                      onClick={() => adicionarIntervalo(dia)}
+                      className="w-fit text-xs text-latao-escuro underline hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-latao focus-visible:ring-offset-2"
                     >
-                      ×
+                      + intervalo
                     </button>
-                  </span>
-                ))}
-              <input
-                type="time"
-                value={novoIntervalo[dia]?.inicio ?? ""}
-                onChange={(e) =>
-                  setNovoIntervalo((prev) => ({
-                    ...prev,
-                    [dia]: { inicio: e.target.value, fim: prev[dia]?.fim ?? "" },
-                  }))
-                }
-                className="w-24 rounded-md border border-neutral-300 px-1 py-1 dark:border-neutral-700 dark:bg-neutral-800"
-              />
-              <span>–</span>
-              <input
-                type="time"
-                value={novoIntervalo[dia]?.fim ?? ""}
-                onChange={(e) =>
-                  setNovoIntervalo((prev) => ({
-                    ...prev,
-                    [dia]: { inicio: prev[dia]?.inicio ?? "", fim: e.target.value },
-                  }))
-                }
-                className="w-24 rounded-md border border-neutral-300 px-1 py-1 dark:border-neutral-700 dark:bg-neutral-800"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  const intervalo = novoIntervalo[dia];
-                  if (!intervalo?.inicio || !intervalo?.fim) return;
-                  setJornadas((prev) => [
-                    ...prev,
-                    { dia_semana: dia, hora_inicio: intervalo.inicio, hora_fim: intervalo.fim },
-                  ]);
-                  setNovoIntervalo((prev) => ({ ...prev, [dia]: { inicio: "", fim: "" } }));
-                }}
-                className="rounded-md border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
-              >
-                + adicionar
-              </button>
-            </div>
-          ))}
+                  </div>
+                ) : (
+                  <p className="pt-1 text-sm text-cinza-300">Fechado</p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <FormError>{state.error}</FormError>}
 
       <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-        >
+        <Button type="submit" disabled={pending} className="text-sm">
           {pending ? "Salvando..." : "Salvar"}
-        </button>
+        </Button>
         {profissional && (
-          <button
-            type="button"
-            onClick={onDone}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700"
-          >
+          <Button type="button" variant="secondary" onClick={onDone} className="text-sm">
             Cancelar
-          </button>
+          </Button>
         )}
       </div>
     </form>

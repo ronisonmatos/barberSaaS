@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getBarbeariaAtiva } from "@/lib/barbearia-ativa";
+import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { normalizePhoneBR } from "@/lib/phone";
 
 export type FormState = { error?: string } | undefined;
@@ -33,11 +33,11 @@ export async function salvarCliente(_prevState: FormState, formData: FormData): 
     return { error: "Telefone inválido. Use um número de celular brasileiro com DDD." };
   }
 
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
 
   const payload = {
-    barbearia_id: barbearia.id,
+    estabelecimento_id: estabelecimento.id,
     nome: parsed.data.nome,
     telefone,
     email: parsed.data.email || null,
@@ -49,7 +49,7 @@ export async function salvarCliente(_prevState: FormState, formData: FormData): 
     : await supabase.from("clientes").insert(payload);
 
   if (error) {
-    if (error.message.includes("clientes_barbearia_id_telefone_key")) {
+    if (error.message.includes("clientes_estabelecimento_id_telefone_key")) {
       return { error: "Já existe um cliente com esse telefone." };
     }
     return { error: error.message };

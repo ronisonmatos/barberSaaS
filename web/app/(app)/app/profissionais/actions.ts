@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getBarbeariaAtiva } from "@/lib/barbearia-ativa";
+import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 
 export type FormState = { error?: string } | undefined;
 
@@ -48,11 +48,11 @@ export async function salvarProfissional(
     return { error: "Em cada intervalo de jornada, o fim deve ser depois do início." };
   }
 
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
 
   const payload = {
-    barbearia_id: barbearia.id,
+    estabelecimento_id: estabelecimento.id,
     nome: parsed.data.nome,
     comissao_percentual: parsed.data.comissao_percentual,
     ativo: parsed.data.ativo,
@@ -81,7 +81,7 @@ export async function salvarProfissional(
   if (jornadas.length > 0) {
     const { error } = await supabase.from("jornadas").insert(
       jornadas.map((j) => ({
-        barbearia_id: barbearia.id,
+        estabelecimento_id: estabelecimento.id,
         profissional_id: profissionalId,
         dia_semana: j.dia_semana,
         hora_inicio: j.hora_inicio,

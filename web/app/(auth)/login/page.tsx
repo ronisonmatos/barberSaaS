@@ -3,53 +3,41 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { signIn } from "@/app/actions/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Heading } from "@/components/ui/heading";
+import { FormError } from "@/components/ui/form-error";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(signIn, undefined);
 
   return (
     <form action={action} className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Entrar</h1>
+      <Heading>Entrar</Heading>
 
       <div className="flex flex-col gap-1">
         <label htmlFor="email" className="text-sm font-medium">
           E-mail
         </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
-        />
+        <Input id="email" name="email" type="email" required />
       </div>
 
       <div className="flex flex-col gap-1">
         <label htmlFor="password" className="text-sm font-medium">
           Senha
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
-        />
+        <Input id="password" name="password" type="password" required />
       </div>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <FormError>{state.error}</FormError>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-neutral-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-      >
+      <Button type="submit" disabled={pending}>
         {pending ? "Entrando..." : "Entrar"}
-      </button>
+      </Button>
 
-      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="text-sm text-cinza-600">
         Não tem conta?{" "}
-        <Link href="/signup" className="underline">
+        <Link href="/signup" className="text-latao-escuro underline">
           Criar conta
         </Link>
       </p>

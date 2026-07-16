@@ -3,23 +3,38 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { buscarSlotsPublico, criarAgendamentoPublico } from "./actions";
+import { salvarTokenAgendamento } from "../meu-agendamento-link";
 import { centavosToBRL } from "@/lib/money";
 import { hojeNaTimezone } from "@/lib/timezone";
 import type { Database } from "@/lib/supabase/types";
+import { Input } from "@/components/ui/input";
+import { Heading } from "@/components/ui/heading";
+import { FormError } from "@/components/ui/form-error";
+import { Chip } from "@/components/ui/chip";
 
-type Barbearia = Database["public"]["Tables"]["barbearias"]["Row"];
+type Estabelecimento = Database["public"]["Tables"]["estabelecimentos"]["Row"];
 type Servico = Database["public"]["Tables"]["servicos"]["Row"];
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 
 const QUALQUER = "qualquer";
 
+// Botões da página pública seguem as cores --tenant-* (variam por preset do estabelecimento),
+// diferente do kit de UI do painel que usa a paleta fixa Navalha & Latão.
+const BOTAO_PRIMARIO =
+  "inline-flex h-11 items-center justify-center rounded-md bg-tenant-acento px-4 text-sm font-medium text-tenant-acento-fg transition-opacity duration-150 hover:opacity-90 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tenant-acento focus-visible:ring-offset-2";
+const BOTAO_SECUNDARIO =
+  "inline-flex h-11 items-center justify-center rounded-md border border-tenant-linha px-4 text-sm font-medium text-current transition-colors duration-150 hover:border-tenant-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tenant-acento focus-visible:ring-offset-2";
+const BOTAO_GHOST = "text-sm text-current underline opacity-70 hover:opacity-100";
+const CARTAO_ESCOLHA =
+  "flex justify-between rounded-md border border-tenant-linha bg-tenant-bg-2 p-3 text-left text-current transition-colors duration-150 hover:border-tenant-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tenant-acento focus-visible:ring-offset-2";
+
 export function AgendarWizard({
-  barbearia,
+  estabelecimento,
   servicos,
   profissionais,
   vinculos,
 }: {
-  barbearia: Barbearia;
+  estabelecimento: Estabelecimento;
   servicos: Servico[];
   profissionais: Profissional[];
   vinculos: { profissional_id: string; servico_id: string }[];
@@ -27,7 +42,7 @@ export function AgendarWizard({
   const [passo, setPasso] = useState(1);
   const [servicoId, setServicoId] = useState<string | null>(null);
   const [profissionalEscolha, setProfissionalEscolha] = useState<string | null>(null);
-  const [data, setData] = useState(hojeNaTimezone(barbearia.timezone));
+  const [data, setData] = useState(hojeNaTimezone(estabelecimento.timezone));
   const [slots, setSlots] = useState<{ inicio: string; fim: string }[]>([]);
   const [slotSelecionado, setSlotSelecionado] = useState<string | null>(null);
   const [nome, setNome] = useState("");
@@ -52,7 +67,7 @@ export function AgendarWizard({
     async function carregar() {
       const resultado =
         profissionalId && servicoId && data
-          ? await buscarSlotsPublico(barbearia.id, profissionalId, servicoId, data)
+          ? await buscarSlotsPublico(estabelecimento.id, profissionalId, servicoId, data)
           : [];
       if (!ignorar) setSlots(resultado);
     }
@@ -60,14 +75,14 @@ export function AgendarWizard({
     return () => {
       ignorar = true;
     };
-  }, [barbearia.id, profissionalId, servicoId, data]);
+  }, [estabelecimento.id, profissionalId, servicoId, data]);
 
   function confirmar() {
     if (!profissionalId || !servicoId || !slotSelecionado) return;
     setErro(null);
     startTransition(async () => {
       const r = await criarAgendamentoPublico({
-        barbeariaId: barbearia.id,
+        estabelecimentoId: estabelecimento.id,
         profissionalId,
         servicoId,
         inicio: slotSelecionado,
@@ -78,6 +93,7 @@ export function AgendarWizard({
         setErro(r.error);
         return;
       }
+      salvarTokenAgendamento(estabelecimento.slug, r.token!);
       setResultado({ token: r.token! });
     });
   }
@@ -85,12 +101,9 @@ export function AgendarWizard({
   if (resultado) {
     return (
       <div className="flex flex-col gap-3">
-        <h1 className="text-xl font-semibold">Agendamento confirmado!</h1>
-        <p>Você vai receber a confirmação pelo WhatsApp informado.</p>
-        <Link
-          href={`/b/${barbearia.slug}/meus-agendamentos/${resultado.token}`}
-          className="underline"
-        >
+        <Heading className="text-tenant-fg">Agendamento confirmado</Heading>
+        <p className="text-tenant-fg opacity-80">Você vai receber a confirmação pelo WhatsApp informado.</p>
+        <Link href={`/b/${estabelecimento.slug}/meus-agendamentos/${resultado.token}`} className={BOTAO_GHOST}>
           Ver ou cancelar meu agendamento
         </Link>
       </div>
@@ -98,12 +111,12 @@ export function AgendarWizard({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Agendar em {barbearia.nome}</h1>
+    <div className="flex flex-col gap-5">
+      <h1 className="font-display text-2xl text-tenant-fg">Agendar em {estabelecimento.nome}</h1>
 
       {passo === 1 && (
         <div className="flex flex-col gap-2">
-          <p className="font-medium">1. Escolha o serviço</p>
+          <p className="text-sm font-medium text-tenant-fg opacity-70">1. Escolha o serviço</p>
           {servicos.map((s) => (
             <button
               key={s.id}
@@ -113,10 +126,10 @@ export function AgendarWizard({
                 setSlotSelecionado(null);
                 setPasso(2);
               }}
-              className="flex justify-between rounded-md border border-neutral-300 p-3 text-left dark:border-neutral-700"
+              className={CARTAO_ESCOLHA}
             >
               <span>{s.nome}</span>
-              <span>{centavosToBRL(s.preco_centavos)}</span>
+              <span className="tabular-nums">{centavosToBRL(s.preco_centavos)}</span>
             </button>
           ))}
         </div>
@@ -124,7 +137,7 @@ export function AgendarWizard({
 
       {passo === 2 && (
         <div className="flex flex-col gap-2">
-          <p className="font-medium">2. Escolha o profissional</p>
+          <p className="text-sm font-medium text-tenant-fg opacity-70">2. Escolha o profissional</p>
           {profissionaisQualificados.map((p) => (
             <button
               key={p.id}
@@ -133,7 +146,7 @@ export function AgendarWizard({
                 setSlotSelecionado(null);
                 setPasso(3);
               }}
-              className="rounded-md border border-neutral-300 p-3 text-left dark:border-neutral-700"
+              className={CARTAO_ESCOLHA}
             >
               {p.nome}
             </button>
@@ -144,11 +157,11 @@ export function AgendarWizard({
               setSlotSelecionado(null);
               setPasso(3);
             }}
-            className="rounded-md border border-neutral-300 p-3 text-left dark:border-neutral-700"
+            className={CARTAO_ESCOLHA}
           >
             Qualquer profissional disponível
           </button>
-          <button onClick={() => setPasso(1)} className="w-fit text-sm text-neutral-500 underline">
+          <button onClick={() => setPasso(1)} className={`${BOTAO_GHOST} w-fit`}>
             Voltar
           </button>
         </div>
@@ -156,16 +169,16 @@ export function AgendarWizard({
 
       {passo === 3 && (
         <div className="flex flex-col gap-3">
-          <p className="font-medium">3. Escolha data e horário</p>
-          <input
+          <p className="text-sm font-medium text-tenant-fg opacity-70">3. Escolha data e horário</p>
+          <Input
             type="date"
             value={data}
-            min={hojeNaTimezone(barbearia.timezone)}
+            min={hojeNaTimezone(estabelecimento.timezone)}
             onChange={(e) => {
               setData(e.target.value);
               setSlotSelecionado(null);
             }}
-            className="w-fit rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
+            className="w-fit"
           />
           <div className="flex flex-wrap gap-2">
             {slots.map((s) => {
@@ -174,30 +187,20 @@ export function AgendarWizard({
                 minute: "2-digit",
               });
               return (
-                <button
-                  key={s.inicio}
-                  onClick={() => setSlotSelecionado(s.inicio)}
-                  className={`rounded-md border px-3 py-1 text-sm ${
-                    slotSelecionado === s.inicio
-                      ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900"
-                      : "border-neutral-300 dark:border-neutral-700"
-                  }`}
-                >
+                <Chip key={s.inicio} selected={slotSelecionado === s.inicio} onClick={() => setSlotSelecionado(s.inicio)}>
                   {hora}
-                </button>
+                </Chip>
               );
             })}
-            {slots.length === 0 && <p className="text-sm text-neutral-500">Sem horários livres nesse dia.</p>}
+            {slots.length === 0 && (
+              <p className="text-sm text-tenant-fg opacity-70">Sem horários livres nesse dia.</p>
+            )}
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setPasso(2)} className="text-sm text-neutral-500 underline">
+            <button onClick={() => setPasso(2)} className={BOTAO_SECUNDARIO}>
               Voltar
             </button>
-            <button
-              disabled={!slotSelecionado}
-              onClick={() => setPasso(4)}
-              className="rounded-md bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-            >
+            <button disabled={!slotSelecionado} onClick={() => setPasso(4)} className={BOTAO_PRIMARIO}>
               Continuar
             </button>
           </div>
@@ -206,29 +209,19 @@ export function AgendarWizard({
 
       {passo === 4 && (
         <div className="flex flex-col gap-3">
-          <p className="font-medium">4. Seus dados</p>
-          <input
-            placeholder="Nome"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
-          />
-          <input
+          <p className="text-sm font-medium text-tenant-fg opacity-70">4. Seus dados</p>
+          <Input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+          <Input
             placeholder="WhatsApp, ex: (47) 99999-9999"
             value={telefone}
             onChange={(e) => setTelefone(e.target.value)}
-            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
           />
-          {erro && <p className="text-sm text-red-600">{erro}</p>}
+          {erro && <FormError>{erro}</FormError>}
           <div className="flex gap-2">
-            <button onClick={() => setPasso(3)} className="text-sm text-neutral-500 underline">
+            <button onClick={() => setPasso(3)} className={BOTAO_SECUNDARIO}>
               Voltar
             </button>
-            <button
-              disabled={pending || !nome || !telefone}
-              onClick={confirmar}
-              className="rounded-md bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-            >
+            <button disabled={pending || !nome || !telefone} onClick={confirmar} className={BOTAO_PRIMARIO}>
               {pending ? "Confirmando..." : "Confirmar agendamento"}
             </button>
           </div>

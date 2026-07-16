@@ -1,23 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
-import { getBarbeariaAtiva } from "@/lib/barbearia-ativa";
+import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { BloqueiosClient } from "./bloqueios-client";
+import { Heading } from "@/components/ui/heading";
 
 export default async function BloqueiosPage() {
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
 
   const [{ data: bloqueios }, { data: profissionais }] = await Promise.all([
     supabase
       .from("bloqueios")
       .select("*")
-      .eq("barbearia_id", barbearia.id)
+      .eq("estabelecimento_id", estabelecimento.id)
       .order("inicio", { ascending: false }),
-    supabase.from("profissionais").select("*").eq("barbearia_id", barbearia.id).order("nome"),
+    supabase.from("profissionais").select("*").eq("estabelecimento_id", estabelecimento.id).order("nome"),
   ]);
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Bloqueios</h1>
+      <Heading>Bloqueios</Heading>
       <BloqueiosClient bloqueios={bloqueios ?? []} profissionais={profissionais ?? []} />
     </div>
   );

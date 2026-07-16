@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getBarbeariaAtiva } from "@/lib/barbearia-ativa";
+import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { brlToCentavos } from "@/lib/money";
 
 export type FormState = { error?: string } | undefined;
@@ -30,7 +30,7 @@ export async function salvarServico(_prevState: FormState, formData: FormData): 
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
   const preco_centavos = brlToCentavos(parsed.data.preco);
   if (!Number.isFinite(preco_centavos) || preco_centavos < 0) {
@@ -38,7 +38,7 @@ export async function salvarServico(_prevState: FormState, formData: FormData): 
   }
 
   const payload = {
-    barbearia_id: barbearia.id,
+    estabelecimento_id: estabelecimento.id,
     nome: parsed.data.nome,
     descricao: parsed.data.descricao || null,
     categoria: parsed.data.categoria || null,

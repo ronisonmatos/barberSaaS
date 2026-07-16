@@ -5,21 +5,21 @@
 
 begin;
 
--- Fixtures isoladas da seed de demonstracao (barbearia propria de teste).
-insert into barbearias (id, nome, slug, timezone, status, config)
+-- Fixtures isoladas da seed de demonstracao (estabelecimento proprio de teste).
+insert into estabelecimentos (id, nome, slug, timezone, status, config)
 values (
   '10000000-0000-0000-0000-000000000001',
-  'Barbearia Teste RPC',
-  'barbearia-teste-rpc',
+  'Estabelecimento Teste RPC',
+  'estabelecimento-teste-rpc',
   'America/Sao_Paulo',
   'ativa',
   '{"antecedencia_min_horas": 2}'
 );
 
-insert into profissionais (id, barbearia_id, nome, ativo)
+insert into profissionais (id, estabelecimento_id, nome, ativo)
 values ('10000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'Profissional Teste', true);
 
-insert into servicos (id, barbearia_id, nome, duracao_minutos, preco_centavos, ativo)
+insert into servicos (id, estabelecimento_id, nome, duracao_minutos, preco_centavos, ativo)
 values
   ('10000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', 'Corte 30min', 30, 4000, true),
   ('10000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001', 'Corte 45min', 45, 5000, true);
@@ -39,7 +39,7 @@ begin
   v_data := current_date + interval '30 days';
   v_dia_semana := extract(dow from v_data)::int;
 
-  insert into jornadas (barbearia_id, profissional_id, dia_semana, hora_inicio, hora_fim)
+  insert into jornadas (estabelecimento_id, profissional_id, dia_semana, hora_inicio, hora_fim)
   values
     ('10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', v_dia_semana, '09:00', '12:00'),
     ('10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', v_dia_semana, '13:00', '19:00');
@@ -86,10 +86,10 @@ begin
     v_data
   );
 
-  insert into clientes (id, barbearia_id, nome, telefone)
+  insert into clientes (id, estabelecimento_id, nome, telefone)
   values ('10000000-0000-0000-0000-0000000000c1', '10000000-0000-0000-0000-000000000001', 'Cliente Teste', '+5547900000001');
 
-  insert into agendamentos (barbearia_id, cliente_id, profissional_id, servico_id, inicio, fim, status, preco_centavos)
+  insert into agendamentos (estabelecimento_id, cliente_id, profissional_id, servico_id, inicio, fim, status, preco_centavos)
   values (
     '10000000-0000-0000-0000-000000000001',
     '10000000-0000-0000-0000-0000000000c1',
@@ -124,7 +124,7 @@ declare
   v_data date := current_date + interval '30 days';
   v_qtd int;
 begin
-  insert into bloqueios (barbearia_id, profissional_id, inicio, fim, motivo)
+  insert into bloqueios (estabelecimento_id, profissional_id, inicio, fim, motivo)
   values (
     '10000000-0000-0000-0000-000000000001',
     '10000000-0000-0000-0000-000000000002',
@@ -202,10 +202,10 @@ begin
   )
   where (inicio at time zone 'America/Sao_Paulo')::time >= '15:30'; -- horario ainda livre, fora do agendamento/bloqueio criados acima
 
-  insert into clientes (id, barbearia_id, nome, telefone)
+  insert into clientes (id, estabelecimento_id, nome, telefone)
   values ('10000000-0000-0000-0000-0000000000c2', '10000000-0000-0000-0000-000000000001', 'Cliente Teste 2', '+5547900000002');
 
-  insert into agendamentos (barbearia_id, cliente_id, profissional_id, servico_id, inicio, fim, status, preco_centavos)
+  insert into agendamentos (estabelecimento_id, cliente_id, profissional_id, servico_id, inicio, fim, status, preco_centavos)
   values (
     '10000000-0000-0000-0000-000000000001',
     '10000000-0000-0000-0000-0000000000c2',
@@ -218,7 +218,7 @@ begin
   );
 
   begin
-    insert into agendamentos (barbearia_id, cliente_id, profissional_id, servico_id, inicio, fim, status, preco_centavos)
+    insert into agendamentos (estabelecimento_id, cliente_id, profissional_id, servico_id, inicio, fim, status, preco_centavos)
     values (
       '10000000-0000-0000-0000-000000000001',
       '10000000-0000-0000-0000-0000000000c2',

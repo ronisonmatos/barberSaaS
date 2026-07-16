@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cancelarAgendamento } from "./actions";
+import { FormError } from "@/components/ui/form-error";
 
 export function CancelarButton({ token, agendamentoId }: { token: string; agendamentoId: string }) {
   const router = useRouter();
@@ -12,7 +13,7 @@ export function CancelarButton({ token, agendamentoId }: { token: string; agenda
 
   if (!confirmando) {
     return (
-      <button onClick={() => setConfirmando(true)} className="text-sm text-red-600 underline">
+      <button onClick={() => setConfirmando(true)} className="w-fit text-sm text-erro underline">
         Cancelar agendamento
       </button>
     );
@@ -20,9 +21,9 @@ export function CancelarButton({ token, agendamentoId }: { token: string; agenda
 
   return (
     <div className="flex flex-col gap-1">
-      <p className="text-sm">Tem certeza que deseja cancelar?</p>
-      {erro && <p className="text-sm text-red-600">{erro}</p>}
-      <div className="flex gap-2 text-sm">
+      <p className="text-sm text-tenant-fg">Tem certeza que deseja cancelar?</p>
+      {erro && <FormError>{erro}</FormError>}
+      <div className="flex gap-3 text-sm">
         <button
           disabled={pending}
           onClick={() =>
@@ -36,11 +37,14 @@ export function CancelarButton({ token, agendamentoId }: { token: string; agenda
               setConfirmando(false);
             })
           }
-          className="text-red-600 underline"
+          className="text-erro underline disabled:opacity-50"
         >
           {pending ? "Cancelando..." : "Sim, cancelar"}
         </button>
-        <button onClick={() => setConfirmando(false)} className="text-neutral-500 underline">
+        <button
+          onClick={() => setConfirmando(false)}
+          className="text-current underline opacity-70 hover:opacity-100"
+        >
           Voltar
         </button>
       </div>

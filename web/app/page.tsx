@@ -10,8 +10,8 @@ export default async function Home() {
   if (!user) redirect("/login");
 
   const { data: membro } = await supabase
-    .from("membros_barbearia")
-    .select("barbearia_id")
+    .from("membros_estabelecimento")
+    .select("estabelecimento_id")
     .eq("usuario_id", user.id)
     .limit(1)
     .maybeSingle();

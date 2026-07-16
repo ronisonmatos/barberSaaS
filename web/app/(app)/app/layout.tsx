@@ -1,45 +1,33 @@
-import Link from "next/link";
-import { getBarbeariaAtiva } from "@/lib/barbearia-ativa";
+import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { signOut } from "@/app/actions/auth";
-
-const LINKS = [
-  { href: "/app/agenda", label: "Agenda" },
-  { href: "/app/servicos", label: "Serviços" },
-  { href: "/app/profissionais", label: "Profissionais" },
-  { href: "/app/bloqueios", label: "Bloqueios" },
-  { href: "/app/clientes", label: "Clientes" },
-];
+import { AppNav } from "./app-nav";
+import { BottomNav } from "./bottom-nav";
+import { Button } from "@/components/ui/button";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { barbearia } = await getBarbeariaAtiva();
+  const { estabelecimento } = await getEstabelecimentoAtivo();
+  const trialAte = new Date(`${estabelecimento.trial_ate}T00:00:00`).toLocaleDateString("pt-BR");
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900">
+      <aside className="hidden shrink-0 flex-col border-r border-linha bg-marfim-2 p-4 md:flex md:w-56">
         <div className="mb-6">
-          <p className="font-semibold">{barbearia.nome}</p>
-          <p className="text-xs text-neutral-500">
-            {barbearia.status === "trial" ? `Trial até ${barbearia.trial_ate}` : barbearia.status}
+          <p className="font-display text-lg text-carvao">{estabelecimento.nome}</p>
+          <p className="text-xs text-cinza-600">
+            {estabelecimento.status === "trial" ? `Trial até ${trialAte}` : estabelecimento.status}
           </p>
         </div>
-        <nav className="flex flex-1 flex-col gap-1">
-          {LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="rounded-md px-3 py-2 text-sm hover:bg-neutral-200 dark:hover:bg-neutral-800"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <AppNav />
         <form action={signOut}>
-          <button type="submit" className="w-full rounded-md px-3 py-2 text-left text-sm text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-800">
+          <Button type="submit" variant="ghost" className="w-full justify-start no-underline">
             Sair
-          </button>
+          </Button>
         </form>
       </aside>
-      <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      <main className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
+        <div className="mx-auto w-full max-w-5xl">{children}</div>
+      </main>
+      <BottomNav signOutAction={signOut} />
     </div>
   );
 }

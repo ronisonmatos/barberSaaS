@@ -1,0 +1,40 @@
+-- Rename "barbearia" -> "estabelecimento": coluna barbearia_id em todas as tabelas de dominio
+-- e as constraints cujo nome padrao incorpora o nome da coluna.
+
+alter table assinaturas_plataforma rename column barbearia_id to estabelecimento_id;
+alter table assinaturas_plataforma rename constraint assinaturas_plataforma_barbearia_id_fkey to assinaturas_plataforma_estabelecimento_id_fkey;
+
+alter table membros_estabelecimento rename column barbearia_id to estabelecimento_id;
+alter table membros_estabelecimento rename constraint membros_barbearia_barbearia_id_fkey to membros_estabelecimento_estabelecimento_id_fkey;
+alter table membros_estabelecimento rename constraint membros_barbearia_barbearia_id_usuario_id_key to membros_estabelecimento_estabelecimento_id_usuario_id_key;
+
+alter table profissionais rename column barbearia_id to estabelecimento_id;
+alter table profissionais rename constraint profissionais_barbearia_id_fkey to profissionais_estabelecimento_id_fkey;
+
+alter table servicos rename column barbearia_id to estabelecimento_id;
+alter table servicos rename constraint servicos_barbearia_id_fkey to servicos_estabelecimento_id_fkey;
+
+alter table jornadas rename column barbearia_id to estabelecimento_id;
+alter table jornadas rename constraint jornadas_barbearia_id_fkey to jornadas_estabelecimento_id_fkey;
+
+alter table bloqueios rename column barbearia_id to estabelecimento_id;
+alter table bloqueios rename constraint bloqueios_barbearia_id_fkey to bloqueios_estabelecimento_id_fkey;
+
+alter table clientes rename column barbearia_id to estabelecimento_id;
+alter table clientes rename constraint clientes_barbearia_id_fkey to clientes_estabelecimento_id_fkey;
+alter table clientes rename constraint clientes_barbearia_id_telefone_key to clientes_estabelecimento_id_telefone_key;
+
+alter table planos_estabelecimento rename column barbearia_id to estabelecimento_id;
+alter table planos_estabelecimento rename constraint planos_barbearia_barbearia_id_fkey to planos_estabelecimento_estabelecimento_id_fkey;
+
+alter table assinaturas_clientes rename column barbearia_id to estabelecimento_id;
+alter table assinaturas_clientes rename constraint assinaturas_clientes_barbearia_id_fkey to assinaturas_clientes_estabelecimento_id_fkey;
+
+alter table agendamentos rename column barbearia_id to estabelecimento_id;
+alter table agendamentos rename constraint agendamentos_barbearia_id_fkey to agendamentos_estabelecimento_id_fkey;
+
+alter table pagamentos rename column barbearia_id to estabelecimento_id;
+alter table pagamentos rename constraint pagamentos_barbearia_id_fkey to pagamentos_estabelecimento_id_fkey;
+
+alter table mensagens_whatsapp rename column barbearia_id to estabelecimento_id;
+alter table mensagens_whatsapp rename constraint mensagens_whatsapp_barbearia_id_fkey to mensagens_whatsapp_estabelecimento_id_fkey;

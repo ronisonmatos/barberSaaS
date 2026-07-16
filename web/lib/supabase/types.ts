@@ -42,9 +42,9 @@ export type Database = {
       agendamentos: {
         Row: {
           assinatura_cliente_id: string | null
-          barbearia_id: string
           cliente_id: string
           created_at: string
+          estabelecimento_id: string
           fim: string
           id: string
           inicio: string
@@ -57,9 +57,9 @@ export type Database = {
         }
         Insert: {
           assinatura_cliente_id?: string | null
-          barbearia_id: string
           cliente_id: string
           created_at?: string
+          estabelecimento_id: string
           fim: string
           id?: string
           inicio: string
@@ -72,9 +72,9 @@ export type Database = {
         }
         Update: {
           assinatura_cliente_id?: string | null
-          barbearia_id?: string
           cliente_id?: string
           created_at?: string
+          estabelecimento_id?: string
           fim?: string
           id?: string
           inicio?: string
@@ -94,17 +94,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "agendamentos_barbearia_id_fkey"
-            columns: ["barbearia_id"]
-            isOneToOne: false
-            referencedRelation: "barbearias"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "agendamentos_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
             referencedColumns: ["id"]
           },
           {
@@ -125,11 +125,11 @@ export type Database = {
       }
       assinaturas_clientes: {
         Row: {
-          barbearia_id: string
           ciclo_fim: string
           ciclo_inicio: string
           cliente_id: string
           created_at: string
+          estabelecimento_id: string
           gateway_subscription_id: string | null
           id: string
           plano_id: string
@@ -137,11 +137,11 @@ export type Database = {
           usos_ciclo: Json
         }
         Insert: {
-          barbearia_id: string
           ciclo_fim: string
           ciclo_inicio: string
           cliente_id: string
           created_at?: string
+          estabelecimento_id: string
           gateway_subscription_id?: string | null
           id?: string
           plano_id: string
@@ -149,11 +149,11 @@ export type Database = {
           usos_ciclo?: Json
         }
         Update: {
-          barbearia_id?: string
           ciclo_fim?: string
           ciclo_inicio?: string
           cliente_id?: string
           created_at?: string
+          estabelecimento_id?: string
           gateway_subscription_id?: string | null
           id?: string
           plano_id?: string
@@ -162,13 +162,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "assinaturas_clientes_barbearia_id_fkey"
-            columns: ["barbearia_id"]
-            isOneToOne: false
-            referencedRelation: "barbearias"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "assinaturas_clientes_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
@@ -176,18 +169,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "assinaturas_clientes_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "assinaturas_clientes_plano_id_fkey"
             columns: ["plano_id"]
             isOneToOne: false
-            referencedRelation: "planos_barbearia"
+            referencedRelation: "planos_estabelecimento"
             referencedColumns: ["id"]
           },
         ]
       }
       assinaturas_plataforma: {
         Row: {
-          barbearia_id: string
           created_at: string
+          estabelecimento_id: string
           gateway_subscription_id: string | null
           id: string
           plano_plataforma_id: string
@@ -195,8 +195,8 @@ export type Database = {
           status: Database["public"]["Enums"]["status_assinatura"]
         }
         Insert: {
-          barbearia_id: string
           created_at?: string
+          estabelecimento_id: string
           gateway_subscription_id?: string | null
           id?: string
           plano_plataforma_id: string
@@ -204,8 +204,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["status_assinatura"]
         }
         Update: {
-          barbearia_id?: string
           created_at?: string
+          estabelecimento_id?: string
           gateway_subscription_id?: string | null
           id?: string
           plano_plataforma_id?: string
@@ -214,10 +214,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "assinaturas_plataforma_barbearia_id_fkey"
-            columns: ["barbearia_id"]
+            foreignKeyName: "assinaturas_plataforma_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
             isOneToOne: false
-            referencedRelation: "barbearias"
+            referencedRelation: "estabelecimentos"
             referencedColumns: ["id"]
           },
           {
@@ -229,7 +229,100 @@ export type Database = {
           },
         ]
       }
-      barbearias: {
+      bloqueios: {
+        Row: {
+          estabelecimento_id: string
+          fim: string
+          id: string
+          inicio: string
+          motivo: string | null
+          profissional_id: string | null
+        }
+        Insert: {
+          estabelecimento_id: string
+          fim: string
+          id?: string
+          inicio: string
+          motivo?: string | null
+          profissional_id?: string | null
+        }
+        Update: {
+          estabelecimento_id?: string
+          fim?: string
+          id?: string
+          inicio?: string
+          motivo?: string | null
+          profissional_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bloqueios_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bloqueios_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          created_at: string
+          email: string | null
+          estabelecimento_id: string
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string
+          token_acesso: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          estabelecimento_id: string
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone: string
+          token_acesso?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          estabelecimento_id?: string
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string
+          token_acesso?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clientes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estabelecimentos: {
         Row: {
           asaas_customer_id: string | null
           asaas_subconta_id: string | null
@@ -243,7 +336,7 @@ export type Database = {
           nome: string
           plano_plataforma_id: string | null
           slug: string
-          status: Database["public"]["Enums"]["status_barbearia"]
+          status: Database["public"]["Enums"]["status_estabelecimento"]
           telefone_whatsapp: string | null
           timezone: string
           trial_ate: string | null
@@ -261,7 +354,7 @@ export type Database = {
           nome: string
           plano_plataforma_id?: string | null
           slug: string
-          status?: Database["public"]["Enums"]["status_barbearia"]
+          status?: Database["public"]["Enums"]["status_estabelecimento"]
           telefone_whatsapp?: string | null
           timezone?: string
           trial_ate?: string | null
@@ -279,14 +372,14 @@ export type Database = {
           nome?: string
           plano_plataforma_id?: string | null
           slug?: string
-          status?: Database["public"]["Enums"]["status_barbearia"]
+          status?: Database["public"]["Enums"]["status_estabelecimento"]
           telefone_whatsapp?: string | null
           timezone?: string
           trial_ate?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "barbearias_plano_plataforma_id_fkey"
+            foreignKeyName: "estabelecimentos_plano_plataforma_id_fkey"
             columns: ["plano_plataforma_id"]
             isOneToOne: false
             referencedRelation: "planos_plataforma"
@@ -294,119 +387,26 @@ export type Database = {
           },
         ]
       }
-      bloqueios: {
-        Row: {
-          barbearia_id: string
-          fim: string
-          id: string
-          inicio: string
-          motivo: string | null
-          profissional_id: string | null
-        }
-        Insert: {
-          barbearia_id: string
-          fim: string
-          id?: string
-          inicio: string
-          motivo?: string | null
-          profissional_id?: string | null
-        }
-        Update: {
-          barbearia_id?: string
-          fim?: string
-          id?: string
-          inicio?: string
-          motivo?: string | null
-          profissional_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bloqueios_barbearia_id_fkey"
-            columns: ["barbearia_id"]
-            isOneToOne: false
-            referencedRelation: "barbearias"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bloqueios_profissional_id_fkey"
-            columns: ["profissional_id"]
-            isOneToOne: false
-            referencedRelation: "profissionais"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      clientes: {
-        Row: {
-          barbearia_id: string
-          created_at: string
-          email: string | null
-          id: string
-          nome: string
-          observacoes: string | null
-          telefone: string
-          token_acesso: string
-          user_id: string | null
-        }
-        Insert: {
-          barbearia_id: string
-          created_at?: string
-          email?: string | null
-          id?: string
-          nome: string
-          observacoes?: string | null
-          telefone: string
-          token_acesso?: string
-          user_id?: string | null
-        }
-        Update: {
-          barbearia_id?: string
-          created_at?: string
-          email?: string | null
-          id?: string
-          nome?: string
-          observacoes?: string | null
-          telefone?: string
-          token_acesso?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clientes_barbearia_id_fkey"
-            columns: ["barbearia_id"]
-            isOneToOne: false
-            referencedRelation: "barbearias"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clientes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "usuarios"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       jornadas: {
         Row: {
-          barbearia_id: string
           dia_semana: number
+          estabelecimento_id: string
           hora_fim: string
           hora_inicio: string
           id: string
           profissional_id: string
         }
         Insert: {
-          barbearia_id: string
           dia_semana: number
+          estabelecimento_id: string
           hora_fim: string
           hora_inicio: string
           id?: string
           profissional_id: string
         }
         Update: {
-          barbearia_id?: string
           dia_semana?: number
+          estabelecimento_id?: string
           hora_fim?: string
           hora_inicio?: string
           id?: string
@@ -414,10 +414,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "jornadas_barbearia_id_fkey"
-            columns: ["barbearia_id"]
+            foreignKeyName: "jornadas_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
             isOneToOne: false
-            referencedRelation: "barbearias"
+            referencedRelation: "estabelecimentos"
             referencedColumns: ["id"]
           },
           {
@@ -429,35 +429,35 @@ export type Database = {
           },
         ]
       }
-      membros_barbearia: {
+      membros_estabelecimento: {
         Row: {
-          barbearia_id: string
+          estabelecimento_id: string
           id: string
           papel: Database["public"]["Enums"]["papel_membro"]
           usuario_id: string
         }
         Insert: {
-          barbearia_id: string
+          estabelecimento_id: string
           id?: string
           papel?: Database["public"]["Enums"]["papel_membro"]
           usuario_id: string
         }
         Update: {
-          barbearia_id?: string
+          estabelecimento_id?: string
           id?: string
           papel?: Database["public"]["Enums"]["papel_membro"]
           usuario_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "membros_barbearia_barbearia_id_fkey"
-            columns: ["barbearia_id"]
+            foreignKeyName: "membros_estabelecimento_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
             isOneToOne: false
-            referencedRelation: "barbearias"
+            referencedRelation: "estabelecimentos"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "membros_barbearia_usuario_id_fkey"
+            foreignKeyName: "membros_estabelecimento_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
             referencedRelation: "usuarios"
@@ -468,30 +468,30 @@ export type Database = {
       mensagens_whatsapp: {
         Row: {
           agendamento_id: string | null
-          barbearia_id: string
           cliente_id: string | null
           conteudo: string | null
           created_at: string
+          estabelecimento_id: string
           id: string
           status: string
           tipo: string
         }
         Insert: {
           agendamento_id?: string | null
-          barbearia_id: string
           cliente_id?: string | null
           conteudo?: string | null
           created_at?: string
+          estabelecimento_id: string
           id?: string
           status?: string
           tipo: string
         }
         Update: {
           agendamento_id?: string | null
-          barbearia_id?: string
           cliente_id?: string | null
           conteudo?: string | null
           created_at?: string
+          estabelecimento_id?: string
           id?: string
           status?: string
           tipo?: string
@@ -505,17 +505,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "mensagens_whatsapp_barbearia_id_fkey"
-            columns: ["barbearia_id"]
-            isOneToOne: false
-            referencedRelation: "barbearias"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "mensagens_whatsapp_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mensagens_whatsapp_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
             referencedColumns: ["id"]
           },
         ]
@@ -524,9 +524,9 @@ export type Database = {
         Row: {
           agendamento_id: string | null
           assinatura_cliente_id: string | null
-          barbearia_id: string
           cliente_id: string | null
           created_at: string
+          estabelecimento_id: string
           gateway_payment_id: string | null
           id: string
           metodo: Database["public"]["Enums"]["metodo_pagamento"]
@@ -537,9 +537,9 @@ export type Database = {
         Insert: {
           agendamento_id?: string | null
           assinatura_cliente_id?: string | null
-          barbearia_id: string
           cliente_id?: string | null
           created_at?: string
+          estabelecimento_id: string
           gateway_payment_id?: string | null
           id?: string
           metodo: Database["public"]["Enums"]["metodo_pagamento"]
@@ -550,9 +550,9 @@ export type Database = {
         Update: {
           agendamento_id?: string | null
           assinatura_cliente_id?: string | null
-          barbearia_id?: string
           cliente_id?: string | null
           created_at?: string
+          estabelecimento_id?: string
           gateway_payment_id?: string | null
           id?: string
           metodo?: Database["public"]["Enums"]["metodo_pagamento"]
@@ -576,27 +576,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "pagamentos_barbearia_id_fkey"
-            columns: ["barbearia_id"]
-            isOneToOne: false
-            referencedRelation: "barbearias"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "pagamentos_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pagamentos_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
         ]
       }
-      planos_barbearia: {
+      planos_estabelecimento: {
         Row: {
           ativo: boolean
-          barbearia_id: string
           created_at: string
           descricao: string | null
+          estabelecimento_id: string
           id: string
           nome: string
           preco_centavos: number
@@ -604,9 +604,9 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
-          barbearia_id: string
           created_at?: string
           descricao?: string | null
+          estabelecimento_id: string
           id?: string
           nome: string
           preco_centavos: number
@@ -614,9 +614,9 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
-          barbearia_id?: string
           created_at?: string
           descricao?: string | null
+          estabelecimento_id?: string
           id?: string
           nome?: string
           preco_centavos?: number
@@ -624,10 +624,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "planos_barbearia_barbearia_id_fkey"
-            columns: ["barbearia_id"]
+            foreignKeyName: "planos_estabelecimento_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
             isOneToOne: false
-            referencedRelation: "barbearias"
+            referencedRelation: "estabelecimentos"
             referencedColumns: ["id"]
           },
         ]
@@ -665,9 +665,9 @@ export type Database = {
       profissionais: {
         Row: {
           ativo: boolean
-          barbearia_id: string
           comissao_percentual: number
           created_at: string
+          estabelecimento_id: string
           foto_url: string | null
           id: string
           nome: string
@@ -675,9 +675,9 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
-          barbearia_id: string
           comissao_percentual?: number
           created_at?: string
+          estabelecimento_id: string
           foto_url?: string | null
           id?: string
           nome: string
@@ -685,9 +685,9 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
-          barbearia_id?: string
           comissao_percentual?: number
           created_at?: string
+          estabelecimento_id?: string
           foto_url?: string | null
           id?: string
           nome?: string
@@ -695,10 +695,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "profissionais_barbearia_id_fkey"
-            columns: ["barbearia_id"]
+            foreignKeyName: "profissionais_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
             isOneToOne: false
-            referencedRelation: "barbearias"
+            referencedRelation: "estabelecimentos"
             referencedColumns: ["id"]
           },
           {
@@ -743,43 +743,43 @@ export type Database = {
       servicos: {
         Row: {
           ativo: boolean
-          barbearia_id: string
           categoria: string | null
           created_at: string
           descricao: string | null
           duracao_minutos: number
+          estabelecimento_id: string
           id: string
           nome: string
           preco_centavos: number
         }
         Insert: {
           ativo?: boolean
-          barbearia_id: string
           categoria?: string | null
           created_at?: string
           descricao?: string | null
           duracao_minutos: number
+          estabelecimento_id: string
           id?: string
           nome: string
           preco_centavos: number
         }
         Update: {
           ativo?: boolean
-          barbearia_id?: string
           categoria?: string | null
           created_at?: string
           descricao?: string | null
           duracao_minutos?: number
+          estabelecimento_id?: string
           id?: string
           nome?: string
           preco_centavos?: number
         }
         Relationships: [
           {
-            foreignKeyName: "servicos_barbearia_id_fkey"
-            columns: ["barbearia_id"]
+            foreignKeyName: "servicos_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
             isOneToOne: false
-            referencedRelation: "barbearias"
+            referencedRelation: "estabelecimentos"
             referencedColumns: ["id"]
           },
         ]
@@ -844,9 +844,9 @@ export type Database = {
         Args: { p_token: string }
         Returns: {
           agendamento_id: string
-          barbearia_nome: string
-          barbearia_slug: string
           cliente_nome: string
+          estabelecimento_nome: string
+          estabelecimento_slug: string
           fim: string
           inicio: string
           preco_centavos: number
@@ -861,8 +861,8 @@ export type Database = {
       }
       criar_agendamento_publico: {
         Args: {
-          p_barbearia_id: string
           p_email?: string
+          p_estabelecimento_id: string
           p_inicio: string
           p_nome: string
           p_profissional_id: string
@@ -875,8 +875,8 @@ export type Database = {
         }[]
       }
       eh_super_admin: { Args: never; Returns: boolean }
-      minhas_barbearias: { Args: never; Returns: string[] }
-      onboarding_criar_barbearia: {
+      meus_estabelecimentos: { Args: never; Returns: string[] }
+      onboarding_criar_estabelecimento: {
         Args: { p_nome: string; p_slug: string }
         Returns: {
           asaas_customer_id: string | null
@@ -891,22 +891,22 @@ export type Database = {
           nome: string
           plano_plataforma_id: string | null
           slug: string
-          status: Database["public"]["Enums"]["status_barbearia"]
+          status: Database["public"]["Enums"]["status_estabelecimento"]
           telefone_whatsapp: string | null
           timezone: string
           trial_ate: string | null
         }
         SetofOptions: {
           from: "*"
-          to: "barbearias"
+          to: "estabelecimentos"
           isOneToOne: true
           isSetofReturn: false
         }
       }
       slots_disponiveis: {
         Args: {
-          p_barbearia_id: string
           p_data: string
+          p_estabelecimento_id: string
           p_profissional_id: string
           p_servico_id: string
         }
@@ -933,7 +933,7 @@ export type Database = {
         | "cancelado"
         | "no_show"
       status_assinatura: "ativa" | "inadimplente" | "cancelada" | "pausada"
-      status_barbearia:
+      status_estabelecimento:
         | "trial"
         | "ativa"
         | "inadimplente"
@@ -1087,7 +1087,7 @@ export const Constants = {
         "no_show",
       ],
       status_assinatura: ["ativa", "inadimplente", "cancelada", "pausada"],
-      status_barbearia: [
+      status_estabelecimento: [
         "trial",
         "ativa",
         "inadimplente",

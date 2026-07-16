@@ -103,6 +103,35 @@ temas por tenant na página pública, texto de interface e acessibilidade.
     Supabase real. **Falta testar de ponta a ponta com Pix de verdade** assim que houver credenciais
     de sandbox + deploy.
   - Cartão (Mercado Pago) e Asaas ficam para levas seguintes, como combinado.
-- Próxima onda da Fase 1 (ver seção 8 da ORIENTACAO-BARBERSAAS.md): terminar de testar a cobrança Pix
-  com credenciais reais, cartão via Mercado Pago, Asaas, e WhatsApp (Cloud API + links wa.me) por
-  último, como o usuário pediu.
+- **Logo consistente em todas as telas**: adicionado ao sidebar/topbar mobile do painel
+  (`web/app/(app)/app/layout.tsx`) e a um header compartilhado novo em
+  `web/app/(public)/b/[slug]/layout.tsx` (logo + nome, linkando pra home), que agora cobre
+  automaticamente todas as páginas públicas (home, agendar, meus-agendamentos) sem precisar repetir
+  em cada uma. Removida a logo duplicada que estava só na home pública.
+- **Deploy Vercel em andamento**: projeto em `https://barber-saa-s-silk.vercel.app`, mas atingiu o
+  limite diário de deploys antes de publicar o commit com admin/dashboard/configurações/pagamento —
+  o site em produção ainda está numa versão anterior (rotas `/api/webhooks/mercadopago` e
+  `/api/cron/expirar-pendentes` dão 404 lá). **Precisa de um redeploy manual quando o limite
+  resetar.**
+- **Teste de Pix em produção (Mercado Pago)**: usuário criou uma aplicação nova no Mercado Pago
+  (separada da produção do app SantosPlay, para não conflitar webhook) e configurou credenciais de
+  **produção** (não sandbox) no estabelecimento "Clube do Homem" (`2734be2f-0b35-46bc-92ac-cd595cc08f83`).
+  Teste em andamento localmente: cria-se o Pix real via `/b/clube-do-homem/agendar`, paga-se de
+  verdade, e a confirmação (que normalmente viria do webhook) é feita manualmente por script
+  consultando a API do Mercado Pago diretamente — combinado porque o webhook só funciona com URL
+  pública (bloqueado pelo item acima). Recomendável ao usuário resetar essas credenciais no painel do
+  Mercado Pago depois dos testes, já que passaram pelo chat.
+- **Cartão de crédito via Mercado Pago (Payment Brick)**: concluído. Tokenização acontece no
+  navegador do cliente (SDK `https://sdk.mercadopago.com/js/v2`, carregado via `next/script` só no
+  passo de cartão) — nosso servidor nunca vê o número do cartão, só o token. Fluxo: `criar_agendamento_publico_pix`
+  generalizada (`p_metodo` novo, default `'pix'`, aceita `'cartao'` — sem quebrar quem já chamava sem
+  esse parâmetro); `web/lib/mercadopago.ts` ganhou `criarCobrancaCartao`; CPF vira obrigatório só
+  nesse fluxo (`web/lib/cpf.ts`, com dígito verificador). Diferente do Pix, cartão responde na hora:
+  aprovado confirma o agendamento na mesma chamada, recusado cancela e libera o horário, em
+  processamento fica pendente aguardando o mesmo webhook/RPC de status já usados pelo Pix (nada mudou
+  no webhook — ele já era genérico por tipo de notificação). Restrito a **crédito** (não débito), sem
+  UI custom de parcelas (o próprio Brick já oferece isso). Validado contra o Supabase real sem gastar
+  dinheiro (RPC generalizada testada com `p_metodo='cartao'` e com o default `'pix'`); a tokenização em
+  si só é testável no navegador.
+- Próxima onda da Fase 1 (ver seção 8 da ORIENTACAO-BARBERSAAS.md): terminar o deploy/webhook de
+  verdade, Asaas, e WhatsApp (Cloud API + links wa.me) por último, como o usuário pediu.

@@ -12,19 +12,6 @@ export function PerfilForm({ nomeAtual, logoUrl }: { nomeAtual: string; logoUrl:
 
   return (
     <div className="flex flex-col gap-6">
-      <form action={nomeAction} className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="nome" className="text-sm font-medium">
-            Nome do estabelecimento
-          </label>
-          <Input id="nome" name="nome" required defaultValue={nomeAtual} className="max-w-sm" />
-        </div>
-        {nomeState?.error && <FormError>{nomeState.error}</FormError>}
-        <Button type="submit" disabled={nomePending} className="w-fit">
-          {nomePending ? "Salvando..." : "Salvar nome"}
-        </Button>
-      </form>
-
       <form action={logoAction} className="flex flex-col gap-3">
         <p className="text-sm font-medium">Logo</p>
         <div className="flex items-center gap-4">
@@ -47,6 +34,19 @@ export function PerfilForm({ nomeAtual, logoUrl }: { nomeAtual: string; logoUrl:
         {logoState?.error && <FormError>{logoState.error}</FormError>}
         <Button type="submit" disabled={logoPending} className="w-fit">
           {logoPending ? "Enviando..." : "Enviar logo"}
+        </Button>
+      </form>
+
+      <form action={nomeAction} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="nome" className="text-sm font-medium">
+            Nome do estabelecimento
+          </label>
+          <Input id="nome" name="nome" required defaultValue={nomeAtual} className="max-w-sm" />
+        </div>
+        {nomeState?.error && <FormError>{nomeState.error}</FormError>}
+        <Button type="submit" disabled={nomePending} className="w-fit">
+          {nomePending ? "Salvando..." : "Salvar nome"}
         </Button>
       </form>
     </div>

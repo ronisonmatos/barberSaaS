@@ -1073,6 +1073,7 @@ export type Database = {
           p_email: string
           p_estabelecimento_id: string
           p_inicio: string
+          p_metodo?: Database["public"]["Enums"]["metodo_pagamento"]
           p_nome: string
           p_profissional_id: string
           p_servico_id: string

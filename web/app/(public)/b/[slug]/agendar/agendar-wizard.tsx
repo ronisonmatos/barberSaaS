@@ -2,10 +2,18 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { buscarSlotsPublico, criarAgendamentoPublico, criarAgendamentoPix, consultarStatusPagamento } from "./actions";
+import {
+  buscarSlotsPublico,
+  criarAgendamentoPublico,
+  criarAgendamentoPix,
+  criarAgendamentoCartao,
+  consultarStatusPagamento,
+} from "./actions";
+import { CardPaymentBrick } from "./card-payment-brick";
 import { salvarTokenAgendamento } from "../meu-agendamento-link";
 import { centavosToBRL } from "@/lib/money";
 import { hojeNaTimezone } from "@/lib/timezone";
+import { validarCPF, formatarCPF, apenasNumeros } from "@/lib/cpf";
 import type { Database } from "@/lib/supabase/types";
 import { Input } from "@/components/ui/input";
 import { Heading } from "@/components/ui/heading";
@@ -21,7 +29,7 @@ type FormasPagamento = {
   gateway_ativo: string;
   mercado_pago_public_key: string | null;
 };
-type MetodoPagamento = "no_local" | "pix";
+type MetodoPagamento = "no_local" | "pix" | "cartao";
 
 const QUALQUER = "qualquer";
 
@@ -58,6 +66,7 @@ export function AgendarWizard({
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [resultado, setResultado] = useState<{ token: string } | null>(null);
@@ -68,10 +77,18 @@ export function AgendarWizard({
     qrCodeBase64: string;
   } | null>(null);
   const [pixConfirmado, setPixConfirmado] = useState(false);
+  const [aguardandoCartao, setAguardandoCartao] = useState<{ pagamentoId: string; token: string } | null>(null);
+  const [cartaoConfirmado, setCartaoConfirmado] = useState(false);
 
-  const podeEscolherFormaPagamento =
-    formasPagamento.aceita_pagamento_antecipado && formasPagamento.aceita_pagamento_no_dia;
-  const gatewayPixDisponivel = formasPagamento.gateway_ativo === "mercado_pago";
+  const gatewayMercadoPagoDisponivel =
+    formasPagamento.aceita_pagamento_antecipado && formasPagamento.gateway_ativo === "mercado_pago";
+  const opcoesPagamento: MetodoPagamento[] = [
+    ...(gatewayMercadoPagoDisponivel ? (["pix", "cartao"] as const) : []),
+    ...(formasPagamento.aceita_pagamento_no_dia ? (["no_local"] as const) : []),
+  ];
+  const podeEscolherFormaPagamento = opcoesPagamento.length > 1;
+
+  const servicoSelecionado = servicos.find((s) => s.id === servicoId) ?? null;
 
   const profissionaisQualificados = useMemo(
     () =>
@@ -99,27 +116,30 @@ export function AgendarWizard({
     };
   }, [estabelecimento.id, profissionalId, servicoId, data]);
 
-  // Poll do status do pagamento Pix ate confirmar (webhook do Mercado Pago atualiza no banco).
+  // Poll do status do pagamento (Pix ou cartão pendente) ate confirmar, via webhook do Mercado Pago.
   useEffect(() => {
-    if (!resultadoPix || pixConfirmado) return;
+    const pendente = resultadoPix ?? aguardandoCartao;
+    const jaConfirmado = pixConfirmado || cartaoConfirmado;
+    if (!pendente || jaConfirmado) return;
     let ignorar = false;
     const intervalo = setInterval(async () => {
-      const status = await consultarStatusPagamento(resultadoPix.pagamentoId, resultadoPix.token);
+      const status = await consultarStatusPagamento(pendente.pagamentoId, pendente.token);
       if (!ignorar && status?.status_agendamento === "confirmado") {
-        setPixConfirmado(true);
+        if (resultadoPix) setPixConfirmado(true);
+        else setCartaoConfirmado(true);
       }
     }, 4000);
     return () => {
       ignorar = true;
       clearInterval(intervalo);
     };
-  }, [resultadoPix, pixConfirmado]);
+  }, [resultadoPix, aguardandoCartao, pixConfirmado, cartaoConfirmado]);
 
   function irParaFormaPagamentoOuDados() {
     if (podeEscolherFormaPagamento) {
       setPasso(4);
     } else {
-      setMetodoPagamento(formasPagamento.aceita_pagamento_antecipado ? "pix" : "no_local");
+      setMetodoPagamento(opcoesPagamento[0] ?? "no_local");
       setPasso(5);
     }
   }
@@ -148,61 +168,75 @@ export function AgendarWizard({
       return;
     }
 
-    startTransition(async () => {
-      const r = await criarAgendamentoPix({
-        estabelecimentoId: estabelecimento.id,
-        profissionalId,
-        servicoId,
-        inicio: slotSelecionado,
-        nome,
-        telefone,
-        email,
+    if (metodoPagamento === "pix") {
+      startTransition(async () => {
+        const r = await criarAgendamentoPix({
+          estabelecimentoId: estabelecimento.id,
+          profissionalId,
+          servicoId,
+          inicio: slotSelecionado,
+          nome,
+          telefone,
+          email,
+        });
+        if (r.error || !r.qrCode || !r.qrCodeBase64 || !r.pagamentoId || !r.token) {
+          setErro(r.error ?? "Erro ao gerar cobrança Pix.");
+          return;
+        }
+        salvarTokenAgendamento(estabelecimento.slug, r.token);
+        setResultadoPix({
+          pagamentoId: r.pagamentoId,
+          token: r.token,
+          qrCode: r.qrCode,
+          qrCodeBase64: r.qrCodeBase64,
+        });
       });
-      if (r.error || !r.qrCode || !r.qrCodeBase64 || !r.pagamentoId || !r.token) {
-        setErro(r.error ?? "Erro ao gerar cobrança Pix.");
-        return;
-      }
-      salvarTokenAgendamento(estabelecimento.slug, r.token);
-      setResultadoPix({
-        pagamentoId: r.pagamentoId,
-        token: r.token,
-        qrCode: r.qrCode,
-        qrCodeBase64: r.qrCodeBase64,
-      });
-    });
+    }
   }
 
-  if (resultadoPix) {
-    if (pixConfirmado) {
+  if (resultadoPix || aguardandoCartao) {
+    const confirmado = pixConfirmado || cartaoConfirmado;
+    const token = resultadoPix?.token ?? aguardandoCartao?.token ?? "";
+    if (confirmado) {
       return (
         <div className="flex flex-col gap-3">
           <Heading className="text-tenant-fg">Pagamento confirmado</Heading>
           <p className="text-tenant-fg opacity-80">Seu agendamento está confirmado.</p>
-          <Link href={`/b/${estabelecimento.slug}/meus-agendamentos/${resultadoPix.token}`} className={BOTAO_GHOST}>
+          <Link href={`/b/${estabelecimento.slug}/meus-agendamentos/${token}`} className={BOTAO_GHOST}>
             Ver meu agendamento
           </Link>
         </div>
       );
     }
+    if (resultadoPix) {
+      return (
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Heading className="text-tenant-fg">Pague com Pix para confirmar</Heading>
+          {/* eslint-disable-next-line @next/next/no-img-element -- imagem base64 gerada em runtime, sem otimização aplicável */}
+          <img
+            src={`data:image/png;base64,${resultadoPix.qrCodeBase64}`}
+            alt="QR code Pix"
+            className="h-56 w-56 rounded-md border border-tenant-linha"
+          />
+          <textarea
+            readOnly
+            value={resultadoPix.qrCode}
+            onClick={(e) => e.currentTarget.select()}
+            rows={3}
+            className="w-full rounded-md border border-tenant-linha bg-tenant-bg-2 p-2 text-xs text-tenant-fg"
+          />
+          <p className="text-sm text-tenant-fg opacity-70">
+            Copie o código acima ou escaneie o QR code no app do seu banco. Confirmamos automaticamente
+            assim que o pagamento cair.
+          </p>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center gap-3 text-center">
-        <Heading className="text-tenant-fg">Pague com Pix para confirmar</Heading>
-        {/* eslint-disable-next-line @next/next/no-img-element -- imagem base64 gerada em runtime, sem otimização aplicável */}
-        <img
-          src={`data:image/png;base64,${resultadoPix.qrCodeBase64}`}
-          alt="QR code Pix"
-          className="h-56 w-56 rounded-md border border-tenant-linha"
-        />
-        <textarea
-          readOnly
-          value={resultadoPix.qrCode}
-          onClick={(e) => e.currentTarget.select()}
-          rows={3}
-          className="w-full rounded-md border border-tenant-linha bg-tenant-bg-2 p-2 text-xs text-tenant-fg"
-        />
-        <p className="text-sm text-tenant-fg opacity-70">
-          Copie o código acima ou escaneie o QR code no app do seu banco. Confirmamos automaticamente assim
-          que o pagamento cair.
+        <Heading className="text-tenant-fg">Processando pagamento</Heading>
+        <p className="text-tenant-fg opacity-80">
+          Seu cartão está sendo processado. Assim que aprovado, confirmamos automaticamente.
         </p>
       </div>
     );
@@ -219,6 +253,9 @@ export function AgendarWizard({
       </div>
     );
   }
+
+  const dadosCartaoCompletos =
+    metodoPagamento === "cartao" && !!nome && !!telefone && !!email && validarCPF(cpf);
 
   return (
     <div className="flex flex-col gap-5">
@@ -320,26 +357,39 @@ export function AgendarWizard({
       {passo === 4 && (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-tenant-fg opacity-70">4. Forma de pagamento</p>
-          {gatewayPixDisponivel && (
+          {gatewayMercadoPagoDisponivel && (
+            <>
+              <button
+                onClick={() => {
+                  setMetodoPagamento("pix");
+                  setPasso(5);
+                }}
+                className={CARTAO_ESCOLHA}
+              >
+                Pagar agora (Pix)
+              </button>
+              <button
+                onClick={() => {
+                  setMetodoPagamento("cartao");
+                  setPasso(5);
+                }}
+                className={CARTAO_ESCOLHA}
+              >
+                Cartão de crédito
+              </button>
+            </>
+          )}
+          {formasPagamento.aceita_pagamento_no_dia && (
             <button
               onClick={() => {
-                setMetodoPagamento("pix");
+                setMetodoPagamento("no_local");
                 setPasso(5);
               }}
               className={CARTAO_ESCOLHA}
             >
-              Pagar agora (Pix)
+              Pagar no dia
             </button>
           )}
-          <button
-            onClick={() => {
-              setMetodoPagamento("no_local");
-              setPasso(5);
-            }}
-            className={CARTAO_ESCOLHA}
-          >
-            Pagar no dia
-          </button>
           <button onClick={() => setPasso(3)} className={`${BOTAO_GHOST} w-fit`}>
             Voltar
           </button>
@@ -357,27 +407,89 @@ export function AgendarWizard({
             value={telefone}
             onChange={(e) => setTelefone(e.target.value)}
           />
-          {metodoPagamento === "pix" && (
+          {(metodoPagamento === "pix" || metodoPagamento === "cartao") && (
             <Input
               type="email"
-              placeholder="E-mail (necessário para o Pix)"
+              placeholder="E-mail (necessário para o pagamento online)"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           )}
+          {metodoPagamento === "cartao" && (
+            <Input
+              placeholder="CPF"
+              value={cpf}
+              onChange={(e) => setCpf(formatarCPF(e.target.value))}
+              maxLength={14}
+            />
+          )}
           {erro && <FormError>{erro}</FormError>}
-          <div className="flex gap-2">
-            <button onClick={() => setPasso(podeEscolherFormaPagamento ? 4 : 3)} className={BOTAO_SECUNDARIO}>
-              Voltar
-            </button>
-            <button
-              disabled={pending || !nome || !telefone || (metodoPagamento === "pix" && !email)}
-              onClick={confirmar}
-              className={BOTAO_PRIMARIO}
-            >
-              {pending ? "Confirmando..." : metodoPagamento === "pix" ? "Ir para pagamento" : "Confirmar agendamento"}
-            </button>
-          </div>
+
+          {metodoPagamento === "cartao" ? (
+            <>
+              <div className="flex gap-2">
+                <button onClick={() => setPasso(4)} className={BOTAO_SECUNDARIO}>
+                  Voltar
+                </button>
+              </div>
+              {!dadosCartaoCompletos && (
+                <p className="text-sm text-tenant-fg opacity-70">
+                  {!nome || !telefone || !email
+                    ? "Preencha nome, WhatsApp e e-mail para continuar."
+                    : "Informe um CPF válido para continuar."}
+                </p>
+              )}
+              {dadosCartaoCompletos && servicoSelecionado && formasPagamento.mercado_pago_public_key && (
+                <CardPaymentBrick
+                  publicKey={formasPagamento.mercado_pago_public_key}
+                  valorCentavos={servicoSelecionado.preco_centavos}
+                  email={email}
+                  cpf={apenasNumeros(cpf)}
+                  onEnviar={(formData) =>
+                    criarAgendamentoCartao({
+                      estabelecimentoId: estabelecimento.id,
+                      profissionalId: profissionalId!,
+                      servicoId: servicoId!,
+                      inicio: slotSelecionado!,
+                      nome,
+                      telefone,
+                      email,
+                      cpf,
+                      formData,
+                    })
+                  }
+                  onResultado={(r) => {
+                    if (r.error) {
+                      setErro(r.error);
+                      return;
+                    }
+                    if (r.token) salvarTokenAgendamento(estabelecimento.slug, r.token);
+                    if (r.confirmado) {
+                      setResultado({ token: r.token! });
+                    } else if (r.pagamentoId && r.token) {
+                      setAguardandoCartao({ pagamentoId: r.pagamentoId, token: r.token });
+                    }
+                  }}
+                />
+              )}
+              {dadosCartaoCompletos && !formasPagamento.mercado_pago_public_key && (
+                <FormError>Configuração de pagamento incompleta (public key ausente).</FormError>
+              )}
+            </>
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={() => setPasso(podeEscolherFormaPagamento ? 4 : 3)} className={BOTAO_SECUNDARIO}>
+                Voltar
+              </button>
+              <button
+                disabled={pending || !nome || !telefone || (metodoPagamento === "pix" && !email)}
+                onClick={confirmar}
+                className={BOTAO_PRIMARIO}
+              >
+                {pending ? "Confirmando..." : metodoPagamento === "pix" ? "Ir para pagamento" : "Confirmar agendamento"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -48,6 +48,55 @@ export async function criarCobrancaPix(input: CriarCobrancaPixInput): Promise<Cr
   };
 }
 
+type FormDataCartaoBrick = {
+  token: string;
+  payment_method_id: string;
+  issuer_id?: string;
+  installments: number;
+  payer: {
+    email: string;
+    identification: { type: string; number: string };
+  };
+};
+
+type CriarCobrancaCartaoResultado = {
+  paymentId: string;
+  status: string;
+};
+
+export async function criarCobrancaCartao(input: {
+  accessToken: string;
+  idempotencyKey: string;
+  valorCentavos: number;
+  descricao: string;
+  formData: FormDataCartaoBrick;
+}): Promise<CriarCobrancaCartaoResultado> {
+  const resposta = await fetch("https://api.mercadopago.com/v1/payments", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${input.accessToken}`,
+      "Content-Type": "application/json",
+      "X-Idempotency-Key": input.idempotencyKey,
+    },
+    body: JSON.stringify({
+      transaction_amount: input.valorCentavos / 100,
+      description: input.descricao,
+      token: input.formData.token,
+      payment_method_id: input.formData.payment_method_id,
+      issuer_id: input.formData.issuer_id,
+      installments: input.formData.installments,
+      payer: input.formData.payer,
+    }),
+  });
+
+  const dados = await resposta.json();
+  if (!resposta.ok) {
+    throw new Error(dados?.message ?? "Falha ao processar cartão no Mercado Pago.");
+  }
+
+  return { paymentId: String(dados.id), status: dados.status };
+}
+
 export async function consultarPagamentoMercadoPago(paymentId: string, accessToken: string) {
   const resposta = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },

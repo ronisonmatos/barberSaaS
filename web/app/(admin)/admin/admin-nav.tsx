@@ -4,22 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/app", label: "Painel" },
-  { href: "/app/agenda", label: "Agenda" },
-  { href: "/app/servicos", label: "Serviços" },
-  { href: "/app/profissionais", label: "Profissionais" },
-  { href: "/app/bloqueios", label: "Bloqueios" },
-  { href: "/app/clientes", label: "Clientes" },
-  { href: "/app/configuracoes", label: "Configurações" },
+  { href: "/admin", label: "Visão geral" },
+  { href: "/admin/estabelecimentos", label: "Estabelecimentos" },
+  { href: "/admin/planos", label: "Planos" },
+  { href: "/admin/suporte", label: "Suporte" },
 ];
 
-export function AppNav() {
+export function AdminNav() {
   const pathname = usePathname();
 
   return (
     <nav className="flex flex-1 flex-col gap-1">
       {LINKS.map((link) => {
-        const ativo = link.href === "/app" ? pathname === "/app" : pathname.startsWith(link.href);
+        const ativo = link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href);
         return (
           <Link
             key={link.href}

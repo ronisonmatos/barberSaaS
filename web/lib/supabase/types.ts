@@ -322,6 +322,50 @@ export type Database = {
           },
         ]
       }
+      estabelecimento_pagamento_config: {
+        Row: {
+          aceita_pagamento_antecipado: boolean
+          aceita_pagamento_no_dia: boolean
+          asaas_api_key: string | null
+          estabelecimento_id: string
+          gateway_ativo: string
+          mercado_pago_access_token: string | null
+          mercado_pago_public_key: string | null
+          mercado_pago_webhook_secret: string | null
+          updated_at: string
+        }
+        Insert: {
+          aceita_pagamento_antecipado?: boolean
+          aceita_pagamento_no_dia?: boolean
+          asaas_api_key?: string | null
+          estabelecimento_id: string
+          gateway_ativo?: string
+          mercado_pago_access_token?: string | null
+          mercado_pago_public_key?: string | null
+          mercado_pago_webhook_secret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aceita_pagamento_antecipado?: boolean
+          aceita_pagamento_no_dia?: boolean
+          asaas_api_key?: string | null
+          estabelecimento_id?: string
+          gateway_ativo?: string
+          mercado_pago_access_token?: string | null
+          mercado_pago_public_key?: string | null
+          mercado_pago_webhook_secret?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estabelecimento_pagamento_config_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: true
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estabelecimentos: {
         Row: {
           asaas_customer_id: string | null
@@ -383,6 +427,48 @@ export type Database = {
             columns: ["plano_plataforma_id"]
             isOneToOne: false
             referencedRelation: "planos_plataforma"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eventos_admin: {
+        Row: {
+          created_at: string
+          detalhes: Json
+          estabelecimento_id: string | null
+          id: string
+          super_admin_id: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          detalhes?: Json
+          estabelecimento_id?: string | null
+          id?: string
+          super_admin_id: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          detalhes?: Json
+          estabelecimento_id?: string | null
+          id?: string
+          super_admin_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventos_admin_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eventos_admin_super_admin_id_fkey"
+            columns: ["super_admin_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]
@@ -784,6 +870,87 @@ export type Database = {
           },
         ]
       }
+      tickets_suporte: {
+        Row: {
+          aberto_por: string
+          assunto: string
+          created_at: string
+          estabelecimento_id: string
+          id: string
+          status: Database["public"]["Enums"]["status_ticket"]
+        }
+        Insert: {
+          aberto_por: string
+          assunto: string
+          created_at?: string
+          estabelecimento_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["status_ticket"]
+        }
+        Update: {
+          aberto_por?: string
+          assunto?: string
+          created_at?: string
+          estabelecimento_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["status_ticket"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_suporte_aberto_por_fkey"
+            columns: ["aberto_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_suporte_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets_suporte_mensagens: {
+        Row: {
+          autor_id: string
+          created_at: string
+          id: string
+          mensagem: string
+          ticket_id: string
+        }
+        Insert: {
+          autor_id: string
+          created_at?: string
+          id?: string
+          mensagem: string
+          ticket_id: string
+        }
+        Update: {
+          autor_id?: string
+          created_at?: string
+          id?: string
+          mensagem?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_suporte_mensagens_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_suporte_mensagens_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets_suporte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usuarios: {
         Row: {
           created_at: string
@@ -840,6 +1007,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_criar_estabelecimento: {
+        Args: { p_nome: string; p_owner_id: string; p_slug: string }
+        Returns: {
+          asaas_customer_id: string | null
+          asaas_subconta_id: string | null
+          ativacao_manual: boolean
+          config: Json
+          created_at: string
+          descricao: string | null
+          endereco: Json | null
+          id: string
+          logo_url: string | null
+          nome: string
+          plano_plataforma_id: string | null
+          slug: string
+          status: Database["public"]["Enums"]["status_estabelecimento"]
+          telefone_whatsapp: string | null
+          timezone: string
+          trial_ate: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "estabelecimentos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       agendamento_por_token: {
         Args: { p_token: string }
         Returns: {
@@ -874,7 +1068,32 @@ export type Database = {
           token_acesso: string
         }[]
       }
+      criar_agendamento_publico_pix: {
+        Args: {
+          p_email: string
+          p_estabelecimento_id: string
+          p_inicio: string
+          p_nome: string
+          p_profissional_id: string
+          p_servico_id: string
+          p_telefone: string
+        }
+        Returns: {
+          agendamento_id: string
+          pagamento_id: string
+          token_acesso: string
+        }[]
+      }
       eh_super_admin: { Args: never; Returns: boolean }
+      formas_pagamento_publico: {
+        Args: { p_estabelecimento_id: string }
+        Returns: {
+          aceita_pagamento_antecipado: boolean
+          aceita_pagamento_no_dia: boolean
+          gateway_ativo: string
+          mercado_pago_public_key: string
+        }[]
+      }
       meus_estabelecimentos: { Args: never; Returns: string[] }
       onboarding_criar_estabelecimento: {
         Args: { p_nome: string; p_slug: string }
@@ -915,6 +1134,13 @@ export type Database = {
           inicio: string
         }[]
       }
+      status_pagamento_publico: {
+        Args: { p_pagamento_id: string; p_token: string }
+        Returns: {
+          status_agendamento: Database["public"]["Enums"]["status_agendamento"]
+          status_pagamento: Database["public"]["Enums"]["status_pagamento"]
+        }[]
+      }
     }
     Enums: {
       metodo_pagamento:
@@ -945,6 +1171,7 @@ export type Database = {
         | "falhou"
         | "estornado"
         | "cancelado"
+      status_ticket: "aberto" | "em_andamento" | "resolvido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1101,6 +1328,7 @@ export const Constants = {
         "estornado",
         "cancelado",
       ],
+      status_ticket: ["aberto", "em_andamento", "resolvido"],
     },
   },
 } as const

@@ -2,7 +2,9 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { normalizePhoneBR } from "@/lib/phone";
+import { criarCobrancaPix } from "@/lib/mercadopago";
 
 export async function buscarSlotsPublico(
   estabelecimentoId: string,
@@ -58,4 +60,91 @@ export async function criarAgendamentoPublico(
   if (error) return { error: error.message };
 
   return { agendamentoId: data.agendamento_id, token: data.token_acesso };
+}
+
+const schemaPix = schema.extend({
+  email: z.email({ error: "Informe um e-mail válido." }),
+});
+
+export async function criarAgendamentoPix(input: z.infer<typeof schemaPix>): Promise<{
+  error?: string;
+  agendamentoId?: string;
+  pagamentoId?: string;
+  token?: string;
+  qrCode?: string;
+  qrCodeBase64?: string;
+}> {
+  const parsed = schemaPix.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+
+  const telefone = normalizePhoneBR(parsed.data.telefone);
+  if (!telefone) {
+    return { error: "WhatsApp inválido. Use um número de celular brasileiro com DDD." };
+  }
+
+  const supabase = await createClient();
+  const { data: criado, error: rpcError } = await supabase
+    .rpc("criar_agendamento_publico_pix", {
+      p_estabelecimento_id: parsed.data.estabelecimentoId,
+      p_profissional_id: parsed.data.profissionalId,
+      p_servico_id: parsed.data.servicoId,
+      p_inicio: parsed.data.inicio,
+      p_nome: parsed.data.nome,
+      p_telefone: telefone,
+      p_email: parsed.data.email,
+    })
+    .single();
+
+  if (rpcError || !criado) return { error: rpcError?.message ?? "Erro ao criar agendamento." };
+
+  const serviceRole = createServiceRoleClient();
+  const [{ data: config }, { data: agendamento }] = await Promise.all([
+    serviceRole
+      .from("estabelecimento_pagamento_config")
+      .select("mercado_pago_access_token")
+      .eq("estabelecimento_id", parsed.data.estabelecimentoId)
+      .single(),
+    serviceRole.from("agendamentos").select("preco_centavos").eq("id", criado.agendamento_id).single(),
+  ]);
+
+  if (!config?.mercado_pago_access_token || !agendamento) {
+    return { error: "Configuração de pagamento indisponível." };
+  }
+
+  try {
+    const cobranca = await criarCobrancaPix({
+      accessToken: config.mercado_pago_access_token,
+      idempotencyKey: criado.agendamento_id,
+      valorCentavos: agendamento.preco_centavos,
+      descricao: "Agendamento",
+      emailPagador: parsed.data.email,
+    });
+
+    await serviceRole
+      .from("pagamentos")
+      .update({ gateway_payment_id: cobranca.paymentId })
+      .eq("id", criado.pagamento_id);
+
+    return {
+      agendamentoId: criado.agendamento_id,
+      pagamentoId: criado.pagamento_id,
+      token: criado.token_acesso,
+      qrCode: cobranca.qrCode,
+      qrCodeBase64: cobranca.qrCodeBase64,
+    };
+  } catch (err) {
+    await serviceRole.from("agendamentos").update({ status: "cancelado" }).eq("id", criado.agendamento_id);
+    await serviceRole.from("pagamentos").update({ status: "cancelado" }).eq("id", criado.pagamento_id);
+    return { error: err instanceof Error ? err.message : "Erro ao gerar cobrança Pix." };
+  }
+}
+
+export async function consultarStatusPagamento(pagamentoId: string, token: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .rpc("status_pagamento_publico", { p_pagamento_id: pagamentoId, p_token: token })
+    .maybeSingle();
+  return data ?? null;
 }

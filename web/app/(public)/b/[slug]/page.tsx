@@ -39,6 +39,14 @@ export default async function EstabelecimentoPublicaPage({
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col gap-8 px-4 py-10">
       <div>
+        {estabelecimento.logo_url && (
+          /* eslint-disable-next-line @next/next/no-img-element -- logo em bucket público, sem necessidade de otimização do next/image */
+          <img
+            src={estabelecimento.logo_url}
+            alt={estabelecimento.nome}
+            className="mb-3 h-16 w-16 rounded-md border border-tenant-linha object-cover"
+          />
+        )}
         <h1 className="font-display text-3xl text-tenant-fg">{estabelecimento.nome}</h1>
         {estabelecimento.descricao && (
           <p className="mt-1 text-tenant-fg opacity-70">{estabelecimento.descricao}</p>

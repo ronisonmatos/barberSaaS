@@ -13,24 +13,26 @@ export default async function AgendarPage({ params }: { params: Promise<{ slug: 
     .maybeSingle();
   if (!estabelecimento) notFound();
 
-  const [{ data: servicos }, { data: profissionais }, { data: vinculos }] = await Promise.all([
-    supabase
-      .from("servicos")
-      .select("*")
-      .eq("estabelecimento_id", estabelecimento.id)
-      .eq("ativo", true)
-      .order("nome"),
-    supabase
-      .from("profissionais")
-      .select("*")
-      .eq("estabelecimento_id", estabelecimento.id)
-      .eq("ativo", true)
-      .order("nome"),
-    supabase
-      .from("profissional_servicos")
-      .select("profissional_id, servico_id, profissionais!inner(estabelecimento_id)")
-      .eq("profissionais.estabelecimento_id", estabelecimento.id),
-  ]);
+  const [{ data: servicos }, { data: profissionais }, { data: vinculos }, { data: formasPagamento }] =
+    await Promise.all([
+      supabase
+        .from("servicos")
+        .select("*")
+        .eq("estabelecimento_id", estabelecimento.id)
+        .eq("ativo", true)
+        .order("nome"),
+      supabase
+        .from("profissionais")
+        .select("*")
+        .eq("estabelecimento_id", estabelecimento.id)
+        .eq("ativo", true)
+        .order("nome"),
+      supabase
+        .from("profissional_servicos")
+        .select("profissional_id, servico_id, profissionais!inner(estabelecimento_id)")
+        .eq("profissionais.estabelecimento_id", estabelecimento.id),
+      supabase.rpc("formas_pagamento_publico", { p_estabelecimento_id: estabelecimento.id }).maybeSingle(),
+    ]);
 
   return (
     <div className="mx-auto min-h-screen max-w-lg px-4 py-10">
@@ -39,6 +41,14 @@ export default async function AgendarPage({ params }: { params: Promise<{ slug: 
         servicos={servicos ?? []}
         profissionais={profissionais ?? []}
         vinculos={vinculos ?? []}
+        formasPagamento={
+          formasPagamento ?? {
+            aceita_pagamento_antecipado: false,
+            aceita_pagamento_no_dia: true,
+            gateway_ativo: "nenhum",
+            mercado_pago_public_key: null,
+          }
+        }
       />
     </div>
   );

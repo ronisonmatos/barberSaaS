@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { BOTAO_GHOST } from "./estilos";
 
 function chaveToken(slug: string) {
   return `barbersaas:token:${slug}`;
@@ -39,7 +40,7 @@ export function MeuAgendamentoLink({ slug }: { slug: string }) {
   if (!token) return null;
 
   return (
-    <a href={`/b/${slug}/meus-agendamentos/${token}`} className="w-fit text-sm underline">
+    <a href={`/b/${slug}/meus-agendamentos/${token}`} className={BOTAO_GHOST}>
       Já tenho agendamento
     </a>
   );

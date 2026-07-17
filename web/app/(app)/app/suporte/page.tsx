@@ -28,7 +28,7 @@ export default async function SuportePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-2xl text-carvao">Suporte</h1>
         <Link href="/app/suporte/novo">
           <Button>Abrir chamado</Button>
@@ -36,28 +36,30 @@ export default async function SuportePage() {
       </div>
 
       {tickets && tickets.length > 0 ? (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-linha text-left">
-              <th className="py-2">Assunto</th>
-              <th>Status</th>
-              <th>Aberto em</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tickets.map((t) => (
-              <tr key={t.id} className="border-b border-linha">
-                <td className="py-2">
-                  <Link href={`/app/suporte/${t.id}`} className="text-carvao underline">
-                    {t.assunto}
-                  </Link>
-                </td>
-                <td className={`font-medium ${STATUS_COR[t.status]}`}>{STATUS_LABEL[t.status]}</td>
-                <td>{new Date(t.created_at).toLocaleDateString("pt-BR")}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-sm">
+            <thead>
+              <tr className="border-b border-linha text-left">
+                <th className="py-2">Assunto</th>
+                <th>Status</th>
+                <th>Aberto em</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tickets.map((t) => (
+                <tr key={t.id} className="border-b border-linha">
+                  <td className="py-2">
+                    <Link href={`/app/suporte/${t.id}`} className="text-carvao underline">
+                      {t.assunto}
+                    </Link>
+                  </td>
+                  <td className={`font-medium ${STATUS_COR[t.status]}`}>{STATUS_LABEL[t.status]}</td>
+                  <td>{new Date(t.created_at).toLocaleDateString("pt-BR")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <EmptyState
           icon={MessageCircle}

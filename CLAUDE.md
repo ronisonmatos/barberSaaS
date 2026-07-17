@@ -1,4 +1,4 @@
-# BarberSaaS
+# Comptus
 
 SaaS multi-tenant para barbearias e salões de beleza. Leia ORIENTACAO-BARBERSAAS.md antes de qualquer tarefa.
 Toda tela nova (ou alterada) segue DESIGN.md ("Navalha & Latão") — paleta, tipografia, componentes,
@@ -133,5 +133,85 @@ temas por tenant na página pública, texto de interface e acessibilidade.
   UI custom de parcelas (o próprio Brick já oferece isso). Validado contra o Supabase real sem gastar
   dinheiro (RPC generalizada testada com `p_metodo='cartao'` e com o default `'pix'`); a tokenização em
   si só é testável no navegador.
+- **Rebranding para Comptus**: concluído. Logo (`web/public/brand/`, 4 SVGs claro/escuro ×
+  logotipo/símbolo) aplicada em `/login`+`/signup`, `/admin` (sidebar + header mobile) e favicon
+  (`web/app/icon.svg`); `/app` (painel do estabelecimento) e `/b/{slug}` continuam com a marca do
+  **tenant** (é white-label de propósito), só ganharam um rodapé "Powered by Comptus" discreto.
+  Rodapé de copyright compartilhado em `web/components/brand-footer.tsx`.
+- **Responsividade 100%**: auditado com Playwright (375/768/1280px) nas 23 telas do app. Achados
+  reais corrigidos: `/admin` não tinha nenhuma navegação no celular (sidebar `hidden md:flex` sem
+  substituto — criado `admin-bottom-nav.tsx` espelhando o padrão do `/app`); vazamento horizontal em
+  `/admin` e `/app` por `min-width: auto` de item flex (faltava `min-w-0` na cadeia de containers);
+  as 8 tabelas do app não tinham `overflow-x-auto`; `StatTile` cortava rótulos longos sem espaço
+  (`min-w-0` + `break-words`); grade semanal da agenda (`grid-cols-7` fixo) virava texto ilegível no
+  celular — agora é lista de 1 coluna abaixo de `md`.
+- **Reembolso de agendamento pago (Mercado Pago)**: concluído, escopo deliberadamente pequeno —
+  reembolso é **manual** (o dono clica "Reembolsar" no card do agendamento em `/app/agenda`),
+  **não automático**, e **sem sistema de saldo/crédito** (decisão explícita: "não compareceu" e
+  "cliente cancelou com antecedência" são calls de negócio diferentes que exigiriam política de
+  cancelamento configurável por estabelecimento — fica pra quando houver volume real). Só aparece
+  pra agendamento `cancelado`/`no_show` com pagamento `pago` via `pix`/`cartao` (owner-only, staff
+  não vê o botão). `web/lib/mercadopago.ts` ganhou `estornarPagamento` (chama
+  `/v1/payments/{id}/refunds`); a ação em `web/app/(app)/app/agenda/actions.ts` só *solicita* o
+  estorno — o status do pagamento continua mudando **só via webhook** (regra do projeto), então o
+  webhook (`app/api/webhooks/mercadopago/route.ts`) ganhou o branch `status === "refunded"` →
+  `estornado` (esse status já existia no enum `status_pagamento`, não precisou migration). UI mostra
+  "reembolso solicitado, aguardando confirmação" logo após o clique, sem fingir que já confirmou.
+  Não testado ponta a ponta com reembolso real (evitado deliberadamente pra não mexer em dinheiro de
+  verdade da "Clube do Homem" em produção) — validado por leitura de código + typecheck/lint +
+  navegação real na agenda confirmando que o botão não aparece quando não deveria.
+- **Convite de usuários da equipe com limite por plano** (`/app/configuracoes`): concluído.
+  `planos_plataforma` ganhou `max_usuarios` (nullable = ilimitado, mesma convenção de
+  `max_profissionais`; migration `20260716150001` já seta Essencial=2, Pro=5 e é editável no
+  `/admin/planos`). Estabelecimento sem plano atribuído (trial/free — `plano_plataforma_id` null,
+  não existe linha "Free" em `planos_plataforma` hoje) cai no fallback hardcoded de 1 usuário
+  (`LIMITE_USUARIOS_SEM_PLANO`, duplicado em `configuracoes/actions.ts` e `configuracoes/page.tsx`
+  de propósito — são só leituras, não vale abstrair uma constante compartilhada pra isso ainda).
+  Novo componente `equipe-form.tsx`: lista membros (nome + papel), "X de Y usuários usados",
+  convite por e-mail (reusa o padrão de `auth.admin.inviteUserByEmail` já usado no cadastro manual
+  do admin) bloqueado quando o limite é atingido, remover membro (não remove o próprio dono). Tudo
+  **owner-only** — staff não vê o card.
+  - **Corrigido de passagem (achado de segurança real, mesma classe do bug de `usuarios.papel`
+    de uma leva anterior)**: a policy de escrita em `membros_estabelecimento` usava
+    `meus_estabelecimentos()`, que retorna o estabelecimento pra qualquer papel — ou seja, **staff
+    conseguia inserir/remover vínculos direto via client**, inclusive se auto-promover a `owner` ou
+    remover o dono de verdade. Trocado por `estabelecimentos_que_possuo()` (só papel `owner`),
+    `security definer` pra não recursar na RLS da própria tabela (mesmo motivo de
+    `meus_estabelecimentos()` já ser `security definer`).
+  - Validado contra o Supabase real: card renderiza certo (`1 de 2 usuários usados` pra Clube do
+    Homem, que está no plano Essencial), tabela de planos do admin mostra/edita a coluna nova. **Não
+    testei o clique em "Convidar" de verdade** — dispara e-mail de convite real via Supabase Auth
+    pro endereço digitado, então isso fica pra você testar com um e-mail seu.
+- **Página pública redesenhada — layout "1A Clássico"**: concluído, a partir de um handoff de
+  design em HTML (usuário escolheu a opção 1A entre 3 variações). As cores do handoff (OKLCH
+  fixos) foram **descartadas de propósito** — a implementação usa os tokens `--tenant-*` que já
+  existiam (`web/app/(public)/b/[slug]/estilos.ts` novo, com `BOTAO_PRIMARIO`/`BOTAO_SECUNDARIO`/
+  `BOTAO_GHOST`/`ROTULO_SECAO` compartilhados entre a home e o wizard de agendar), então a página
+  continua se adaptando aos 3 presets de tema por tenant, como sempre. Card único (max-width
+  480px) com hero (logo circular + nome + frase curta + CTAs), galeria de fotos, Sobre,
+  Horário/Endereço, Serviços, Profissionais e rodapé Instagram/WhatsApp (wa.me a partir do
+  `telefone_whatsapp` que já existia — só o link, não é a integração de WhatsApp Cloud API que
+  ainda está na fila). Todas as seções novas somem graciosamente quando o campo está vazio (não
+  aparecem placeholders "Adicione uma foto" pro visitante público — isso só existe no editor).
+  - Campos novos aproveitando o que já existia: `descricao` (já existia) virou a frase curta do
+    hero; `endereco` (jsonb `{rua,numero,bairro,cidade,uf,cep}`, já existia na tabela desde a Fase
+    0 mas nunca tinha UI) agora tem formulário em Configurações. Só 3 colunas de fato novas:
+    `sobre`, `horario_texto` (texto livre, não é calculado a partir das jornadas dos
+    profissionais — decisão deliberada de manter simples), `instagram_url`.
+  - **Galeria de fotos com limite por plano**: mesmo padrão de `max_usuarios` (onda anterior) —
+    `planos_plataforma.max_fotos` (Essencial=10, Pro=20, sem plano=5 via fallback hardcoded).
+    Reusa o bucket `logos` existente com prefixo `{estabelecimento_id}/galeria/` em vez de criar
+    bucket novo (as policies já são por path, não por bucket dedicado). Nova tabela
+    `estabelecimento_fotos` com RLS pública de leitura (só de estabelecimento ativo/trial, mesmo
+    padrão de `servicos`/`profissionais`) e gerenciamento por qualquer membro (não é owner-only —
+    mesma régua do card "Perfil", que também nunca foi owner-only).
+  - Corrigido o header duplicado: a home antiga tinha um header compartilhado (logo+nome) em
+    `layout.tsx` que agora conflitava com o hero do card. Virou `estabelecimento-header.tsx`
+    (client component com `usePathname()`) que se esconde especificamente na home — continua
+    aparecendo em `/agendar` e `/meus-agendamentos/{token}`, que não têm hero próprio.
+  - Validado contra o Supabase real: usei a própria tela de Configurações da Clube do Homem pra
+    preencher os campos novos de verdade, tirei screenshot da home pública com tudo populado
+    (bateu exatamente com o handoff, só que nas cores do tema do tenant), e reverti os campos
+    pra vazio de novo depois — não ficou dado de teste no perfil real deles.
 - Próxima onda da Fase 1 (ver seção 8 da ORIENTACAO-BARBERSAAS.md): terminar o deploy/webhook de
   verdade, Asaas, e WhatsApp (Cloud API + links wa.me) por último, como o usuário pediu.

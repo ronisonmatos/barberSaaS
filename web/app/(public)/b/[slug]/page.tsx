@@ -2,8 +2,32 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { centavosToBRL } from "@/lib/money";
-import { Eyebrow } from "@/components/ui/eyebrow";
 import { MeuAgendamentoLink } from "./meu-agendamento-link";
+import { BOTAO_PRIMARIO, ROTULO_SECAO, PAGINA_WRAP, PAGINA_CARTAO } from "./estilos";
+
+type Endereco = {
+  rua?: string | null;
+  numero?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  uf?: string | null;
+  cep?: string | null;
+};
+
+function formatarEndereco(valor: unknown): string | null {
+  if (!valor || typeof valor !== "object") return null;
+  const e = valor as Endereco;
+  const linha1 = [e.rua, e.numero].filter(Boolean).join(", ");
+  const linha2 = [e.bairro, [e.cidade, e.uf].filter(Boolean).join("/")].filter(Boolean).join(", ");
+  const linhas = [linha1, linha2].filter(Boolean);
+  return linhas.length > 0 ? linhas.join("\n") : null;
+}
+
+function linkWhatsApp(telefoneE164: string | null): string | null {
+  if (!telefoneE164) return null;
+  const digitos = telefoneE164.replace(/\D/g, "");
+  return digitos ? `https://wa.me/${digitos}` : null;
+}
 
 export default async function EstabelecimentoPublicaPage({
   params,
@@ -21,7 +45,7 @@ export default async function EstabelecimentoPublicaPage({
 
   if (!estabelecimento) notFound();
 
-  const [{ data: servicos }, { data: profissionais }] = await Promise.all([
+  const [{ data: servicos }, { data: profissionais }, { data: fotos }] = await Promise.all([
     supabase
       .from("servicos")
       .select("*")
@@ -34,58 +58,129 @@ export default async function EstabelecimentoPublicaPage({
       .eq("estabelecimento_id", estabelecimento.id)
       .eq("ativo", true)
       .order("nome"),
+    supabase
+      .from("estabelecimento_fotos")
+      .select("id, url")
+      .eq("estabelecimento_id", estabelecimento.id)
+      .order("ordem"),
   ]);
 
+  const endereco = formatarEndereco(estabelecimento.endereco);
+  const whatsapp = linkWhatsApp(estabelecimento.telefone_whatsapp);
+  const infoCards = [
+    estabelecimento.horario_texto ? { titulo: "Horário", conteudo: estabelecimento.horario_texto } : null,
+    endereco ? { titulo: "Endereço", conteudo: endereco } : null,
+  ].filter((c): c is { titulo: string; conteudo: string } => c !== null);
+
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col gap-8 px-4 py-10">
-      <div>
-        <h1 className="font-display text-3xl text-tenant-fg">{estabelecimento.nome}</h1>
-        {estabelecimento.descricao && (
-          <p className="mt-1 text-tenant-fg opacity-70">{estabelecimento.descricao}</p>
+    <div className={PAGINA_WRAP}>
+      <div className={PAGINA_CARTAO}>
+        <div className="flex flex-col items-center gap-3 px-7 pt-10 pb-7 text-center">
+          {estabelecimento.logo_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- logo em bucket público, sem necessidade de otimização do next/image */
+            <img
+              src={estabelecimento.logo_url}
+              alt={estabelecimento.nome}
+              className="size-[88px] rounded-full border border-tenant-linha object-cover"
+            />
+          ) : (
+            <div className="flex size-[88px] items-center justify-center rounded-full border border-tenant-linha text-xs opacity-60">
+              Logo
+            </div>
+          )}
+          <h1 className="text-2xl font-bold tracking-tight">{estabelecimento.nome}</h1>
+          {estabelecimento.descricao && <p className="text-sm opacity-70">{estabelecimento.descricao}</p>}
+          <div className="mt-1 flex flex-wrap justify-center gap-2.5">
+            <Link href={`/b/${slug}/agendar`} className={BOTAO_PRIMARIO}>
+              Agendar horário
+            </Link>
+            <MeuAgendamentoLink slug={slug} />
+          </div>
+        </div>
+
+        {fotos && fotos.length > 0 && (
+          <div className="px-6 pb-2">
+            <p className={`${ROTULO_SECAO} mb-3`}>Fotos do estabelecimento</p>
+            <div className="mb-6 grid grid-cols-3 gap-2">
+              {fotos.map((f) => (
+                /* eslint-disable-next-line @next/next/no-img-element -- foto em bucket público, sem necessidade de otimização do next/image */
+                <img key={f.id} src={f.url} alt="" className="aspect-square w-full rounded-[10px] object-cover" />
+              ))}
+            </div>
+          </div>
         )}
+
+        <div className="flex flex-col gap-5 px-6 pb-6">
+          {estabelecimento.sobre && (
+            <section>
+              <p className={`${ROTULO_SECAO} mb-2`}>Sobre</p>
+              <p className="text-sm leading-relaxed opacity-85">{estabelecimento.sobre}</p>
+            </section>
+          )}
+
+          {infoCards.length > 0 && (
+            <div className="grid grid-cols-2 gap-3.5">
+              {infoCards.map((c) => (
+                <div key={c.titulo} className="rounded-xl bg-tenant-bg p-3.5">
+                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] opacity-70">{c.titulo}</p>
+                  <p className="whitespace-pre-line text-[13px] leading-relaxed">{c.conteudo}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <section>
+            <p className={`${ROTULO_SECAO} mb-2`}>Serviços</p>
+            <ul className="flex flex-col gap-2">
+              {(servicos ?? []).map((s) => (
+                <li key={s.id} className="flex items-center justify-between rounded-xl bg-tenant-bg p-4">
+                  <div>
+                    <p className="text-[15px] font-semibold">{s.nome}</p>
+                    <p className="mt-0.5 text-[13px] opacity-60">{s.duracao_minutos}min</p>
+                  </div>
+                  <p className="text-base font-bold tabular-nums">{centavosToBRL(s.preco_centavos)}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section>
+            <p className={`${ROTULO_SECAO} mb-2`}>Profissionais</p>
+            <ul className="flex flex-wrap gap-2">
+              {(profissionais ?? []).map((p) => (
+                <li key={p.id} className="rounded-full border border-tenant-linha px-4 py-2 text-sm">
+                  {p.nome}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {(whatsapp || estabelecimento.instagram_url) && (
+            <div className="flex gap-2.5 border-t border-tenant-linha pt-2">
+              {estabelecimento.instagram_url && (
+                <a
+                  href={estabelecimento.instagram_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 rounded-xl bg-tenant-bg p-2.5 text-center text-sm font-semibold transition-opacity duration-150 hover:opacity-80"
+                >
+                  Instagram
+                </a>
+              )}
+              {whatsapp && (
+                <a
+                  href={whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 rounded-xl bg-tenant-bg p-2.5 text-center text-sm font-semibold transition-opacity duration-150 hover:opacity-80"
+                >
+                  WhatsApp
+                </a>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-
-      <div className="flex flex-wrap items-center gap-4">
-        <Link
-          href={`/b/${slug}/agendar`}
-          className="inline-flex h-11 items-center justify-center rounded-md bg-tenant-acento px-4 font-medium text-tenant-acento-fg transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tenant-acento focus-visible:ring-offset-2"
-        >
-          Agendar horário
-        </Link>
-        <MeuAgendamentoLink slug={slug} />
-      </div>
-
-      <section>
-        <Eyebrow>Serviços</Eyebrow>
-        <ul className="mt-3 flex flex-col gap-2">
-          {(servicos ?? []).map((s) => (
-            <li
-              key={s.id}
-              className="flex justify-between rounded-md border border-tenant-linha bg-tenant-bg-2 p-3"
-            >
-              <div>
-                <p className="font-medium text-tenant-fg">{s.nome}</p>
-                <p className="text-sm text-tenant-fg opacity-70">{s.duracao_minutos}min</p>
-              </div>
-              <p className="font-medium tabular-nums text-tenant-fg">{centavosToBRL(s.preco_centavos)}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <Eyebrow>Profissionais</Eyebrow>
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {(profissionais ?? []).map((p) => (
-            <li
-              key={p.id}
-              className="rounded-full border border-tenant-linha px-3 py-1 text-sm text-tenant-fg"
-            >
-              {p.nome}
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }

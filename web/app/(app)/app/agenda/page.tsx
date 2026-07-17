@@ -21,7 +21,7 @@ export default async function AgendaPage({
 }: {
   searchParams: Promise<{ data?: string; visao?: string }>;
 }) {
-  const { estabelecimento } = await getEstabelecimentoAtivo();
+  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
   const params = await searchParams;
   const data = params.data ?? hojeNaTimezone(estabelecimento.timezone);
@@ -52,7 +52,9 @@ export default async function AgendaPage({
 
   const { data: agendamentos } = await supabase
     .from("agendamentos")
-    .select("id, inicio, fim, status, profissional_id, clientes(nome), servicos(nome)")
+    .select(
+      "id, inicio, fim, status, profissional_id, clientes(nome), servicos(nome), pagamentos(status, metodo, valor_centavos)"
+    )
     .eq("estabelecimento_id", estabelecimento.id)
     .gte("inicio", rangeInicio.toISOString())
     .lt("inicio", rangeFim.toISOString())
@@ -67,6 +69,13 @@ export default async function AgendaPage({
       profissional_id: ag.profissional_id,
       cliente_nome: ag.clientes?.nome ?? "—",
       servico_nome: ag.servicos?.nome ?? "—",
+      pagamento: ag.pagamentos?.[0]
+        ? {
+            status: ag.pagamentos[0].status,
+            metodo: ag.pagamentos[0].metodo,
+            valor_centavos: ag.pagamentos[0].valor_centavos,
+          }
+        : null,
     })
   );
 
@@ -77,7 +86,7 @@ export default async function AgendaPage({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Heading>Agenda</Heading>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
           <Link
             href={`/app/agenda?data=${diaAnterior}&visao=${visao}`}
             className="rounded-md border border-linha px-2 py-1 text-carvao hover:bg-marfim"
@@ -119,9 +128,10 @@ export default async function AgendaPage({
           servicos={servicos ?? []}
           clientes={clientes ?? []}
           agendamentosPorProfissional={{ ...Object.groupBy(detalhados, (a) => a.profissional_id) }}
+          podeReembolsar={papel === "owner"}
         />
       ) : (
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-7">
           {Array.from({ length: 7 }, (_, i) => somarDias(inicioDaSemana(data), i)).map((dia) => (
             <div key={dia} className="flex flex-col gap-2 rounded-md border border-linha bg-marfim-2 p-2">
               <Link href={`/app/agenda?data=${dia}&visao=dia`} className="text-sm font-medium text-latao-escuro underline">

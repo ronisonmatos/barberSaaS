@@ -15,7 +15,7 @@ const instrumentSans = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "BarberSaaS",
+  title: "Comptus",
   description: "Agendamento online para barbearias e salões de beleza.",
 };
 

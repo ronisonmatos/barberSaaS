@@ -3,6 +3,7 @@ import { signOut } from "@/app/actions/auth";
 import { AppNav } from "./app-nav";
 import { BottomNav } from "./bottom-nav";
 import { Button } from "@/components/ui/button";
+import { BrandFooter } from "@/components/brand-footer";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { estabelecimento } = await getEstabelecimentoAtivo();
@@ -33,9 +34,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Sair
           </Button>
         </form>
+        <div className="mt-4 border-t border-linha pt-4">
+          <BrandFooter />
+        </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 border-b border-linha bg-marfim-2 px-4 py-3 md:hidden">
           {estabelecimento.logo_url ? (
             /* eslint-disable-next-line @next/next/no-img-element -- logo em bucket público, sem necessidade de otimização do next/image */
@@ -47,7 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ) : null}
           <p className="truncate font-display text-base text-carvao">{estabelecimento.nome}</p>
         </header>
-        <main className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
+        <main className="min-w-0 flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
           <div className="mx-auto w-full max-w-5xl">{children}</div>
         </main>
       </div>

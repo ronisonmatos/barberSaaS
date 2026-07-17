@@ -10,7 +10,9 @@ import {
   consultarStatusPagamento,
 } from "./actions";
 import { CardPaymentBrick } from "./card-payment-brick";
+import { SeletorData } from "./seletor-data";
 import { salvarTokenAgendamento } from "../meu-agendamento-link";
+import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, BOTAO_GHOST } from "../estilos";
 import { centavosToBRL } from "@/lib/money";
 import { hojeNaTimezone } from "@/lib/timezone";
 import { validarCPF, formatarCPF, apenasNumeros } from "@/lib/cpf";
@@ -35,13 +37,8 @@ const QUALQUER = "qualquer";
 
 // Botões da página pública seguem as cores --tenant-* (variam por preset do estabelecimento),
 // diferente do kit de UI do painel que usa a paleta fixa Navalha & Latão.
-const BOTAO_PRIMARIO =
-  "inline-flex h-11 items-center justify-center rounded-md bg-tenant-acento px-4 text-sm font-medium text-tenant-acento-fg transition-opacity duration-150 hover:opacity-90 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tenant-acento focus-visible:ring-offset-2";
-const BOTAO_SECUNDARIO =
-  "inline-flex h-11 items-center justify-center rounded-md border border-tenant-linha px-4 text-sm font-medium text-current transition-colors duration-150 hover:border-tenant-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tenant-acento focus-visible:ring-offset-2";
-const BOTAO_GHOST = "text-sm text-current underline opacity-70 hover:opacity-100";
 const CARTAO_ESCOLHA =
-  "flex justify-between rounded-md border border-tenant-linha bg-tenant-bg-2 p-3 text-left text-current transition-colors duration-150 hover:border-tenant-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tenant-acento focus-visible:ring-offset-2";
+  "flex justify-between rounded-md border border-tenant-linha bg-tenant-bg p-3 text-left text-current transition-colors duration-150 hover:border-tenant-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tenant-acento focus-visible:ring-offset-2";
 
 export function AgendarWizard({
   estabelecimento,
@@ -223,7 +220,7 @@ export function AgendarWizard({
             value={resultadoPix.qrCode}
             onClick={(e) => e.currentTarget.select()}
             rows={3}
-            className="w-full rounded-md border border-tenant-linha bg-tenant-bg-2 p-2 text-xs text-tenant-fg"
+            className="w-full rounded-md border border-tenant-linha bg-tenant-bg p-2 text-xs text-tenant-fg"
           />
           <p className="text-sm text-tenant-fg opacity-70">
             Copie o código acima ou escaneie o QR code no app do seu banco. Confirmamos automaticamente
@@ -317,15 +314,13 @@ export function AgendarWizard({
       {passo === 3 && (
         <div className="flex flex-col gap-3">
           <p className="text-sm font-medium text-tenant-fg opacity-70">3. Escolha data e horário</p>
-          <Input
-            type="date"
+          <SeletorData
             value={data}
             min={hojeNaTimezone(estabelecimento.timezone)}
-            onChange={(e) => {
-              setData(e.target.value);
+            onChange={(novaData) => {
+              setData(novaData);
               setSlotSelecionado(null);
             }}
-            className="w-fit"
           />
           <div className="flex flex-wrap gap-2">
             {slots.map((s) => {

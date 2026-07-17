@@ -1,4 +1,4 @@
-# BarberSaaS
+# Comptus
 
 SaaS multi-tenant para barbearias e salões de beleza. Ver `ORIENTACAO-BARBERSAAS.md` para a
 especificação completa (arquitetura, modelo de dados, regras de negócio e roadmap).

@@ -42,7 +42,7 @@ export default async function AdminOverviewPage() {
     <div className="flex flex-col gap-6">
       <Heading>Visão geral</Heading>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Trial" value={porStatus.trial} icon={Building2} colorClassName="text-latao-escuro" />
         <StatTile label="Ativas" value={porStatus.ativa} icon={TrendingUp} colorClassName="text-sucesso" />
         <StatTile label="Inadimplentes" value={porStatus.inadimplente} icon={AlertTriangle} colorClassName="text-aviso" />

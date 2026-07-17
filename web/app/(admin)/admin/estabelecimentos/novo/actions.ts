@@ -39,7 +39,10 @@ export async function cadastrarEstabelecimentoManualmente(
   const serviceRole = createServiceRoleClient();
   const { data: convidado, error: inviteError } = await serviceRole.auth.admin.inviteUserByEmail(
     parsed.data.emailDono,
-    { data: { nome: parsed.data.nomeDono } }
+    {
+      data: { nome: parsed.data.nomeDono },
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/definir-senha`,
+    }
   );
   if (inviteError) {
     return { error: `Erro ao convidar o dono: ${inviteError.message}` };

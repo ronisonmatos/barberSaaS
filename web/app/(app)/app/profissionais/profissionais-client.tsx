@@ -50,39 +50,41 @@ export function ProfissionaisClient({
           descricao="Use o botão acima para cadastrar o primeiro profissional."
         />
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-linha text-left text-cinza-600">
-              <th className="py-2 font-medium">Nome</th>
-              <th className="font-medium">Comissão</th>
-              <th className="font-medium">Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {profissionais.map((p) => (
-              <tr key={p.id} className="border-b border-linha text-carvao hover:bg-marfim">
-                <td className="py-2">{p.nome}</td>
-                <td className="tabular-nums">{p.comissao_percentual}%</td>
-                <td className={p.ativo ? "text-sucesso" : "text-cinza-600"}>
-                  {p.ativo ? "Ativo" : "Inativo"}
-                </td>
-                <td className="flex gap-2 py-2 text-right">
-                  <Button variant="ghost" onClick={() => setEditando(p)}>
-                    Editar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    disabled={isPending}
-                    onClick={() => startTransition(() => alternarAtivoProfissional(p.id, !p.ativo))}
-                  >
-                    {p.ativo ? "Desativar" : "Ativar"}
-                  </Button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead>
+              <tr className="border-b border-linha text-left text-cinza-600">
+                <th className="py-2 font-medium">Nome</th>
+                <th className="font-medium">Comissão</th>
+                <th className="font-medium">Status</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {profissionais.map((p) => (
+                <tr key={p.id} className="border-b border-linha text-carvao hover:bg-marfim">
+                  <td className="py-2">{p.nome}</td>
+                  <td className="tabular-nums">{p.comissao_percentual}%</td>
+                  <td className={p.ativo ? "text-sucesso" : "text-cinza-600"}>
+                    {p.ativo ? "Ativo" : "Inativo"}
+                  </td>
+                  <td className="flex gap-2 py-2 text-right">
+                    <Button variant="ghost" onClick={() => setEditando(p)}>
+                      Editar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      disabled={isPending}
+                      onClick={() => startTransition(() => alternarAtivoProfissional(p.id, !p.ativo))}
+                    >
+                      {p.ativo ? "Desativar" : "Ativar"}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

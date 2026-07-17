@@ -1,9 +1,11 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { atualizarStatusAgendamento } from "./actions";
+import { atualizarStatusAgendamento, reembolsarAgendamento } from "./actions";
+import { centavosToBRL } from "@/lib/money";
 import { Button } from "@/components/ui/button";
+import { FormError } from "@/components/ui/form-error";
 import { StatusBadge, type StatusAgendamento } from "@/components/ui/status-badge";
 
 export type AgendamentoDetalhado = {
@@ -13,11 +15,20 @@ export type AgendamentoDetalhado = {
   status: string;
   cliente_nome: string;
   servico_nome: string;
+  pagamento?: { status: string; metodo: string; valor_centavos: number } | null;
 };
 
-export function AgendamentoCard({ agendamento }: { agendamento: AgendamentoDetalhado }) {
+export function AgendamentoCard({
+  agendamento,
+  podeReembolsar,
+}: {
+  agendamento: AgendamentoDetalhado;
+  podeReembolsar: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [reembolsoSolicitado, setReembolsoSolicitado] = useState(false);
+  const [erroReembolso, setErroReembolso] = useState<string | null>(null);
 
   const hora = (iso: string) =>
     new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -29,7 +40,27 @@ export function AgendamentoCard({ agendamento }: { agendamento: AgendamentoDetal
     });
   }
 
+  function reembolsar() {
+    setErroReembolso(null);
+    startTransition(async () => {
+      const r = await reembolsarAgendamento(agendamento.id);
+      if (r.error) {
+        setErroReembolso(r.error);
+        return;
+      }
+      setReembolsoSolicitado(true);
+      router.refresh();
+    });
+  }
+
   const editavel = agendamento.status === "pendente" || agendamento.status === "confirmado";
+  const encerrado = agendamento.status === "cancelado" || agendamento.status === "no_show";
+  const pagamento = agendamento.pagamento;
+  const podeSolicitarReembolso =
+    podeReembolsar &&
+    encerrado &&
+    pagamento?.status === "pago" &&
+    (pagamento.metodo === "pix" || pagamento.metodo === "cartao");
 
   return (
     <div className="rounded-md border border-linha bg-marfim-2 p-2 text-sm">
@@ -51,6 +82,26 @@ export function AgendamentoCard({ agendamento }: { agendamento: AgendamentoDetal
             Cancelar
           </Button>
         </div>
+      )}
+      {encerrado && pagamento?.status === "pago" && (
+        <div className="mt-1 flex flex-col gap-1">
+          <p className="text-xs text-cinza-600">Pago: {centavosToBRL(pagamento.valor_centavos)}</p>
+          {podeSolicitarReembolso &&
+            (reembolsoSolicitado ? (
+              <p className="text-xs text-latao-escuro">
+                Reembolso solicitado — o status muda para &quot;Estornado&quot; assim que o Mercado Pago
+                confirmar.
+              </p>
+            ) : (
+              <Button variant="perigo" className="w-fit text-xs" disabled={pending} onClick={reembolsar}>
+                {pending ? "Solicitando..." : "Reembolsar"}
+              </Button>
+            ))}
+          {erroReembolso && <FormError className="text-xs">{erroReembolso}</FormError>}
+        </div>
+      )}
+      {encerrado && pagamento?.status === "estornado" && (
+        <p className="mt-1 text-xs text-cinza-600">Reembolsado: {centavosToBRL(pagamento.valor_centavos)}</p>
       )}
     </div>
   );

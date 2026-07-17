@@ -27,6 +27,9 @@ export default function LoginPage() {
           Senha
         </label>
         <Input id="password" name="password" type="password" required />
+        <Link href="/esqueci-senha" className="w-fit text-xs text-latao-escuro underline">
+          Esqueci minha senha
+        </Link>
       </div>
 
       {state?.error && <FormError>{state.error}</FormError>}

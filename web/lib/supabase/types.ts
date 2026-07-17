@@ -322,6 +322,38 @@ export type Database = {
           },
         ]
       }
+      estabelecimento_fotos: {
+        Row: {
+          created_at: string
+          estabelecimento_id: string
+          id: string
+          ordem: number
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          estabelecimento_id: string
+          id?: string
+          ordem?: number
+          url: string
+        }
+        Update: {
+          created_at?: string
+          estabelecimento_id?: string
+          id?: string
+          ordem?: number
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estabelecimento_fotos_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estabelecimento_pagamento_config: {
         Row: {
           aceita_pagamento_antecipado: boolean
@@ -375,11 +407,14 @@ export type Database = {
           created_at: string
           descricao: string | null
           endereco: Json | null
+          horario_texto: string | null
           id: string
+          instagram_url: string | null
           logo_url: string | null
           nome: string
           plano_plataforma_id: string | null
           slug: string
+          sobre: string | null
           status: Database["public"]["Enums"]["status_estabelecimento"]
           telefone_whatsapp: string | null
           timezone: string
@@ -393,11 +428,14 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           endereco?: Json | null
+          horario_texto?: string | null
           id?: string
+          instagram_url?: string | null
           logo_url?: string | null
           nome: string
           plano_plataforma_id?: string | null
           slug: string
+          sobre?: string | null
           status?: Database["public"]["Enums"]["status_estabelecimento"]
           telefone_whatsapp?: string | null
           timezone?: string
@@ -411,11 +449,14 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           endereco?: Json | null
+          horario_texto?: string | null
           id?: string
+          instagram_url?: string | null
           logo_url?: string | null
           nome?: string
           plano_plataforma_id?: string | null
           slug?: string
+          sobre?: string | null
           status?: Database["public"]["Enums"]["status_estabelecimento"]
           telefone_whatsapp?: string | null
           timezone?: string
@@ -723,7 +764,9 @@ export type Database = {
           ativo: boolean
           created_at: string
           id: string
+          max_fotos: number | null
           max_profissionais: number | null
+          max_usuarios: number | null
           nome: string
           preco_centavos: number
           recursos: Json
@@ -732,7 +775,9 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          max_fotos?: number | null
           max_profissionais?: number | null
+          max_usuarios?: number | null
           nome: string
           preco_centavos: number
           recursos?: Json
@@ -741,7 +786,9 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          max_fotos?: number | null
           max_profissionais?: number | null
+          max_usuarios?: number | null
           nome?: string
           preco_centavos?: number
           recursos?: Json
@@ -1017,11 +1064,14 @@ export type Database = {
           created_at: string
           descricao: string | null
           endereco: Json | null
+          horario_texto: string | null
           id: string
+          instagram_url: string | null
           logo_url: string | null
           nome: string
           plano_plataforma_id: string | null
           slug: string
+          sobre: string | null
           status: Database["public"]["Enums"]["status_estabelecimento"]
           telefone_whatsapp: string | null
           timezone: string
@@ -1086,6 +1136,7 @@ export type Database = {
         }[]
       }
       eh_super_admin: { Args: never; Returns: boolean }
+      estabelecimentos_que_possuo: { Args: never; Returns: string[] }
       formas_pagamento_publico: {
         Args: { p_estabelecimento_id: string }
         Returns: {
@@ -1106,11 +1157,14 @@ export type Database = {
           created_at: string
           descricao: string | null
           endereco: Json | null
+          horario_texto: string | null
           id: string
+          instagram_url: string | null
           logo_url: string | null
           nome: string
           plano_plataforma_id: string | null
           slug: string
+          sobre: string | null
           status: Database["public"]["Enums"]["status_estabelecimento"]
           telefone_whatsapp: string | null
           timezone: string

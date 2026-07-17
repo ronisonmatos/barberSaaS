@@ -51,7 +51,7 @@ export default async function AdminEstabelecimentosPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-2xl text-carvao">Estabelecimentos</h1>
         <Link
           href="/admin/estabelecimentos/novo"
@@ -90,32 +90,34 @@ export default async function AdminEstabelecimentosPage({
       </form>
 
       {estabelecimentos && estabelecimentos.length > 0 ? (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-linha text-left">
-              <th className="py-2">Nome</th>
-              <th>Endereço</th>
-              <th>Status</th>
-              <th>Plano</th>
-              <th>Trial até</th>
-            </tr>
-          </thead>
-          <tbody>
-            {estabelecimentos.map((e) => (
-              <tr key={e.id} className="border-b border-linha">
-                <td className="py-2">
-                  <Link href={`/admin/estabelecimentos/${e.id}`} className="font-medium text-carvao underline">
-                    {e.nome}
-                  </Link>
-                </td>
-                <td className="text-cinza-600">/b/{e.slug}</td>
-                <td className={`font-medium ${STATUS_COR[e.status]}`}>{STATUS_LABEL[e.status]}</td>
-                <td>{e.planos_plataforma?.nome ?? "—"}</td>
-                <td>{e.trial_ate ?? "—"}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b border-linha text-left">
+                <th className="py-2">Nome</th>
+                <th>Endereço</th>
+                <th>Status</th>
+                <th>Plano</th>
+                <th>Trial até</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {estabelecimentos.map((e) => (
+                <tr key={e.id} className="border-b border-linha">
+                  <td className="py-2">
+                    <Link href={`/admin/estabelecimentos/${e.id}`} className="font-medium text-carvao underline">
+                      {e.nome}
+                    </Link>
+                  </td>
+                  <td className="text-cinza-600">/b/{e.slug}</td>
+                  <td className={`font-medium ${STATUS_COR[e.status]}`}>{STATUS_LABEL[e.status]}</td>
+                  <td>{e.planos_plataforma?.nome ?? "—"}</td>
+                  <td>{e.trial_ate ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <EmptyState
           icon={Building2}

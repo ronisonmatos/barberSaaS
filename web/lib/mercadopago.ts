@@ -97,6 +97,24 @@ export async function criarCobrancaCartao(input: {
   return { paymentId: String(dados.id), status: dados.status };
 }
 
+export async function estornarPagamento(paymentId: string, accessToken: string): Promise<void> {
+  const resposta = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}/refunds`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "X-Idempotency-Key": `refund-${paymentId}`,
+    },
+    body: JSON.stringify({}),
+  });
+
+  if (!resposta.ok) {
+    const dados = await resposta.json().catch(() => null);
+    const detalhe = dados?.cause?.[0]?.description ?? dados?.error ?? dados?.message;
+    throw new Error(detalhe ?? "Falha ao solicitar reembolso no Mercado Pago.");
+  }
+}
+
 export async function consultarPagamentoMercadoPago(paymentId: string, accessToken: string) {
   const resposta = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },

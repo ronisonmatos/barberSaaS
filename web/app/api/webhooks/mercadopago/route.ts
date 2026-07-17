@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
     }
   } else if (["rejected", "cancelled"].includes(pagamentoMercadoPago.status)) {
     await supabase.from("pagamentos").update({ status: "falhou" }).eq("id", pagamento.id);
+  } else if (pagamentoMercadoPago.status === "refunded") {
+    await supabase.from("pagamentos").update({ status: "estornado" }).eq("id", pagamento.id);
   }
 
   await supabase

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AgendarWizard } from "./agendar-wizard";
+import { PAGINA_WRAP, PAGINA_CARTAO } from "../estilos";
 
 export default async function AgendarPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -35,21 +36,23 @@ export default async function AgendarPage({ params }: { params: Promise<{ slug: 
     ]);
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg px-4 py-10">
-      <AgendarWizard
-        estabelecimento={estabelecimento}
-        servicos={servicos ?? []}
-        profissionais={profissionais ?? []}
-        vinculos={vinculos ?? []}
-        formasPagamento={
-          formasPagamento ?? {
-            aceita_pagamento_antecipado: false,
-            aceita_pagamento_no_dia: true,
-            gateway_ativo: "nenhum",
-            mercado_pago_public_key: null,
+    <div className={PAGINA_WRAP}>
+      <div className={`${PAGINA_CARTAO} p-6`}>
+        <AgendarWizard
+          estabelecimento={estabelecimento}
+          servicos={servicos ?? []}
+          profissionais={profissionais ?? []}
+          vinculos={vinculos ?? []}
+          formasPagamento={
+            formasPagamento ?? {
+              aceita_pagamento_antecipado: false,
+              aceita_pagamento_no_dia: true,
+              gateway_ativo: "nenhum",
+              mercado_pago_public_key: null,
+            }
           }
-        }
-      />
+        />
+      </div>
     </div>
   );
 }

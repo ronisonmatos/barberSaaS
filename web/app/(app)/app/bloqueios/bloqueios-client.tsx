@@ -70,36 +70,38 @@ export function BloqueiosClient({
       {bloqueios.length === 0 ? (
         <EmptyState icon={Ban} titulo="Nenhum bloqueio cadastrado" descricao="Use o formulário acima para bloquear um período." />
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-linha text-left text-cinza-600">
-              <th className="py-2 font-medium">Profissional</th>
-              <th className="font-medium">Início</th>
-              <th className="font-medium">Fim</th>
-              <th className="font-medium">Motivo</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {bloqueios.map((b) => (
-              <tr key={b.id} className="border-b border-linha text-carvao hover:bg-marfim">
-                <td className="py-2">{nomeProfissional(b.profissional_id)}</td>
-                <td>{formatarDataHora(b.inicio)}</td>
-                <td>{formatarDataHora(b.fim)}</td>
-                <td>{b.motivo}</td>
-                <td className="text-right">
-                  <Button
-                    variant="perigo"
-                    disabled={isPending}
-                    onClick={() => startTransition(() => excluirBloqueio(b.id))}
-                  >
-                    Excluir
-                  </Button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b border-linha text-left text-cinza-600">
+                <th className="py-2 font-medium">Profissional</th>
+                <th className="font-medium">Início</th>
+                <th className="font-medium">Fim</th>
+                <th className="font-medium">Motivo</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {bloqueios.map((b) => (
+                <tr key={b.id} className="border-b border-linha text-carvao hover:bg-marfim">
+                  <td className="py-2">{nomeProfissional(b.profissional_id)}</td>
+                  <td>{formatarDataHora(b.inicio)}</td>
+                  <td>{formatarDataHora(b.fim)}</td>
+                  <td>{b.motivo}</td>
+                  <td className="text-right">
+                    <Button
+                      variant="perigo"
+                      disabled={isPending}
+                      onClick={() => startTransition(() => excluirBloqueio(b.id))}
+                    >
+                      Excluir
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

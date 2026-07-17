@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { normalizePhoneBR } from "@/lib/phone";
+import { estornarPagamento } from "@/lib/mercadopago";
 
 export async function buscarSlotsDisponiveis(
   profissionalId: string,
@@ -103,4 +104,55 @@ export async function atualizarStatusAgendamento(
   const supabase = await createClient();
   await supabase.from("agendamentos").update({ status }).eq("id", id);
   revalidatePath("/app/agenda");
+}
+
+export async function reembolsarAgendamento(agendamentoId: string): Promise<{ error?: string }> {
+  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
+  if (papel !== "owner") {
+    return { error: "Só o dono do estabelecimento pode solicitar reembolsos." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: agendamento } = await supabase
+    .from("agendamentos")
+    .select("id, status")
+    .eq("id", agendamentoId)
+    .eq("estabelecimento_id", estabelecimento.id)
+    .single();
+  if (!agendamento) return { error: "Agendamento não encontrado." };
+  if (agendamento.status !== "cancelado" && agendamento.status !== "no_show") {
+    return { error: "Só é possível reembolsar agendamentos cancelados ou marcados como não compareceu." };
+  }
+
+  const { data: pagamento } = await supabase
+    .from("pagamentos")
+    .select("id, status, gateway_payment_id, metodo")
+    .eq("agendamento_id", agendamento.id)
+    .eq("estabelecimento_id", estabelecimento.id)
+    .maybeSingle();
+  if (!pagamento || pagamento.status !== "pago" || !pagamento.gateway_payment_id) {
+    return { error: "Não há pagamento confirmado para reembolsar nesse agendamento." };
+  }
+  if (pagamento.metodo !== "pix" && pagamento.metodo !== "cartao") {
+    return { error: "Esse pagamento não passou pelo gateway e não pode ser reembolsado por aqui." };
+  }
+
+  const { data: config } = await supabase
+    .from("estabelecimento_pagamento_config")
+    .select("mercado_pago_access_token")
+    .eq("estabelecimento_id", estabelecimento.id)
+    .single();
+  if (!config?.mercado_pago_access_token) {
+    return { error: "Configuração do Mercado Pago ausente para este estabelecimento." };
+  }
+
+  try {
+    await estornarPagamento(pagamento.gateway_payment_id, config.mercado_pago_access_token);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Falha ao solicitar reembolso no Mercado Pago." };
+  }
+
+  revalidatePath("/app/agenda");
+  return {};
 }

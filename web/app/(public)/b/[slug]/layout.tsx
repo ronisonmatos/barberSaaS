@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { EstabelecimentoHeader } from "./estabelecimento-header";
 
 const TEMA_PADRAO = "classica";
 
@@ -22,24 +22,15 @@ export default async function EstabelecimentoPublicoLayout({
   const config = (data?.config ?? {}) as Record<string, unknown>;
   const tema = typeof config.tema === "string" ? config.tema : TEMA_PADRAO;
 
+  const ano = new Date().getFullYear();
+
   return (
-    <div data-tema={tema} className="min-h-screen">
-      {data && (
-        <header className="flex items-center gap-2 border-b border-tenant-linha px-4 py-3">
-          <Link href={`/b/${slug}`} className="flex items-center gap-2">
-            {data.logo_url ? (
-              /* eslint-disable-next-line @next/next/no-img-element -- logo em bucket público, sem necessidade de otimização do next/image */
-              <img
-                src={data.logo_url}
-                alt={data.nome}
-                className="h-8 w-8 shrink-0 rounded-md border border-tenant-linha object-cover"
-              />
-            ) : null}
-            <span className="truncate font-display text-base text-tenant-fg">{data.nome}</span>
-          </Link>
-        </header>
-      )}
-      {children}
+    <div data-tema={tema} className="flex min-h-screen flex-col">
+      {data && <EstabelecimentoHeader slug={slug} nome={data.nome} logoUrl={data.logo_url} />}
+      <div className="flex-1">{children}</div>
+      <footer className="border-t border-tenant-linha px-4 py-3 text-center text-xs text-tenant-fg/60">
+        Powered by Comptus · © {ano} · Todos os direitos reservados.
+      </footer>
     </div>
   );
 }

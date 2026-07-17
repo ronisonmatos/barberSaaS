@@ -1,4 +1,4 @@
-# BarberSaaS — Design System "Navalha & Latão"
+# Comptus — Design System "Navalha & Latão"
 
 > Complementa `ORIENTACAO-BARBERSAAS.md`. Toda tela nova segue este documento.
 > Regra geral: elegância vem de disciplina — pouca cor, muito espaço, tipografia bem usada.

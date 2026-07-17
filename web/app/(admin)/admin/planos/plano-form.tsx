@@ -23,8 +23,8 @@ export function PlanoForm({ plano, onDone }: { plano?: Plano | null; onDone?: ()
     >
       {plano && <input type="hidden" name="id" value={plano.id} />}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2 flex flex-col gap-1">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2 flex flex-col gap-1">
           <label className="text-sm font-medium">Nome</label>
           <Input name="nome" required defaultValue={plano?.nome} />
         </div>
@@ -36,7 +36,11 @@ export function PlanoForm({ plano, onDone }: { plano?: Plano | null; onDone?: ()
           <label className="text-sm font-medium">Máx. profissionais (vazio = ilimitado)</label>
           <Input name="maxProfissionais" type="number" min={1} defaultValue={plano?.max_profissionais ?? ""} />
         </div>
-        <div className="col-span-2 flex gap-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Máx. usuários do painel (vazio = ilimitado)</label>
+          <Input name="maxUsuarios" type="number" min={1} defaultValue={plano?.max_usuarios ?? ""} />
+        </div>
+        <div className="sm:col-span-2 flex flex-wrap gap-4">
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="whatsapp" defaultChecked={recursos.whatsapp ?? false} />
             WhatsApp

@@ -46,7 +46,7 @@ export default async function AdminEstabelecimentoDetalhePage({
         <Link href="/admin/estabelecimentos" className="text-sm text-cinza-600 underline">
           ← Estabelecimentos
         </Link>
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <Heading>{estabelecimento.nome}</Heading>
           <span className="text-sm font-medium text-carvao">{STATUS_LABEL[estabelecimento.status]}</span>
         </div>

@@ -42,40 +42,42 @@ export function ClientesClient({
       {clientes.length === 0 ? (
         <EmptyState icon={Users} titulo="Nenhum cliente cadastrado ainda" descricao="Use o botão acima para cadastrar o primeiro cliente." />
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-linha text-left text-cinza-600">
-              <th className="py-2 font-medium">Nome</th>
-              <th className="font-medium">Telefone</th>
-              <th className="font-medium">E-mail</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {clientes.map((c) => (
-              <tr key={c.id} className="border-b border-linha text-carvao hover:bg-marfim">
-                <td className="py-2">{c.nome}</td>
-                <td>{formatPhoneBR(c.telefone)}</td>
-                <td>{c.email}</td>
-                <td className="flex gap-2 py-2 text-right">
-                  <Button variant="ghost" onClick={() => setEditando(c)}>
-                    Editar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      navigator.clipboard.writeText(linkGerenciamento(c.token_acesso));
-                      setCopiadoId(c.id);
-                      setTimeout(() => setCopiadoId(null), 2000);
-                    }}
-                  >
-                    {copiadoId === c.id ? "Link copiado" : "Copiar link"}
-                  </Button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead>
+              <tr className="border-b border-linha text-left text-cinza-600">
+                <th className="py-2 font-medium">Nome</th>
+                <th className="font-medium">Telefone</th>
+                <th className="font-medium">E-mail</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {clientes.map((c) => (
+                <tr key={c.id} className="border-b border-linha text-carvao hover:bg-marfim">
+                  <td className="py-2">{c.nome}</td>
+                  <td>{formatPhoneBR(c.telefone)}</td>
+                  <td>{c.email}</td>
+                  <td className="flex gap-2 py-2 text-right">
+                    <Button variant="ghost" onClick={() => setEditando(c)}>
+                      Editar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        navigator.clipboard.writeText(linkGerenciamento(c.token_acesso));
+                        setCopiadoId(c.id);
+                        setTimeout(() => setCopiadoId(null), 2000);
+                      }}
+                    >
+                      {copiadoId === c.id ? "Link copiado" : "Copiar link"}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

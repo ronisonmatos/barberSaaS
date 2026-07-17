@@ -64,7 +64,7 @@ export default async function PainelPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-2xl text-carvao">Painel</h1>
         <div className="flex gap-1 rounded-md border border-linha bg-marfim-2 p-1 text-sm">
           {(Object.keys(PERIODOS) as PeriodoKey[]).map((chave) => (
@@ -82,7 +82,7 @@ export default async function PainelPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatTile label="Agendados" value={total} icon={CalendarCheck} colorClassName="text-carvao" />
         <StatTile label="Atendidos" value={concluidos} icon={CheckCheck} colorClassName="text-sucesso" />
         <StatTile label="A atender" value={aAtender} icon={Clock} colorClassName="text-latao-escuro" />

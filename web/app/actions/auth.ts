@@ -70,3 +70,52 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+const definirSenhaSchema = z.object({
+  password: z.string().min(8, { error: "A senha deve ter ao menos 8 caracteres." }),
+});
+
+export async function definirSenha(_prevState: AuthState, formData: FormData): Promise<AuthState> {
+  const parsed = definirSenhaSchema.safeParse({ password: formData.get("password") });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Convite expirado ou inválido. Peça um novo convite." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect("/");
+}
+
+const esqueciSenhaSchema = z.object({
+  email: z.email({ error: "Informe um e-mail válido." }),
+});
+
+export async function solicitarRecuperacaoSenha(
+  _prevState: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const parsed = esqueciSenhaSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+
+  const supabase = await createClient();
+  // Não revela se o e-mail existe ou não (evita enumeração de contas) -- o Supabase só envia
+  // o e-mail se a conta existir, e aqui sempre respondemos com a mesma mensagem de sucesso.
+  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/definir-senha`,
+  });
+
+  return undefined;
+}

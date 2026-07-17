@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { UserRound, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles } from "lucide-react";
+import { UserRound, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles, Palette } from "lucide-react";
 
 export type SecaoConfiguracao = {
   href: string;
@@ -21,6 +21,13 @@ export const SECOES_CONFIGURACAO: SecaoConfiguracao[] = [
     label: "Fotos",
     descricao: "Galeria exibida na página pública.",
     icon: Images,
+  },
+  {
+    href: "/app/configuracoes/aparencia",
+    label: "Aparência",
+    descricao: "Cores da página pública.",
+    icon: Palette,
+    ownerOnly: true,
   },
   {
     href: "/app/configuracoes/plano",

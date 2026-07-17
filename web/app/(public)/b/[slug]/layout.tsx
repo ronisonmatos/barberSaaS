@@ -43,11 +43,28 @@ export default async function EstabelecimentoPublicoLayout({
 
   const config = (data?.config ?? {}) as Record<string, unknown>;
   const tema = typeof config.tema === "string" ? config.tema : TEMA_PADRAO;
+  const cores = config.cores as
+    | { bg: string; bg2: string; fg: string; linha: string; acento: string; acentoFg: string }
+    | undefined;
+
+  // Cores customizadas (config.cores) sobrescrevem o preset [data-tema] via CSS custom
+  // properties inline -- data-tema continua definindo o preset de base/fallback quando o
+  // estabelecimento nunca personalizou (compatível com estabelecimentos existentes).
+  const estiloCores = cores
+    ? ({
+        "--tenant-bg": cores.bg,
+        "--tenant-bg-2": cores.bg2,
+        "--tenant-fg": cores.fg,
+        "--tenant-linha": cores.linha,
+        "--tenant-acento": cores.acento,
+        "--tenant-acento-fg": cores.acentoFg,
+      } as React.CSSProperties)
+    : undefined;
 
   const ano = new Date().getFullYear();
 
   return (
-    <div data-tema={tema} className="flex min-h-screen flex-col">
+    <div data-tema={tema} style={estiloCores} className="flex min-h-screen flex-col">
       {data && <EstabelecimentoHeader slug={slug} nome={data.nome} logoUrl={data.logo_url} />}
       <div className="flex-1">{children}</div>
       <footer className="border-t border-tenant-linha px-4 py-3 text-center text-xs text-tenant-fg/60">

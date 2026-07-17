@@ -9,7 +9,7 @@ import {
   criarAgendamentoCartao,
   consultarStatusPagamento,
 } from "./actions";
-import { CardPaymentBrick } from "./card-payment-brick";
+import { CardPaymentBrick } from "@/components/payment/card-payment-brick";
 import { SeletorData } from "./seletor-data";
 import { salvarTokenAgendamento } from "../meu-agendamento-link";
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, BOTAO_GHOST } from "../estilos";

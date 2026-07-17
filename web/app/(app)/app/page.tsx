@@ -1,11 +1,34 @@
 import Link from "next/link";
-import { CalendarCheck, CheckCheck, Clock, X, UserX, BarChart3 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  CalendarCheck,
+  CheckCheck,
+  Clock,
+  X,
+  UserX,
+  BarChart3,
+  Wallet,
+  QrCode,
+  CreditCard,
+  Banknote,
+  Store,
+  Repeat,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { hojeNaTimezone, dataLocal, limitesDoDiaUTC, somarDias } from "@/lib/timezone";
+import { centavosToBRL } from "@/lib/money";
 import { StatTile } from "@/components/ui/stat-tile";
 import { EmptyState } from "@/components/ui/empty-state";
 import { GraficoStatus, GraficoVolumeDiario } from "./dashboard-charts";
+
+const METODO_INFO: Record<string, { label: string; icon: LucideIcon }> = {
+  pix: { label: "Pix", icon: QrCode },
+  cartao: { label: "Cartão", icon: CreditCard },
+  dinheiro: { label: "Dinheiro", icon: Banknote },
+  no_local: { label: "No local", icon: Store },
+  assinatura: { label: "Assinatura", icon: Repeat },
+};
 
 const PERIODOS = {
   hoje: { label: "Hoje", dias: 1 },
@@ -62,6 +85,21 @@ export default async function PainelPage({
     { rotulo: "Não compareceram", valor: naoCompareceram, cor: "var(--erro)" },
   ];
 
+  const { data: pagamentos } = await supabase
+    .from("pagamentos")
+    .select("metodo, valor_centavos")
+    .eq("estabelecimento_id", estabelecimento.id)
+    .eq("status", "pago")
+    .gte("pago_em", rangeInicio.toISOString())
+    .lt("pago_em", rangeFim.toISOString());
+
+  const listaPagamentos = pagamentos ?? [];
+  const receitaTotal = listaPagamentos.reduce((soma, p) => soma + p.valor_centavos, 0);
+  const receitaPorMetodo = new Map<string, number>();
+  for (const p of listaPagamentos) {
+    receitaPorMetodo.set(p.metodo, (receitaPorMetodo.get(p.metodo) ?? 0) + p.valor_centavos);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -103,6 +141,39 @@ export default async function PainelPage({
           <GraficoVolumeDiario dados={dadosVolume} />
         </div>
       )}
+
+      <div className="flex flex-col gap-3">
+        <div>
+          <h2 className="font-display text-xl text-carvao">Receita</h2>
+          <p className="text-xs text-cinza-300">
+            Só cobre pagamentos feitos online (Pix/Cartão) — o que é recebido presencialmente ainda não é registrado.
+          </p>
+        </div>
+
+        {listaPagamentos.length === 0 ? (
+          <EmptyState
+            icon={Wallet}
+            titulo="Nenhum pagamento recebido no período"
+            descricao="Pagamentos online via Pix ou cartão aparecem aqui assim que forem confirmados."
+          />
+        ) : (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatTile label="Total recebido" value={centavosToBRL(receitaTotal)} icon={Wallet} colorClassName="text-carvao" />
+            {[...receitaPorMetodo.entries()].map(([metodo, valor]) => {
+              const info = METODO_INFO[metodo] ?? { label: metodo, icon: Wallet };
+              return (
+                <StatTile
+                  key={metodo}
+                  label={info.label}
+                  value={centavosToBRL(valor)}
+                  icon={info.icon}
+                  colorClassName="text-latao-escuro"
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

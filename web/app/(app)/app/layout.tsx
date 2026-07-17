@@ -1,13 +1,38 @@
+import { createClient } from "@/lib/supabase/server";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { signOut } from "@/app/actions/auth";
-import { AppNav } from "./app-nav";
+import { SidebarNav } from "./sidebar-nav";
 import { BottomNav } from "./bottom-nav";
 import { Button } from "@/components/ui/button";
 import { BrandFooter } from "@/components/brand-footer";
 
+const STATUS_LABEL: Record<string, string> = {
+  inadimplente: "Inadimplente",
+  suspensa: "Suspensa",
+  cancelada: "Cancelada",
+};
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { estabelecimento } = await getEstabelecimentoAtivo();
+  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
   const trialAte = new Date(`${estabelecimento.trial_ate}T00:00:00`).toLocaleDateString("pt-BR");
+
+  let planoNome: string | null = null;
+  if (estabelecimento.plano_plataforma_id) {
+    const supabase = await createClient();
+    const { data: plano } = await supabase
+      .from("planos_plataforma")
+      .select("nome")
+      .eq("id", estabelecimento.plano_plataforma_id)
+      .maybeSingle();
+    planoNome = plano?.nome ?? null;
+  }
+
+  const statusTexto =
+    estabelecimento.status === "trial"
+      ? `Trial até ${trialAte}`
+      : estabelecimento.status === "ativa" && planoNome
+        ? planoNome
+        : (STATUS_LABEL[estabelecimento.status] ?? estabelecimento.status);
 
   return (
     <div className="flex min-h-screen">
@@ -23,12 +48,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ) : null}
           <div className="min-w-0">
             <p className="truncate font-display text-lg text-carvao">{estabelecimento.nome}</p>
-            <p className="text-xs text-cinza-600">
-              {estabelecimento.status === "trial" ? `Trial até ${trialAte}` : estabelecimento.status}
-            </p>
+            <p className="text-xs text-cinza-600">{statusTexto}</p>
           </div>
         </div>
-        <AppNav />
+        <SidebarNav papel={papel} />
         <form action={signOut}>
           <Button type="submit" variant="ghost" className="w-full justify-start no-underline">
             Sair

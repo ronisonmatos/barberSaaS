@@ -42,6 +42,7 @@ export type Database = {
       agendamentos: {
         Row: {
           assinatura_cliente_id: string | null
+          chegou_em: string | null
           cliente_id: string
           created_at: string
           estabelecimento_id: string
@@ -57,6 +58,7 @@ export type Database = {
         }
         Insert: {
           assinatura_cliente_id?: string | null
+          chegou_em?: string | null
           cliente_id: string
           created_at?: string
           estabelecimento_id: string
@@ -72,6 +74,7 @@ export type Database = {
         }
         Update: {
           assinatura_cliente_id?: string | null
+          chegou_em?: string | null
           cliente_id?: string
           created_at?: string
           estabelecimento_id?: string
@@ -718,6 +721,57 @@ export type Database = {
           },
         ]
       }
+      pagamentos_plataforma: {
+        Row: {
+          created_at: string
+          estabelecimento_id: string
+          gateway_payment_id: string | null
+          id: string
+          metodo: Database["public"]["Enums"]["metodo_pagamento"]
+          pago_em: string | null
+          plano_plataforma_id: string
+          status: Database["public"]["Enums"]["status_pagamento"]
+          valor_centavos: number
+        }
+        Insert: {
+          created_at?: string
+          estabelecimento_id: string
+          gateway_payment_id?: string | null
+          id?: string
+          metodo: Database["public"]["Enums"]["metodo_pagamento"]
+          pago_em?: string | null
+          plano_plataforma_id: string
+          status?: Database["public"]["Enums"]["status_pagamento"]
+          valor_centavos: number
+        }
+        Update: {
+          created_at?: string
+          estabelecimento_id?: string
+          gateway_payment_id?: string | null
+          id?: string
+          metodo?: Database["public"]["Enums"]["metodo_pagamento"]
+          pago_em?: string | null
+          plano_plataforma_id?: string
+          status?: Database["public"]["Enums"]["status_pagamento"]
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_plataforma_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_plataforma_plano_plataforma_id_fkey"
+            columns: ["plano_plataforma_id"]
+            isOneToOne: false
+            referencedRelation: "planos_plataforma"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planos_estabelecimento: {
         Row: {
           ativo: boolean
@@ -1101,6 +1155,24 @@ export type Database = {
       }
       cancelar_agendamento_via_token: {
         Args: { p_agendamento_id: string; p_token: string }
+        Returns: undefined
+      }
+      checkin_buscar_agendamentos_publico: {
+        Args: { p_estabelecimento_id: string; p_telefone: string }
+        Returns: {
+          agendamento_id: string
+          inicio: string
+          ja_chegou: boolean
+          profissional_nome: string
+          servico_nome: string
+        }[]
+      }
+      checkin_confirmar_publico: {
+        Args: {
+          p_agendamento_id: string
+          p_estabelecimento_id: string
+          p_telefone: string
+        }
         Returns: undefined
       }
       criar_agendamento_publico: {

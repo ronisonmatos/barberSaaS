@@ -70,6 +70,29 @@ export async function alterarPlanoEstabelecimento(estabelecimentoId: string, pla
     .eq("id", estabelecimentoId);
   if (error) throw new Error(error.message);
 
+  // Mantem assinaturas_plataforma consistente com a troca manual, com o mesmo efeito de +1 mes de
+  // vencimento que uma renovacao paga teria (ver confirmarPagamentoPlataforma).
+  const proximoVencimento = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const { data: assinaturaExistente } = await supabase
+    .from("assinaturas_plataforma")
+    .select("id")
+    .eq("estabelecimento_id", estabelecimentoId)
+    .maybeSingle();
+
+  if (assinaturaExistente) {
+    await supabase
+      .from("assinaturas_plataforma")
+      .update({ plano_plataforma_id: planoId, status: "ativa", proximo_vencimento: proximoVencimento })
+      .eq("id", assinaturaExistente.id);
+  } else {
+    await supabase.from("assinaturas_plataforma").insert({
+      estabelecimento_id: estabelecimentoId,
+      plano_plataforma_id: planoId,
+      status: "ativa",
+      proximo_vencimento: proximoVencimento,
+    });
+  }
+
   await supabase.from("eventos_admin").insert({
     estabelecimento_id: estabelecimentoId,
     super_admin_id: userId,

@@ -1,7 +1,29 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { EstabelecimentoHeader } from "./estabelecimento-header";
 
 const TEMA_PADRAO = "classica";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("estabelecimentos")
+    .select("nome, logo_url")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (!data) return {};
+
+  return {
+    title: data.nome,
+    icons: data.logo_url ? { icon: data.logo_url } : undefined,
+  };
+}
 
 export default async function EstabelecimentoPublicoLayout({
   params,

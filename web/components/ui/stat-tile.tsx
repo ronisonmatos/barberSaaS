@@ -8,7 +8,7 @@ export function StatTile({
   colorClassName = "text-carvao",
 }: {
   label: string;
-  value: number;
+  value: number | string;
   icon: LucideIcon;
   colorClassName?: string;
 }) {
@@ -18,7 +18,9 @@ export function StatTile({
         <Icon className={`h-4 w-4 shrink-0 ${colorClassName}`} strokeWidth={1.5} />
         <p className="min-w-0 break-words text-sm font-medium text-cinza-600">{label}</p>
       </div>
-      <p className={`font-display text-3xl ${colorClassName}`}>{value.toLocaleString("pt-BR")}</p>
+      <p className={`font-display text-3xl ${colorClassName}`}>
+        {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
+      </p>
     </Card>
   );
 }

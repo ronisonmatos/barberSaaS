@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { atualizarStatusAgendamento, reembolsarAgendamento } from "./actions";
+import { atualizarStatusAgendamento, reembolsarAgendamento, marcarChegada } from "./actions";
 import { centavosToBRL } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
@@ -13,6 +13,7 @@ export type AgendamentoDetalhado = {
   inicio: string;
   fim: string;
   status: string;
+  chegou_em?: string | null;
   cliente_nome: string;
   servico_nome: string;
   pagamento?: { status: string; metodo: string; valor_centavos: number } | null;
@@ -36,6 +37,13 @@ export function AgendamentoCard({
   function atualizar(status: "concluido" | "cancelado" | "no_show") {
     startTransition(async () => {
       await atualizarStatusAgendamento(agendamento.id, status);
+      router.refresh();
+    });
+  }
+
+  function marcarChegou() {
+    startTransition(async () => {
+      await marcarChegada(agendamento.id);
       router.refresh();
     });
   }
@@ -70,6 +78,17 @@ export function AgendamentoCard({
       <p className="text-carvao">{agendamento.cliente_nome}</p>
       <p className="text-cinza-600">{agendamento.servico_nome}</p>
       <StatusBadge status={agendamento.status as StatusAgendamento} />
+      {agendamento.chegou_em ? (
+        <p className="mt-1 text-xs text-sucesso">
+          Chegou às {hora(agendamento.chegou_em)}
+        </p>
+      ) : (
+        editavel && (
+          <Button variant="ghost" className="mt-1 text-xs" disabled={pending} onClick={marcarChegou}>
+            Marcar chegada
+          </Button>
+        )
+      )}
       {editavel && (
         <div className="mt-1 flex gap-2 text-xs">
           <Button variant="ghost" disabled={pending} onClick={() => atualizar("concluido")}>

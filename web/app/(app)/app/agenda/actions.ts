@@ -106,6 +106,12 @@ export async function atualizarStatusAgendamento(
   revalidatePath("/app/agenda");
 }
 
+export async function marcarChegada(id: string) {
+  const supabase = await createClient();
+  await supabase.from("agendamentos").update({ chegou_em: new Date().toISOString() }).eq("id", id);
+  revalidatePath("/app/agenda");
+}
+
 export async function reembolsarAgendamento(agendamentoId: string): Promise<{ error?: string }> {
   const { estabelecimento, papel } = await getEstabelecimentoAtivo();
   if (papel !== "owner") {

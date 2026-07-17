@@ -53,7 +53,7 @@ export default async function AgendaPage({
   const { data: agendamentos } = await supabase
     .from("agendamentos")
     .select(
-      "id, inicio, fim, status, profissional_id, clientes(nome), servicos(nome), pagamentos(status, metodo, valor_centavos)"
+      "id, inicio, fim, status, chegou_em, profissional_id, clientes(nome), servicos(nome), pagamentos(status, metodo, valor_centavos)"
     )
     .eq("estabelecimento_id", estabelecimento.id)
     .gte("inicio", rangeInicio.toISOString())
@@ -66,6 +66,7 @@ export default async function AgendaPage({
       inicio: ag.inicio,
       fim: ag.fim,
       status: ag.status,
+      chegou_em: ag.chegou_em,
       profissional_id: ag.profissional_id,
       cliente_nome: ag.clientes?.nome ?? "—",
       servico_nome: ag.servicos?.nome ?? "—",

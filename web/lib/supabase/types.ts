@@ -327,21 +327,27 @@ export type Database = {
       }
       estabelecimento_fotos: {
         Row: {
+          ativo: boolean
           created_at: string
+          desativado_por_limite_plano: boolean
           estabelecimento_id: string
           id: string
           ordem: number
           url: string
         }
         Insert: {
+          ativo?: boolean
           created_at?: string
+          desativado_por_limite_plano?: boolean
           estabelecimento_id: string
           id?: string
           ordem?: number
           url: string
         }
         Update: {
+          ativo?: boolean
           created_at?: string
+          desativado_por_limite_plano?: boolean
           estabelecimento_id?: string
           id?: string
           ordem?: number
@@ -561,18 +567,27 @@ export type Database = {
       }
       membros_estabelecimento: {
         Row: {
+          ativo: boolean
+          created_at: string
+          desativado_por_limite_plano: boolean
           estabelecimento_id: string
           id: string
           papel: Database["public"]["Enums"]["papel_membro"]
           usuario_id: string
         }
         Insert: {
+          ativo?: boolean
+          created_at?: string
+          desativado_por_limite_plano?: boolean
           estabelecimento_id: string
           id?: string
           papel?: Database["public"]["Enums"]["papel_membro"]
           usuario_id: string
         }
         Update: {
+          ativo?: boolean
+          created_at?: string
+          desativado_por_limite_plano?: boolean
           estabelecimento_id?: string
           id?: string
           papel?: Database["public"]["Enums"]["papel_membro"]
@@ -661,6 +676,7 @@ export type Database = {
           id: string
           metodo: Database["public"]["Enums"]["metodo_pagamento"]
           pago_em: string | null
+          pedido_id: string | null
           status: Database["public"]["Enums"]["status_pagamento"]
           valor_centavos: number
         }
@@ -674,6 +690,7 @@ export type Database = {
           id?: string
           metodo: Database["public"]["Enums"]["metodo_pagamento"]
           pago_em?: string | null
+          pedido_id?: string | null
           status?: Database["public"]["Enums"]["status_pagamento"]
           valor_centavos: number
         }
@@ -687,6 +704,7 @@ export type Database = {
           id?: string
           metodo?: Database["public"]["Enums"]["metodo_pagamento"]
           pago_em?: string | null
+          pedido_id?: string | null
           status?: Database["public"]["Enums"]["status_pagamento"]
           valor_centavos?: number
         }
@@ -717,6 +735,13 @@ export type Database = {
             columns: ["estabelecimento_id"]
             isOneToOne: false
             referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
         ]
@@ -772,6 +797,103 @@ export type Database = {
           },
         ]
       }
+      pedido_itens: {
+        Row: {
+          created_at: string
+          id: string
+          nome_produto: string
+          pedido_id: string
+          preco_unitario_centavos: number
+          produto_id: string
+          quantidade: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_produto: string
+          pedido_id: string
+          preco_unitario_centavos: number
+          produto_id: string
+          quantidade: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_produto?: string
+          pedido_id?: string
+          preco_unitario_centavos?: number
+          produto_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          agendamento_id: string | null
+          cliente_id: string
+          created_at: string
+          estabelecimento_id: string
+          id: string
+          status: Database["public"]["Enums"]["status_pedido"]
+          total_centavos: number
+        }
+        Insert: {
+          agendamento_id?: string | null
+          cliente_id: string
+          created_at?: string
+          estabelecimento_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["status_pedido"]
+          total_centavos: number
+        }
+        Update: {
+          agendamento_id?: string | null
+          cliente_id?: string
+          created_at?: string
+          estabelecimento_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["status_pedido"]
+          total_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planos_estabelecimento: {
         Row: {
           ativo: boolean
@@ -819,6 +941,7 @@ export type Database = {
           created_at: string
           id: string
           max_fotos: number | null
+          max_produtos: number | null
           max_profissionais: number | null
           max_usuarios: number | null
           nome: string
@@ -830,6 +953,7 @@ export type Database = {
           created_at?: string
           id?: string
           max_fotos?: number | null
+          max_produtos?: number | null
           max_profissionais?: number | null
           max_usuarios?: number | null
           nome: string
@@ -841,6 +965,7 @@ export type Database = {
           created_at?: string
           id?: string
           max_fotos?: number | null
+          max_produtos?: number | null
           max_profissionais?: number | null
           max_usuarios?: number | null
           nome?: string
@@ -849,11 +974,74 @@ export type Database = {
         }
         Relationships: []
       }
+      produtos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          desativado_por_limite_plano: boolean
+          descricao: string | null
+          estabelecimento_id: string
+          estoque: number
+          foto_url: string | null
+          id: string
+          meta_descricao: string | null
+          meta_titulo: string | null
+          nome: string
+          ordem: number
+          preco_centavos: number
+          slug: string
+          tags: string[]
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          desativado_por_limite_plano?: boolean
+          descricao?: string | null
+          estabelecimento_id: string
+          estoque?: number
+          foto_url?: string | null
+          id?: string
+          meta_descricao?: string | null
+          meta_titulo?: string | null
+          nome: string
+          ordem?: number
+          preco_centavos: number
+          slug: string
+          tags?: string[]
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          desativado_por_limite_plano?: boolean
+          descricao?: string | null
+          estabelecimento_id?: string
+          estoque?: number
+          foto_url?: string | null
+          id?: string
+          meta_descricao?: string | null
+          meta_titulo?: string | null
+          nome?: string
+          ordem?: number
+          preco_centavos?: number
+          slug?: string
+          tags?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profissionais: {
         Row: {
           ativo: boolean
           comissao_percentual: number
           created_at: string
+          desativado_por_limite_plano: boolean
           estabelecimento_id: string
           foto_url: string | null
           id: string
@@ -864,6 +1052,7 @@ export type Database = {
           ativo?: boolean
           comissao_percentual?: number
           created_at?: string
+          desativado_por_limite_plano?: boolean
           estabelecimento_id: string
           foto_url?: string | null
           id?: string
@@ -874,6 +1063,7 @@ export type Database = {
           ativo?: boolean
           comissao_percentual?: number
           created_at?: string
+          desativado_por_limite_plano?: boolean
           estabelecimento_id?: string
           foto_url?: string | null
           id?: string
@@ -1153,6 +1343,10 @@ export type Database = {
           status: Database["public"]["Enums"]["status_agendamento"]
         }[]
       }
+      aplicar_limites_plano: {
+        Args: { p_estabelecimento_id: string }
+        Returns: undefined
+      }
       cancelar_agendamento_via_token: {
         Args: { p_agendamento_id: string; p_token: string }
         Returns: undefined
@@ -1180,6 +1374,7 @@ export type Database = {
           p_email?: string
           p_estabelecimento_id: string
           p_inicio: string
+          p_itens?: Json
           p_nome: string
           p_profissional_id: string
           p_servico_id: string
@@ -1187,6 +1382,7 @@ export type Database = {
         }
         Returns: {
           agendamento_id: string
+          pedido_id: string
           token_acesso: string
         }[]
       }
@@ -1195,6 +1391,7 @@ export type Database = {
           p_email: string
           p_estabelecimento_id: string
           p_inicio: string
+          p_itens?: Json
           p_metodo?: Database["public"]["Enums"]["metodo_pagamento"]
           p_nome: string
           p_profissional_id: string
@@ -1204,10 +1401,47 @@ export type Database = {
         Returns: {
           agendamento_id: string
           pagamento_id: string
+          pedido_id: string
+          token_acesso: string
+        }[]
+      }
+      criar_pedido_publico: {
+        Args: {
+          p_email?: string
+          p_estabelecimento_id: string
+          p_itens: Json
+          p_nome: string
+          p_telefone: string
+        }
+        Returns: {
+          pedido_id: string
+          token_acesso: string
+        }[]
+      }
+      criar_pedido_publico_pix: {
+        Args: {
+          p_email: string
+          p_estabelecimento_id: string
+          p_itens: Json
+          p_metodo?: Database["public"]["Enums"]["metodo_pagamento"]
+          p_nome: string
+          p_telefone: string
+        }
+        Returns: {
+          pagamento_id: string
+          pedido_id: string
           token_acesso: string
         }[]
       }
       eh_super_admin: { Args: never; Returns: boolean }
+      estabelecimento_permite_loja: {
+        Args: { p_estabelecimento_id: string }
+        Returns: boolean
+      }
+      estabelecimento_permite_pagamento_online: {
+        Args: { p_estabelecimento_id: string }
+        Returns: boolean
+      }
       estabelecimentos_que_possuo: { Args: never; Returns: string[] }
       formas_pagamento_publico: {
         Args: { p_estabelecimento_id: string }
@@ -1217,6 +1451,10 @@ export type Database = {
           gateway_ativo: string
           mercado_pago_public_key: string
         }[]
+      }
+      incrementar_estoque_produto: {
+        Args: { p_produto_id: string; p_quantidade: number }
+        Returns: undefined
       }
       meus_estabelecimentos: { Args: never; Returns: string[] }
       onboarding_criar_estabelecimento: {
@@ -1249,6 +1487,25 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      pedido_por_token: {
+        Args: { p_token: string }
+        Returns: {
+          agendamento_id: string
+          created_at: string
+          itens: Json
+          pedido_id: string
+          status: Database["public"]["Enums"]["status_pedido"]
+          total_centavos: number
+        }[]
+      }
+      processar_itens_pedido: {
+        Args: {
+          p_estabelecimento_id: string
+          p_itens: Json
+          p_pedido_id: string
+        }
+        Returns: number
+      }
       slots_disponiveis: {
         Args: {
           p_data: string
@@ -1266,6 +1523,7 @@ export type Database = {
         Returns: {
           status_agendamento: Database["public"]["Enums"]["status_agendamento"]
           status_pagamento: Database["public"]["Enums"]["status_pagamento"]
+          status_pedido: Database["public"]["Enums"]["status_pedido"]
         }[]
       }
     }
@@ -1297,6 +1555,11 @@ export type Database = {
         | "pago"
         | "falhou"
         | "estornado"
+        | "cancelado"
+      status_pedido:
+        | "pendente"
+        | "aguardando_retirada"
+        | "retirado"
         | "cancelado"
       status_ticket: "aberto" | "em_andamento" | "resolvido"
     }
@@ -1453,6 +1716,12 @@ export const Constants = {
         "pago",
         "falhou",
         "estornado",
+        "cancelado",
+      ],
+      status_pedido: [
+        "pendente",
+        "aguardando_retirada",
+        "retirado",
         "cancelado",
       ],
       status_ticket: ["aberto", "em_andamento", "resolvido"],

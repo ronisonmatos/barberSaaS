@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/expirar-pendentes", "schedule": "*/5 * * * *" }
+    { "path": "/api/cron/expirar-pendentes", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/expirar-trial", "schedule": "0 6 * * *" }
   ]
 }

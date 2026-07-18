@@ -70,6 +70,8 @@ export async function alterarPlanoEstabelecimento(estabelecimentoId: string, pla
     .eq("id", estabelecimentoId);
   if (error) throw new Error(error.message);
 
+  await supabase.rpc("aplicar_limites_plano", { p_estabelecimento_id: estabelecimentoId });
+
   // Mantem assinaturas_plataforma consistente com a troca manual, com o mesmo efeito de +1 mes de
   // vencimento que uma renovacao paga teria (ver confirmarPagamentoPlataforma).
   const proximoVencimento = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);

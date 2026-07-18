@@ -14,8 +14,13 @@ const schema = z.object({
   preco: z.string().min(1, { error: "Informe o preço." }),
   maxProfissionais: z.string().optional(),
   maxUsuarios: z.string().optional(),
+  maxFotos: z.string().optional(),
+  maxProdutos: z.string().optional(),
   whatsapp: z.boolean(),
   relatorios: z.boolean(),
+  pagamentoOnline: z.boolean(),
+  loja: z.boolean(),
+  suporte: z.enum(["limitado", "prioritario"]),
 });
 
 export async function salvarPlano(_prevState: FormState, formData: FormData): Promise<FormState> {
@@ -27,8 +32,13 @@ export async function salvarPlano(_prevState: FormState, formData: FormData): Pr
     preco: formData.get("preco"),
     maxProfissionais: formData.get("maxProfissionais") || undefined,
     maxUsuarios: formData.get("maxUsuarios") || undefined,
+    maxFotos: formData.get("maxFotos") || undefined,
+    maxProdutos: formData.get("maxProdutos") || undefined,
     whatsapp: formData.get("whatsapp") === "on",
     relatorios: formData.get("relatorios") === "on",
+    pagamentoOnline: formData.get("pagamentoOnline") === "on",
+    loja: formData.get("loja") === "on",
+    suporte: formData.get("suporte") || "limitado",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -45,7 +55,15 @@ export async function salvarPlano(_prevState: FormState, formData: FormData): Pr
     preco_centavos,
     max_profissionais: parsed.data.maxProfissionais ? Number.parseInt(parsed.data.maxProfissionais, 10) : null,
     max_usuarios: parsed.data.maxUsuarios ? Number.parseInt(parsed.data.maxUsuarios, 10) : null,
-    recursos: { whatsapp: parsed.data.whatsapp, relatorios: parsed.data.relatorios },
+    max_fotos: parsed.data.maxFotos ? Number.parseInt(parsed.data.maxFotos, 10) : null,
+    max_produtos: parsed.data.maxProdutos ? Number.parseInt(parsed.data.maxProdutos, 10) : null,
+    recursos: {
+      whatsapp: parsed.data.whatsapp,
+      relatorios: parsed.data.relatorios,
+      pagamento_online: parsed.data.pagamentoOnline,
+      loja: parsed.data.loja,
+      suporte: parsed.data.suporte,
+    },
   };
 
   const { error } = parsed.data.id

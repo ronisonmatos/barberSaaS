@@ -22,12 +22,14 @@ export async function getEstabelecimentoAtivo(): Promise<{
 
   const { data: membro } = await supabase
     .from("membros_estabelecimento")
-    .select("papel, estabelecimentos(*)")
+    .select("papel, ativo, estabelecimentos(*)")
     .eq("usuario_id", user.id)
     .limit(1)
     .maybeSingle();
 
-  if (!membro || !membro.estabelecimentos) redirect("/onboarding");
+  if (!membro) redirect("/onboarding");
+  if (!membro.ativo) redirect("/conta-desativada");
+  if (!membro.estabelecimentos) redirect("/onboarding");
 
   return { userId: user.id, papel: membro.papel, estabelecimento: membro.estabelecimentos };
 }

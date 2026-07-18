@@ -14,7 +14,7 @@ export default async function FotosConfigPage() {
   const [{ data: fotos }, { data: planoFotos }] = await Promise.all([
     supabase
       .from("estabelecimento_fotos")
-      .select("id, url")
+      .select("id, url, ativo, desativado_por_limite_plano")
       .eq("estabelecimento_id", estabelecimento.id)
       .order("ordem"),
     estabelecimento.plano_plataforma_id
@@ -28,13 +28,19 @@ export default async function FotosConfigPage() {
   const limiteFotos = estabelecimento.plano_plataforma_id
     ? (planoFotos?.max_fotos ?? null)
     : LIMITE_FOTOS_SEM_PLANO;
+  const fotosForm = (fotos ?? []).map((f) => ({
+    id: f.id,
+    url: f.url,
+    ativo: f.ativo,
+    desativadoPorLimitePlano: f.desativado_por_limite_plano,
+  }));
 
   return (
     <div className="flex flex-col gap-4">
       <VoltarConfiguracoes />
       <Heading>Fotos do estabelecimento</Heading>
       <Card className="p-4">
-        <GaleriaForm fotos={fotos ?? []} limite={limiteFotos} />
+        <GaleriaForm fotos={fotosForm} limite={limiteFotos} />
       </Card>
     </div>
   );

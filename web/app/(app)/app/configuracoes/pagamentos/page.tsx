@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { Card } from "@/components/ui/card";
@@ -31,11 +32,40 @@ export default async function PagamentosConfigPage() {
   }
 
   const supabase = await createClient();
-  const { data: pagamentoConfig } = await supabase
-    .from("estabelecimento_pagamento_config")
-    .select("*")
-    .eq("estabelecimento_id", estabelecimento.id)
-    .maybeSingle();
+  const [{ data: pagamentoConfig }, { data: plano }] = await Promise.all([
+    supabase
+      .from("estabelecimento_pagamento_config")
+      .select("*")
+      .eq("estabelecimento_id", estabelecimento.id)
+      .maybeSingle(),
+    estabelecimento.plano_plataforma_id
+      ? supabase
+          .from("planos_plataforma")
+          .select("recursos")
+          .eq("id", estabelecimento.plano_plataforma_id)
+          .single()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const permitePagamentoOnline = !estabelecimento.plano_plataforma_id
+    ? true
+    : ((plano?.recursos as Record<string, boolean> | null)?.pagamento_online ?? false);
+
+  if (!permitePagamentoOnline) {
+    return (
+      <div className="flex flex-col gap-4">
+        <VoltarConfiguracoes />
+        <Heading>Pagamentos</Heading>
+        <Card className="p-4 text-sm text-cinza-600">
+          Pagamento online não está disponível no plano Free.{" "}
+          <Link href="/app/configuracoes/plano" className="font-medium text-latao-escuro underline">
+            Faça upgrade de plano
+          </Link>{" "}
+          para habilitar cobrança pelo agendamento.
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">

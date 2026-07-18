@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, Scissors, UserSquare2, Ban, Users, Settings } from "lucide-react";
+import { LayoutDashboard, Calendar, Scissors, UserSquare2, Ban, Users, Settings, ShoppingBag, Package } from "lucide-react";
 
 const LINKS = [
   { href: "/app", label: "Painel", icon: LayoutDashboard },
   { href: "/app/agenda", label: "Agenda", icon: Calendar },
   { href: "/app/servicos", label: "Serviços", icon: Scissors },
+  { href: "/app/produtos", label: "Produtos", icon: ShoppingBag },
+  { href: "/app/pedidos", label: "Pedidos", icon: Package },
   { href: "/app/profissionais", label: "Profissionais", icon: UserSquare2 },
   { href: "/app/bloqueios", label: "Bloqueios", icon: Ban },
   { href: "/app/clientes", label: "Clientes", icon: Users },

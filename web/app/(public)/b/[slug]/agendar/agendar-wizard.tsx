@@ -13,6 +13,8 @@ import { CardPaymentBrick } from "@/components/payment/card-payment-brick";
 import { SeletorData } from "./seletor-data";
 import { salvarTokenAgendamento } from "../meu-agendamento-link";
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, BOTAO_GHOST } from "../estilos";
+import { ResultadoPagamento } from "../resultado-pagamento";
+import { CarrinhoProdutos, type ProdutoCarrinho } from "../carrinho-produtos";
 import { centavosToBRL } from "@/lib/money";
 import { hojeNaTimezone } from "@/lib/timezone";
 import { validarCPF, formatarCPF, apenasNumeros } from "@/lib/cpf";
@@ -32,6 +34,7 @@ type FormasPagamento = {
   mercado_pago_public_key: string | null;
 };
 type MetodoPagamento = "no_local" | "pix" | "cartao";
+type Passo = "servico" | "profissional" | "data" | "produtos" | "pagamento" | "dados";
 
 const QUALQUER = "qualquer";
 
@@ -46,19 +49,22 @@ export function AgendarWizard({
   profissionais,
   vinculos,
   formasPagamento,
+  produtos,
 }: {
   estabelecimento: Estabelecimento;
   servicos: Servico[];
   profissionais: Profissional[];
   vinculos: { profissional_id: string; servico_id: string }[];
   formasPagamento: FormasPagamento;
+  produtos: ProdutoCarrinho[];
 }) {
-  const [passo, setPasso] = useState(1);
+  const [passo, setPasso] = useState<Passo>("servico");
   const [servicoId, setServicoId] = useState<string | null>(null);
   const [profissionalEscolha, setProfissionalEscolha] = useState<string | null>(null);
   const [data, setData] = useState(hojeNaTimezone(estabelecimento.timezone));
   const [slots, setSlots] = useState<{ inicio: string; fim: string }[]>([]);
   const [slotSelecionado, setSlotSelecionado] = useState<string | null>(null);
+  const [carrinho, setCarrinho] = useState<Record<string, number>>({});
   const [metodoPagamento, setMetodoPagamento] = useState<MetodoPagamento | null>(null);
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -77,6 +83,8 @@ export function AgendarWizard({
   const [aguardandoCartao, setAguardandoCartao] = useState<{ pagamentoId: string; token: string } | null>(null);
   const [cartaoConfirmado, setCartaoConfirmado] = useState(false);
 
+  const temProdutos = produtos.length > 0;
+
   const gatewayMercadoPagoDisponivel =
     formasPagamento.aceita_pagamento_antecipado && formasPagamento.gateway_ativo === "mercado_pago";
   const opcoesPagamento: MetodoPagamento[] = [
@@ -85,7 +93,25 @@ export function AgendarWizard({
   ];
   const podeEscolherFormaPagamento = opcoesPagamento.length > 1;
 
+  const passosAtivos: Passo[] = [
+    "servico",
+    "profissional",
+    "data",
+    ...(temProdutos ? (["produtos"] as const) : []),
+    ...(podeEscolherFormaPagamento ? (["pagamento"] as const) : []),
+    "dados",
+  ];
+  const numero = (p: Passo) => passosAtivos.indexOf(p) + 1;
+
   const servicoSelecionado = servicos.find((s) => s.id === servicoId) ?? null;
+  const totalProdutosCentavos = Object.entries(carrinho).reduce((soma, [produtoId, qtd]) => {
+    const produto = produtos.find((p) => p.id === produtoId);
+    return soma + (produto ? produto.preco_centavos * qtd : 0);
+  }, 0);
+  const totalCentavos = (servicoSelecionado?.preco_centavos ?? 0) + totalProdutosCentavos;
+  const itensCarrinho = Object.entries(carrinho)
+    .filter(([, qtd]) => qtd > 0)
+    .map(([produtoId, quantidade]) => ({ produtoId, quantidade }));
 
   const profissionaisQualificados = useMemo(
     () =>
@@ -134,10 +160,18 @@ export function AgendarWizard({
 
   function irParaFormaPagamentoOuDados() {
     if (podeEscolherFormaPagamento) {
-      setPasso(4);
+      setPasso("pagamento");
     } else {
       setMetodoPagamento(opcoesPagamento[0] ?? "no_local");
-      setPasso(5);
+      setPasso("dados");
+    }
+  }
+
+  function irDeDataParaProximo() {
+    if (temProdutos) {
+      setPasso("produtos");
+    } else {
+      irParaFormaPagamentoOuDados();
     }
   }
 
@@ -154,6 +188,7 @@ export function AgendarWizard({
           inicio: slotSelecionado,
           nome,
           telefone,
+          itens: itensCarrinho.length > 0 ? itensCarrinho : undefined,
         });
         if (r.error) {
           setErro(r.error);
@@ -175,6 +210,7 @@ export function AgendarWizard({
           nome,
           telefone,
           email,
+          itens: itensCarrinho.length > 0 ? itensCarrinho : undefined,
         });
         if (r.error || !r.qrCode || !r.qrCodeBase64 || !r.pagamentoId || !r.token) {
           setErro(r.error ?? "Erro ao gerar cobrança Pix.");
@@ -194,48 +230,15 @@ export function AgendarWizard({
   if (resultadoPix || aguardandoCartao) {
     const confirmado = pixConfirmado || cartaoConfirmado;
     const token = resultadoPix?.token ?? aguardandoCartao?.token ?? "";
-    if (confirmado) {
-      return (
-        <div className="flex flex-col gap-3">
-          <Heading className="text-tenant-fg">Pagamento confirmado</Heading>
-          <p className="text-tenant-fg opacity-80">Seu agendamento está confirmado.</p>
-          <Link href={`/b/${estabelecimento.slug}/meus-agendamentos/${token}`} className={BOTAO_GHOST}>
-            Ver meu agendamento
-          </Link>
-        </div>
-      );
-    }
-    if (resultadoPix) {
-      return (
-        <div className="flex flex-col items-center gap-3 text-center">
-          <Heading className="text-tenant-fg">Pague com Pix para confirmar</Heading>
-          {/* eslint-disable-next-line @next/next/no-img-element -- imagem base64 gerada em runtime, sem otimização aplicável */}
-          <img
-            src={`data:image/png;base64,${resultadoPix.qrCodeBase64}`}
-            alt="QR code Pix"
-            className="h-56 w-56 rounded-md border border-tenant-linha"
-          />
-          <textarea
-            readOnly
-            value={resultadoPix.qrCode}
-            onClick={(e) => e.currentTarget.select()}
-            rows={3}
-            className="w-full rounded-md border border-tenant-linha bg-tenant-bg p-2 text-xs text-tenant-fg"
-          />
-          <p className="text-sm text-tenant-fg opacity-70">
-            Copie o código acima ou escaneie o QR code no app do seu banco. Confirmamos automaticamente
-            assim que o pagamento cair.
-          </p>
-        </div>
-      );
-    }
     return (
-      <div className="flex flex-col items-center gap-3 text-center">
-        <Heading className="text-tenant-fg">Processando pagamento</Heading>
-        <p className="text-tenant-fg opacity-80">
-          Seu cartão está sendo processado. Assim que aprovado, confirmamos automaticamente.
-        </p>
-      </div>
+      <ResultadoPagamento
+        confirmado={confirmado}
+        pix={resultadoPix && !confirmado ? { qrCode: resultadoPix.qrCode, qrCodeBase64: resultadoPix.qrCodeBase64 } : null}
+        linkHref={`/b/${estabelecimento.slug}/meus-agendamentos/${token}`}
+        linkLabel="Ver meu agendamento"
+        tituloConfirmado="Pagamento confirmado"
+        mensagemConfirmado="Seu agendamento está confirmado."
+      />
     );
   }
 
@@ -258,7 +261,7 @@ export function AgendarWizard({
     <div className="flex flex-col gap-5">
       <h1 className="font-display text-2xl text-tenant-fg">Agendar em {estabelecimento.nome}</h1>
 
-      {passo === 1 && (
+      {passo === "servico" && (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-tenant-fg opacity-70">1. Escolha o serviço</p>
           {servicos.map((s) => (
@@ -268,7 +271,7 @@ export function AgendarWizard({
                 setServicoId(s.id);
                 setProfissionalEscolha(null);
                 setSlotSelecionado(null);
-                setPasso(2);
+                setPasso("profissional");
               }}
               className={CARTAO_ESCOLHA}
             >
@@ -279,7 +282,7 @@ export function AgendarWizard({
         </div>
       )}
 
-      {passo === 2 && (
+      {passo === "profissional" && (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-tenant-fg opacity-70">2. Escolha o profissional</p>
           {profissionaisQualificados.map((p) => (
@@ -288,7 +291,7 @@ export function AgendarWizard({
               onClick={() => {
                 setProfissionalEscolha(p.id);
                 setSlotSelecionado(null);
-                setPasso(3);
+                setPasso("data");
               }}
               className={CARTAO_ESCOLHA}
             >
@@ -299,19 +302,19 @@ export function AgendarWizard({
             onClick={() => {
               setProfissionalEscolha(QUALQUER);
               setSlotSelecionado(null);
-              setPasso(3);
+              setPasso("data");
             }}
             className={CARTAO_ESCOLHA}
           >
             Qualquer profissional disponível
           </button>
-          <button onClick={() => setPasso(1)} className={`${BOTAO_GHOST} w-fit`}>
+          <button onClick={() => setPasso("servico")} className={`${BOTAO_GHOST} w-fit`}>
             Voltar
           </button>
         </div>
       )}
 
-      {passo === 3 && (
+      {passo === "data" && (
         <div className="flex flex-col gap-3">
           <p className="text-sm font-medium text-tenant-fg opacity-70">3. Escolha data e horário</p>
           <SeletorData
@@ -339,25 +342,48 @@ export function AgendarWizard({
             )}
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setPasso(2)} className={BOTAO_SECUNDARIO}>
+            <button onClick={() => setPasso("profissional")} className={BOTAO_SECUNDARIO}>
               Voltar
             </button>
-            <button disabled={!slotSelecionado} onClick={irParaFormaPagamentoOuDados} className={BOTAO_PRIMARIO}>
+            <button disabled={!slotSelecionado} onClick={irDeDataParaProximo} className={BOTAO_PRIMARIO}>
               Continuar
             </button>
           </div>
         </div>
       )}
 
-      {passo === 4 && (
+      {passo === "produtos" && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium text-tenant-fg opacity-70">
+            {numero("produtos")}. Quer levar algum produto?
+          </p>
+          <CarrinhoProdutos
+            produtos={produtos}
+            carrinho={carrinho}
+            onChange={(produtoId, quantidade) =>
+              setCarrinho((prev) => ({ ...prev, [produtoId]: quantidade }))
+            }
+          />
+          <div className="flex gap-2">
+            <button onClick={() => setPasso("data")} className={BOTAO_SECUNDARIO}>
+              Voltar
+            </button>
+            <button onClick={irParaFormaPagamentoOuDados} className={BOTAO_PRIMARIO}>
+              Continuar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {passo === "pagamento" && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-tenant-fg opacity-70">4. Forma de pagamento</p>
+          <p className="text-sm font-medium text-tenant-fg opacity-70">{numero("pagamento")}. Forma de pagamento</p>
           {gatewayMercadoPagoDisponivel && (
             <>
               <button
                 onClick={() => {
                   setMetodoPagamento("pix");
-                  setPasso(5);
+                  setPasso("dados");
                 }}
                 className={CARTAO_ESCOLHA}
               >
@@ -366,7 +392,7 @@ export function AgendarWizard({
               <button
                 onClick={() => {
                   setMetodoPagamento("cartao");
-                  setPasso(5);
+                  setPasso("dados");
                 }}
                 className={CARTAO_ESCOLHA}
               >
@@ -378,24 +404,27 @@ export function AgendarWizard({
             <button
               onClick={() => {
                 setMetodoPagamento("no_local");
-                setPasso(5);
+                setPasso("dados");
               }}
               className={CARTAO_ESCOLHA}
             >
               Pagar no dia
             </button>
           )}
-          <button onClick={() => setPasso(3)} className={`${BOTAO_GHOST} w-fit`}>
+          <button onClick={() => setPasso(temProdutos ? "produtos" : "data")} className={`${BOTAO_GHOST} w-fit`}>
             Voltar
           </button>
         </div>
       )}
 
-      {passo === 5 && (
+      {passo === "dados" && (
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium text-tenant-fg opacity-70">
-            {podeEscolherFormaPagamento ? "5." : "4."} Seus dados
-          </p>
+          <p className="text-sm font-medium text-tenant-fg opacity-70">{numero("dados")}. Seus dados</p>
+          {totalProdutosCentavos > 0 && (
+            <p className="text-sm text-tenant-fg opacity-70">
+              Serviço + produtos: <span className="font-medium tabular-nums">{centavosToBRL(totalCentavos)}</span>
+            </p>
+          )}
           <Input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
           <Input
             placeholder="WhatsApp, ex: (47) 99999-9999"
@@ -423,7 +452,7 @@ export function AgendarWizard({
           {metodoPagamento === "cartao" ? (
             <>
               <div className="flex gap-2">
-                <button onClick={() => setPasso(4)} className={BOTAO_SECUNDARIO}>
+                <button onClick={() => setPasso("pagamento")} className={BOTAO_SECUNDARIO}>
                   Voltar
                 </button>
               </div>
@@ -437,7 +466,7 @@ export function AgendarWizard({
               {dadosCartaoCompletos && servicoSelecionado && formasPagamento.mercado_pago_public_key && (
                 <CardPaymentBrick
                   publicKey={formasPagamento.mercado_pago_public_key}
-                  valorCentavos={servicoSelecionado.preco_centavos}
+                  valorCentavos={totalCentavos}
                   email={email}
                   cpf={apenasNumeros(cpf)}
                   onEnviar={(formData) =>
@@ -451,6 +480,7 @@ export function AgendarWizard({
                       email,
                       cpf,
                       formData,
+                      itens: itensCarrinho.length > 0 ? itensCarrinho : undefined,
                     })
                   }
                   onResultado={(r) => {
@@ -473,7 +503,10 @@ export function AgendarWizard({
             </>
           ) : (
             <div className="flex gap-2">
-              <button onClick={() => setPasso(podeEscolherFormaPagamento ? 4 : 3)} className={BOTAO_SECUNDARIO}>
+              <button
+                onClick={() => setPasso(podeEscolherFormaPagamento ? "pagamento" : temProdutos ? "produtos" : "data")}
+                className={BOTAO_SECUNDARIO}
+              >
                 Voltar
               </button>
               <button

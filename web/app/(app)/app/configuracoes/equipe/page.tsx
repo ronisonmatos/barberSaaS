@@ -24,7 +24,7 @@ export default async function EquipeConfigPage() {
   const [{ data: membrosData }, { data: plano }] = await Promise.all([
     supabase
       .from("membros_estabelecimento")
-      .select("id, papel, usuario_id, usuarios(nome)")
+      .select("id, papel, usuario_id, ativo, desativado_por_limite_plano, usuarios(nome)")
       .eq("estabelecimento_id", estabelecimento.id)
       .order("papel"),
     estabelecimento.plano_plataforma_id
@@ -40,6 +40,8 @@ export default async function EquipeConfigPage() {
     nome: m.usuarios?.nome ?? "—",
     papel: m.papel,
     usuarioId: m.usuario_id,
+    ativo: m.ativo,
+    desativadoPorLimitePlano: m.desativado_por_limite_plano,
   }));
   const limiteUsuarios = estabelecimento.plano_plataforma_id
     ? (plano?.max_usuarios ?? null)

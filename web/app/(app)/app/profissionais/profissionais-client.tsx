@@ -7,6 +7,7 @@ import { alternarAtivoProfissional } from "./actions";
 import type { Database } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormError } from "@/components/ui/form-error";
 
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 type Servico = Database["public"]["Tables"]["servicos"]["Row"];
@@ -25,9 +26,19 @@ export function ProfissionaisClient({
 }) {
   const [editando, setEditando] = useState<Profissional | "novo" | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [erroToggle, setErroToggle] = useState<string | null>(null);
+
+  function alternar(p: Profissional) {
+    setErroToggle(null);
+    startTransition(async () => {
+      const r = await alternarAtivoProfissional(p.id, !p.ativo);
+      if (r.error) setErroToggle(r.error);
+    });
+  }
 
   return (
     <div className="flex flex-col gap-4">
+      {erroToggle && <FormError>{erroToggle}</FormError>}
       {editando ? (
         <ProfissionalForm
           key={editando === "novo" ? "novo" : editando.id}
@@ -66,17 +77,17 @@ export function ProfissionaisClient({
                   <td className="py-2">{p.nome}</td>
                   <td className="tabular-nums">{p.comissao_percentual}%</td>
                   <td className={p.ativo ? "text-sucesso" : "text-cinza-600"}>
-                    {p.ativo ? "Ativo" : "Inativo"}
+                    {p.ativo
+                      ? "Ativo"
+                      : p.desativado_por_limite_plano
+                        ? "Desativado (limite do plano)"
+                        : "Inativo"}
                   </td>
                   <td className="flex gap-2 py-2 text-right">
                     <Button variant="ghost" onClick={() => setEditando(p)}>
                       Editar
                     </Button>
-                    <Button
-                      variant="ghost"
-                      disabled={isPending}
-                      onClick={() => startTransition(() => alternarAtivoProfissional(p.id, !p.ativo))}
-                    >
+                    <Button variant="ghost" disabled={isPending} onClick={() => alternar(p)}>
                       {p.ativo ? "Desativar" : "Ativar"}
                     </Button>
                   </td>

@@ -6,7 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
 
-type Membro = { id: string; nome: string; papel: "owner" | "staff"; usuarioId: string };
+type Membro = {
+  id: string;
+  nome: string;
+  papel: "owner" | "staff";
+  usuarioId: string;
+  ativo: boolean;
+  desativadoPorLimitePlano: boolean;
+};
 
 export function EquipeForm({
   membros,
@@ -22,7 +29,7 @@ export function EquipeForm({
   const [removendoId, setRemovendoId] = useState<string | null>(null);
   const [erroRemover, setErroRemover] = useState<string | null>(null);
 
-  const usados = membros.length;
+  const usados = membros.filter((m) => m.ativo).length;
   const limiteAtingido = limite !== null && usados >= limite;
 
   function remover(id: string) {
@@ -49,7 +56,10 @@ export function EquipeForm({
           >
             <div>
               <p className="font-medium text-carvao">{m.nome}</p>
-              <p className="text-xs text-cinza-600">{m.papel === "owner" ? "Dono" : "Equipe"}</p>
+              <p className="text-xs text-cinza-600">
+                {m.papel === "owner" ? "Dono" : "Equipe"}
+                {!m.ativo && m.desativadoPorLimitePlano ? " · Desativado (limite do plano)" : ""}
+              </p>
             </div>
             {m.papel !== "owner" && m.usuarioId !== meuUsuarioId && (
               <Button

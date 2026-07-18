@@ -10,7 +10,7 @@ function formatarMB(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(0)}MB`;
 }
 
-type Foto = { id: string; url: string };
+type Foto = { id: string; url: string; ativo: boolean; desativadoPorLimitePlano: boolean };
 
 export function GaleriaForm({ fotos, limite }: { fotos: Foto[]; limite: number | null }) {
   const [state, action, pending] = useActionState(adicionarFotos, undefined);
@@ -20,7 +20,7 @@ export function GaleriaForm({ fotos, limite }: { fotos: Foto[]; limite: number |
   const [erroRemover, setErroRemover] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const usadas = fotos.length;
+  const usadas = fotos.filter((f) => f.ativo).length;
   const limiteAtingido = limite !== null && usadas >= limite;
 
   function selecionarArquivos(e: React.ChangeEvent<HTMLInputElement>) {
@@ -60,7 +60,12 @@ export function GaleriaForm({ fotos, limite }: { fotos: Foto[]; limite: number |
         {fotos.map((f) => (
           <div key={f.id} className="group relative aspect-square overflow-hidden rounded-md border border-linha">
             {/* eslint-disable-next-line @next/next/no-img-element -- foto em bucket público, sem necessidade de otimização do next/image */}
-            <img src={f.url} alt="" className="h-full w-full object-cover" />
+            <img src={f.url} alt="" className={`h-full w-full object-cover ${f.ativo ? "" : "opacity-40"}`} />
+            {!f.ativo && f.desativadoPorLimitePlano && (
+              <span className="absolute bottom-1 left-1 rounded bg-carvao/70 px-1.5 py-0.5 text-[10px] text-marfim">
+                Oculta (limite do plano)
+              </span>
+            )}
             <button
               type="button"
               disabled={isPending && removendoId === f.id}

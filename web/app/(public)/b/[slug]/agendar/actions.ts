@@ -6,6 +6,7 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { normalizePhoneBR } from "@/lib/phone";
 import { criarCobrancaPix, criarCobrancaCartao } from "@/lib/mercadopago";
 import { validarCPF, apenasNumeros } from "@/lib/cpf";
+import { devolverEstoquePedido } from "@/lib/estoque";
 
 export async function buscarSlotsPublico(
   estabelecimentoId: string,
@@ -24,6 +25,8 @@ export async function buscarSlotsPublico(
   return slots ?? [];
 }
 
+const itemSchema = z.object({ produtoId: z.string().uuid(), quantidade: z.number().int().positive() });
+
 const schema = z.object({
   estabelecimentoId: z.string().uuid(),
   profissionalId: z.string().uuid(),
@@ -31,7 +34,13 @@ const schema = z.object({
   inicio: z.string().min(1),
   nome: z.string().trim().min(2, { error: "Informe seu nome." }),
   telefone: z.string().min(1, { error: "Informe seu WhatsApp." }),
+  itens: z.array(itemSchema).optional(),
 });
+
+function itensParaJsonb(itens: { produtoId: string; quantidade: number }[] | undefined) {
+  if (!itens || itens.length === 0) return null;
+  return itens.map((i) => ({ produto_id: i.produtoId, quantidade: i.quantidade }));
+}
 
 export async function criarAgendamentoPublico(
   input: z.infer<typeof schema>
@@ -55,6 +64,7 @@ export async function criarAgendamentoPublico(
       p_inicio: parsed.data.inicio,
       p_nome: parsed.data.nome,
       p_telefone: telefone,
+      p_itens: itensParaJsonb(parsed.data.itens),
     })
     .single();
 
@@ -66,6 +76,26 @@ export async function criarAgendamentoPublico(
 const schemaPix = schema.extend({
   email: z.email({ error: "Informe um e-mail válido." }),
 });
+
+async function restaurarEstoqueEcancelarPedido(
+  serviceRole: ReturnType<typeof createServiceRoleClient>,
+  pedidoId?: string | null
+) {
+  if (!pedidoId) return;
+  await devolverEstoquePedido(serviceRole, pedidoId);
+  await serviceRole.from("pedidos").update({ status: "cancelado" }).eq("id", pedidoId);
+}
+
+async function cancelarAgendamentoEPedido(
+  serviceRole: ReturnType<typeof createServiceRoleClient>,
+  agendamentoId: string,
+  pagamentoId: string,
+  pedidoId?: string | null
+) {
+  await serviceRole.from("agendamentos").update({ status: "cancelado" }).eq("id", agendamentoId);
+  await serviceRole.from("pagamentos").update({ status: "cancelado" }).eq("id", pagamentoId);
+  await restaurarEstoqueEcancelarPedido(serviceRole, pedidoId);
+}
 
 export async function criarAgendamentoPix(input: z.infer<typeof schemaPix>): Promise<{
   error?: string;
@@ -95,22 +125,23 @@ export async function criarAgendamentoPix(input: z.infer<typeof schemaPix>): Pro
       p_nome: parsed.data.nome,
       p_telefone: telefone,
       p_email: parsed.data.email,
+      p_itens: itensParaJsonb(parsed.data.itens),
     })
     .single();
 
   if (rpcError || !criado) return { error: rpcError?.message ?? "Erro ao criar agendamento." };
 
   const serviceRole = createServiceRoleClient();
-  const [{ data: config }, { data: agendamento }] = await Promise.all([
+  const [{ data: config }, { data: pagamento }] = await Promise.all([
     serviceRole
       .from("estabelecimento_pagamento_config")
       .select("mercado_pago_access_token")
       .eq("estabelecimento_id", parsed.data.estabelecimentoId)
       .single(),
-    serviceRole.from("agendamentos").select("preco_centavos").eq("id", criado.agendamento_id).single(),
+    serviceRole.from("pagamentos").select("valor_centavos").eq("id", criado.pagamento_id).single(),
   ]);
 
-  if (!config?.mercado_pago_access_token || !agendamento) {
+  if (!config?.mercado_pago_access_token || !pagamento) {
     return { error: "Configuração de pagamento indisponível." };
   }
 
@@ -118,7 +149,7 @@ export async function criarAgendamentoPix(input: z.infer<typeof schemaPix>): Pro
     const cobranca = await criarCobrancaPix({
       accessToken: config.mercado_pago_access_token,
       idempotencyKey: criado.agendamento_id,
-      valorCentavos: agendamento.preco_centavos,
+      valorCentavos: pagamento.valor_centavos,
       descricao: "Agendamento",
       emailPagador: parsed.data.email,
     });
@@ -136,8 +167,7 @@ export async function criarAgendamentoPix(input: z.infer<typeof schemaPix>): Pro
       qrCodeBase64: cobranca.qrCodeBase64,
     };
   } catch (err) {
-    await serviceRole.from("agendamentos").update({ status: "cancelado" }).eq("id", criado.agendamento_id);
-    await serviceRole.from("pagamentos").update({ status: "cancelado" }).eq("id", criado.pagamento_id);
+    await cancelarAgendamentoEPedido(serviceRole, criado.agendamento_id, criado.pagamento_id, criado.pedido_id);
     return { error: err instanceof Error ? err.message : "Erro ao gerar cobrança Pix." };
   }
 }
@@ -178,22 +208,23 @@ export async function criarAgendamentoCartao(
       p_telefone: telefone,
       p_email: parsed.data.email,
       p_metodo: "cartao",
+      p_itens: itensParaJsonb(parsed.data.itens),
     })
     .single();
 
   if (rpcError || !criado) return { error: rpcError?.message ?? "Erro ao criar agendamento." };
 
   const serviceRole = createServiceRoleClient();
-  const [{ data: config }, { data: agendamento }] = await Promise.all([
+  const [{ data: config }, { data: pagamento }] = await Promise.all([
     serviceRole
       .from("estabelecimento_pagamento_config")
       .select("mercado_pago_access_token")
       .eq("estabelecimento_id", parsed.data.estabelecimentoId)
       .single(),
-    serviceRole.from("agendamentos").select("preco_centavos").eq("id", criado.agendamento_id).single(),
+    serviceRole.from("pagamentos").select("valor_centavos").eq("id", criado.pagamento_id).single(),
   ]);
 
-  if (!config?.mercado_pago_access_token || !agendamento) {
+  if (!config?.mercado_pago_access_token || !pagamento) {
     return { error: "Configuração de pagamento indisponível." };
   }
 
@@ -201,7 +232,7 @@ export async function criarAgendamentoCartao(
     const cobranca = await criarCobrancaCartao({
       accessToken: config.mercado_pago_access_token,
       idempotencyKey: criado.pagamento_id,
-      valorCentavos: agendamento.preco_centavos,
+      valorCentavos: pagamento.valor_centavos,
       descricao: "Agendamento",
       formData: {
         token: parsed.data.formData.token,
@@ -223,20 +254,23 @@ export async function criarAgendamentoCartao(
         .update({ status: "pago", pago_em: new Date().toISOString() })
         .eq("id", criado.pagamento_id);
       await serviceRole.from("agendamentos").update({ status: "confirmado" }).eq("id", criado.agendamento_id);
+      if (criado.pedido_id) {
+        await serviceRole.from("pedidos").update({ status: "aguardando_retirada" }).eq("id", criado.pedido_id);
+      }
       return { confirmado: true, token: criado.token_acesso, pagamentoId: criado.pagamento_id };
     }
 
     if (cobranca.status === "rejected") {
       await serviceRole.from("agendamentos").update({ status: "cancelado" }).eq("id", criado.agendamento_id);
       await serviceRole.from("pagamentos").update({ status: "falhou" }).eq("id", criado.pagamento_id);
+      await restaurarEstoqueEcancelarPedido(serviceRole, criado.pedido_id);
       return { error: "Cartão recusado. Tente outro cartão ou outra forma de pagamento." };
     }
 
     // in_process/pending: fica pendente, o webhook confirma quando resolver.
     return { confirmado: false, token: criado.token_acesso, pagamentoId: criado.pagamento_id };
   } catch (err) {
-    await serviceRole.from("agendamentos").update({ status: "cancelado" }).eq("id", criado.agendamento_id);
-    await serviceRole.from("pagamentos").update({ status: "cancelado" }).eq("id", criado.pagamento_id);
+    await cancelarAgendamentoEPedido(serviceRole, criado.agendamento_id, criado.pagamento_id, criado.pedido_id);
     return { error: err instanceof Error ? err.message : "Erro ao processar cartão." };
   }
 }

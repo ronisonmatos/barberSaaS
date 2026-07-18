@@ -14,7 +14,7 @@ export default async function AgendarPage({ params }: { params: Promise<{ slug: 
     .maybeSingle();
   if (!estabelecimento) notFound();
 
-  const [{ data: servicos }, { data: profissionais }, { data: vinculos }, { data: formasPagamento }] =
+  const [{ data: servicos }, { data: profissionais }, { data: vinculos }, { data: formasPagamento }, { data: produtos }] =
     await Promise.all([
       supabase
         .from("servicos")
@@ -33,6 +33,12 @@ export default async function AgendarPage({ params }: { params: Promise<{ slug: 
         .select("profissional_id, servico_id, profissionais!inner(estabelecimento_id)")
         .eq("profissionais.estabelecimento_id", estabelecimento.id),
       supabase.rpc("formas_pagamento_publico", { p_estabelecimento_id: estabelecimento.id }).maybeSingle(),
+      supabase
+        .from("produtos")
+        .select("id, nome, preco_centavos, foto_url, estoque")
+        .eq("estabelecimento_id", estabelecimento.id)
+        .eq("ativo", true)
+        .order("ordem"),
     ]);
 
   return (
@@ -51,6 +57,7 @@ export default async function AgendarPage({ params }: { params: Promise<{ slug: 
               mercado_pago_public_key: null,
             }
           }
+          produtos={produtos ?? []}
         />
       </div>
     </div>

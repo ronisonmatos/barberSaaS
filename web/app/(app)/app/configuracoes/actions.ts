@@ -135,7 +135,12 @@ export async function adicionarFotos(_prevState: FormState, formData: FormData):
 
   const supabase = await createClient();
 
-  const [{ count: fotosAtuais }, { data: plano }] = await Promise.all([
+  const [{ count: fotosAtivas }, { count: fotosTotal }, { data: plano }] = await Promise.all([
+    supabase
+      .from("estabelecimento_fotos")
+      .select("id", { count: "exact", head: true })
+      .eq("estabelecimento_id", estabelecimento.id)
+      .eq("ativo", true),
     supabase
       .from("estabelecimento_fotos")
       .select("id", { count: "exact", head: true })
@@ -149,7 +154,7 @@ export async function adicionarFotos(_prevState: FormState, formData: FormData):
       : Promise.resolve({ data: null }),
   ]);
   const limite = estabelecimento.plano_plataforma_id ? (plano?.max_fotos ?? null) : LIMITE_FOTOS_SEM_PLANO;
-  const usadas = fotosAtuais ?? 0;
+  const usadas = fotosAtivas ?? 0;
   if (limite !== null && usadas >= limite) {
     return { error: `Limite de fotos do plano atingido (${limite}). Faça upgrade de plano para adicionar mais.` };
   }
@@ -159,7 +164,7 @@ export async function adicionarFotos(_prevState: FormState, formData: FormData):
     };
   }
 
-  let ordem = usadas;
+  let ordem = fotosTotal ?? 0;
   for (const arquivo of arquivos) {
     const extensao = arquivo.name.split(".").pop() ?? "jpg";
     const caminho = `${estabelecimento.id}/galeria/${crypto.randomUUID()}.${extensao}`;
@@ -235,7 +240,8 @@ export async function convidarMembro(
     supabase
       .from("membros_estabelecimento")
       .select("id", { count: "exact", head: true })
-      .eq("estabelecimento_id", estabelecimento.id),
+      .eq("estabelecimento_id", estabelecimento.id)
+      .eq("ativo", true),
     estabelecimento.plano_plataforma_id
       ? supabase
           .from("planos_plataforma")

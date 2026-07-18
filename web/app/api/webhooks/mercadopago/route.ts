@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { consultarPagamentoMercadoPago, verificarAssinaturaWebhookMercadoPago } from "@/lib/mercadopago";
+import { devolverEstoquePedido } from "@/lib/estoque";
 
 export async function POST(request: NextRequest) {
   const corpo = await request.json().catch(() => null);
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   const { data: pagamento } = await supabase
     .from("pagamentos")
-    .select("id, estabelecimento_id, agendamento_id")
+    .select("id, estabelecimento_id, agendamento_id, pedido_id")
     .eq("gateway_payment_id", dataId)
     .maybeSingle();
 
@@ -64,8 +65,15 @@ export async function POST(request: NextRequest) {
     if (pagamento.agendamento_id) {
       await supabase.from("agendamentos").update({ status: "confirmado" }).eq("id", pagamento.agendamento_id);
     }
+    if (pagamento.pedido_id) {
+      await supabase.from("pedidos").update({ status: "aguardando_retirada" }).eq("id", pagamento.pedido_id);
+    }
   } else if (["rejected", "cancelled"].includes(pagamentoMercadoPago.status)) {
     await supabase.from("pagamentos").update({ status: "falhou" }).eq("id", pagamento.id);
+    if (pagamento.pedido_id) {
+      await devolverEstoquePedido(supabase, pagamento.pedido_id);
+      await supabase.from("pedidos").update({ status: "cancelado" }).eq("id", pagamento.pedido_id);
+    }
   } else if (pagamentoMercadoPago.status === "refunded") {
     await supabase.from("pagamentos").update({ status: "estornado" }).eq("id", pagamento.id);
   }

@@ -213,5 +213,106 @@ temas por tenant na página pública, texto de interface e acessibilidade.
     preencher os campos novos de verdade, tirei screenshot da home pública com tudo populado
     (bateu exatamente com o handoff, só que nas cores do tema do tenant), e reverti os campos
     pra vazio de novo depois — não ficou dado de teste no perfil real deles.
+- **Plano Free + downgrade automático pós-trial**: concluído. Linha real `Free` em
+  `planos_plataforma` (R$0, 1 profissional, 1 usuário, 3 fotos, `recursos.suporte = "limitado"`)
+  substituindo o fallback hardcoded que existia só em código. Novo cron
+  `web/app/api/cron/expirar-trial/route.ts` (diário, `web/vercel.json`) mexe `status='trial'` com
+  `trial_ate` vencido (e `ativacao_manual=false`, respeitando trava do super_admin) para
+  `status='ativa'` + plano Free.
+  - RPC nova `aplicar_limites_plano(estabelecimento_id)` (security definer) reconcilia
+    profissionais/membros/fotos com o limite do plano atual sempre que `plano_plataforma_id` muda —
+    chamada pelo cron, por `alterarPlanoEstabelecimento` (admin) e por `confirmarPagamentoPlataforma`
+    (upgrade real via Pix/cartão da assinatura da plataforma). Mantém ativos os mais antigos
+    (`created_at`/`ordem`) até o limite; excedentes viram `ativo=false,
+    desativado_por_limite_plano=true` (nunca deletados). Se o limite aumentar depois, tudo que foi
+    desativado **pela função** reativa automaticamente — mas nunca mexe em algo que o dono desativou
+    manualmente (`ativo=false, desativado_por_limite_plano=false`), essa distinção é o que permite
+    diferenciar "a plataforma desligou por causa do limite" de "o dono desligou de propósito".
+    Validado com script transacional (`supabase/tests/aplicar_limites_plano.sql`, sempre com
+    `rollback`) cobrindo os 3 cenários: downgrade pro Free desativando os mais novos, proteção do
+    item desativado manualmente, e reativação automática num upgrade pra Pro.
+  - Fechado um gap de segurança de negócio pré-existente: `max_profissionais` nunca era checado em
+    lugar nenhum (só decorativo no card do plano) — agora `profissionais/actions.ts` bloqueia
+    criação/reativação acima do limite, mesmo padrão já usado por `max_usuarios`/`max_fotos`.
+  - `membros_estabelecimento` ganhou `ativo`/`desativado_por_limite_plano`/`created_at` (não tinha
+    nenhum dos três). Membro desativado perde acesso a **toda** a RLS multi-tenant, não só ao
+    painel: `meus_estabelecimentos()`/`estabelecimentos_que_possuo()` (usadas por quase toda policy
+    de domínio) agora exigem `ativo`. Precisou de uma policy extra (`membros leem o proprio
+    vinculo`) pra ele continuar enxergando o próprio vínculo e cair na tela nova
+    `/conta-desativada` em vez de `/onboarding`. `estabelecimento_fotos` ganhou as mesmas duas
+    colunas de controle; a RLS pública e a página `/b/{slug}` passaram a filtrar por `ativo`.
+  - Owner nunca é desativado por este mecanismo (mas consome a vaga de `max_usuarios` como
+    qualquer usuário).
+  - Admin (`/admin/planos`) ganhou os campos que faltavam no formulário (`max_fotos` não era nem
+    exposto nem persistido antes disso) e um seletor de suporte limitado/prioritário.
+- **Pagamento online como recurso de plano**: concluído. `recursos.pagamento_online` (Free=false,
+  Essencial/Pro=true; durante o trial sem plano atribuído continua liberado). Nova função
+  `estabelecimento_permite_pagamento_online(id)` usada em dois pontos: `formas_pagamento_publico`
+  zera `aceita_pagamento_antecipado` pro público mesmo que a config salva diga `true` (não apaga a
+  config do dono, só bloqueia a exposição — `aceita_pagamento_no_dia` não é afetado, já que pagar no
+  dia não depende de gateway); e `criar_agendamento_publico_pix` repete a mesma checagem como
+  barreira de servidor (a UI escondendo a opção não impede alguém de chamar a RPC direto). Em
+  `/app/configuracoes/pagamentos`, se o plano não permite, o formulário nem aparece — só um aviso
+  com link pra `/app/configuracoes/plano`. Validado com script transacional
+  (`supabase/tests/gate_pagamento_online.sql`, sempre com `rollback`).
+- **Loja de produtos**: concluído. Estabelecimento cadastra produtos (`/app/produtos`, 1 foto por
+  produto reaproveitando o bucket `logos` com prefixo `/produtos/`, com controle de estoque
+  numérico) e o cliente compra na página pública, avulso ou junto com um serviço agendado (um
+  pagamento só). Só retirada no local por enquanto.
+  - Recurso de plano pago, mesmo padrão de `pagamento_online`: `recursos.loja` (Free=false +
+    `max_produtos=0`, Essencial/Pro=true) + `estabelecimento_permite_loja(id)`, checada na RLS
+    pública de `produtos` e de novo dentro das RPCs de compra (defesa em profundidade). Free com
+    `max_produtos=0` faz a extensão de `aplicar_limites_plano` desativar todos os produtos no
+    downgrade (não só esconder do público — ficam genuinamente inativos em `/app/produtos` também),
+    reativando automaticamente num upgrade, mesma regra já usada por profissionais/fotos/membros.
+  - Schema novo: `produtos` (com `desativado_por_limite_plano`, mesmo mecanismo de
+    profissionais/fotos), `pedidos` (com `agendamento_id` opcional pra compra combinada) e
+    `pedido_itens` (preço/nome congelados no ato); `pagamentos` ganhou `pedido_id` como mais uma FK
+    opcional (mesmo padrão de `agendamento_id`/`assinatura_cliente_id`) — uma compra combinada seta
+    as duas FKs na mesma linha de pagamento.
+  - Estoque: `UPDATE produtos SET estoque = estoque - qtd WHERE estoque >= qtd` dentro da transação
+    da RPC de compra (sem lock explícito, o próprio UPDATE condicional já serializa concorrência);
+    se faltar estoque de qualquer item, a RPC inteira aborta e nada é persistido. Devolvido
+    automaticamente quando um pedido é cancelado (webhook do Mercado Pago, cron de expiração de
+    +15min, ou cancelamento manual em `/app/pedidos`) via `web/lib/estoque.ts`.
+  - RPCs: `criar_pedido_publico`/`criar_pedido_publico_pix` (compra avulsa, espelham as RPCs de
+    agendamento sem a parte de slot/profissional/serviço) e `criar_agendamento_publico`/
+    `criar_agendamento_publico_pix` ganharam um `p_itens jsonb` opcional pra compra combinada
+    (precisou `drop function` explícito antes do `create`, já que mudar a lista de parâmetros cria
+    sobrecarga em vez de substituir — mesmo motivo documentado em `20260716140001_metodo_cartao.sql`).
+    `status_pagamento_publico` foi generalizada (`left join` em vez de `join` obrigatório) pra
+    cobrir pagamento de pedido avulso sem agendamento.
+  - UI pública: home ganha uma seção compacta "Produtos" (poucos itens + link "Ver loja") só quando
+    há produtos — nada aparece se o plano não permitir loja, a RLS já garante isso na origem;
+    catálogo completo + carrinho + checkout moram em `/b/{slug}/loja` (rota nova); o wizard de
+    agendar ganhou um passo opcional "Quer levar algum produto?" entre data/hora e forma de
+    pagamento. Extraídos dois componentes compartilhados entre os dois wizards:
+    `carrinho-produtos.tsx` (stepper de quantidade) e `resultado-pagamento.tsx` (telas de QR Pix/
+    processando/confirmado, que antes só existiam duplicadas dentro do `agendar-wizard.tsx`).
+    `/b/{slug}/meus-agendamentos/{token}` ganhou uma seção "Meus pedidos" (RPC nova
+    `pedido_por_token`, mesmo token do cliente).
+  - `/app/pedidos`: gestão de retirada (marcar retirado / cancelar com devolução de estoque).
+  - Validado com script transacional (`supabase/tests/loja.sql`, sempre com `rollback`): gate por
+    plano, compra avulsa decrementando estoque, bloqueio por estoque insuficiente sem efeito
+    colateral, downgrade/upgrade via `aplicar_limites_plano`, e compra combinada vinculando o
+    pedido ao agendamento com estoque decrementado corretamente.
+- **Cadastro de produto mais intuitivo + tags/SEO**: concluído. `/app/produtos` reorganizado em
+  seções (dados básicos, foto com preview local antes de salvar, descrição, tags, SEO), formulário
+  antes era um bloco único sem preview de nada. `produtos` ganhou `tags text[]`, `slug` (único por
+  `estabelecimento_id`, auto-gerado do nome via `slugify` já existente em `lib/slug.ts`, com
+  sufixo numérico em caso de colisão — resolvido em código, não em SQL), `meta_titulo` e
+  `meta_descricao`.
+  - Nova página pública `/b/{slug}/loja/{produto}` (por decisão explícita do usuário: campo de SEO
+    sem página própria não serve pra nada) com `generateMetadata` (título/descrição/Open Graph
+    usando os campos de SEO com fallback pro nome/descrição) e dados estruturados JSON-LD
+    (`schema.org/Product`, com `availability` a partir do estoque) — é o que o Google de fato usa
+    pra indexar/rich snippet, diferente da meta tag "keywords" que o Google já ignora há mais de 10
+    anos (por isso as tags viraram um campo visível de organização, não uma keyword invisível).
+  - Teaser de produtos na home passou a linkar pra página individual do produto (antes ia direto
+    pra `/loja`); a página do produto tem um botão "Comprar" que leva pra `/b/{slug}/loja?
+    adicionar={id}` — a loja lê esse parâmetro e já entra com 1 unidade no carrinho.
+  - Validado com script transacional (`supabase/tests/produtos_slug.sql`): índice único bloqueia
+    slug duplicado dentro do mesmo estabelecimento, mas permite o mesmo slug em estabelecimentos
+    diferentes.
 - Próxima onda da Fase 1 (ver seção 8 da ORIENTACAO-BARBERSAAS.md): terminar o deploy/webhook de
   verdade, Asaas, e WhatsApp (Cloud API + links wa.me) por último, como o usuário pediu.

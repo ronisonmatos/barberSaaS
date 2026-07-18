@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Users, UserSquare2, MoreHorizontal, Scissors, Ban, LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { Calendar, Users, UserSquare2, MoreHorizontal, Scissors, Ban, LogOut, LayoutDashboard, Settings, ShoppingBag, Package } from "lucide-react";
 
 const PRINCIPAIS = [
   { href: "/app/agenda", label: "Agenda", icon: Calendar },
@@ -14,6 +14,8 @@ const PRINCIPAIS = [
 const MAIS = [
   { href: "/app", label: "Painel", icon: LayoutDashboard },
   { href: "/app/servicos", label: "Serviços", icon: Scissors },
+  { href: "/app/produtos", label: "Produtos", icon: ShoppingBag },
+  { href: "/app/pedidos", label: "Pedidos", icon: Package },
   { href: "/app/bloqueios", label: "Bloqueios", icon: Ban },
   { href: "/app/configuracoes", label: "Configurações", icon: Settings },
 ];

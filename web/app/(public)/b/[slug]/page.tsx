@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { centavosToBRL } from "@/lib/money";
 import { MeuAgendamentoLink } from "./meu-agendamento-link";
-import { BOTAO_PRIMARIO, ROTULO_SECAO, PAGINA_WRAP, PAGINA_CARTAO } from "./estilos";
+import { BOTAO_PRIMARIO, BOTAO_GHOST, ROTULO_SECAO, PAGINA_WRAP, PAGINA_CARTAO } from "./estilos";
 
 type Endereco = {
   rua?: string | null;
@@ -45,7 +45,7 @@ export default async function EstabelecimentoPublicaPage({
 
   if (!estabelecimento) notFound();
 
-  const [{ data: servicos }, { data: profissionais }, { data: fotos }] = await Promise.all([
+  const [{ data: servicos }, { data: profissionais }, { data: fotos }, { data: produtos }] = await Promise.all([
     supabase
       .from("servicos")
       .select("*")
@@ -62,7 +62,15 @@ export default async function EstabelecimentoPublicaPage({
       .from("estabelecimento_fotos")
       .select("id, url")
       .eq("estabelecimento_id", estabelecimento.id)
+      .eq("ativo", true)
       .order("ordem"),
+    supabase
+      .from("produtos")
+      .select("id, nome, preco_centavos, foto_url, slug")
+      .eq("estabelecimento_id", estabelecimento.id)
+      .eq("ativo", true)
+      .order("ordem")
+      .limit(4),
   ]);
 
   const endereco = formatarEndereco(estabelecimento.endereco);
@@ -143,6 +151,37 @@ export default async function EstabelecimentoPublicaPage({
               ))}
             </ul>
           </section>
+
+          {produtos && produtos.length > 0 && (
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <p className={ROTULO_SECAO}>Produtos</p>
+                <Link href={`/b/${slug}/loja`} className={BOTAO_GHOST}>
+                  Ver loja
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {produtos.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/b/${slug}/loja/${p.slug}`}
+                    className="flex flex-col gap-1 rounded-xl bg-tenant-bg p-2 text-center transition-opacity duration-150 hover:opacity-80"
+                  >
+                    {p.foto_url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element -- foto em bucket público, sem necessidade de otimização do next/image */
+                      <img src={p.foto_url} alt="" className="aspect-square w-full rounded-lg object-cover" />
+                    ) : (
+                      <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-tenant-linha text-xs opacity-60">
+                        Produto
+                      </div>
+                    )}
+                    <p className="truncate text-[12px] font-medium">{p.nome}</p>
+                    <p className="text-[12px] tabular-nums opacity-70">{centavosToBRL(p.preco_centavos)}</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section>
             <p className={`${ROTULO_SECAO} mb-2`}>Profissionais</p>

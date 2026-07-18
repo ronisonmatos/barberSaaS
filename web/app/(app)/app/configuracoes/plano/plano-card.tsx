@@ -9,15 +9,33 @@ import type { Database } from "@/lib/supabase/types";
 
 type Plano = Database["public"]["Tables"]["planos_plataforma"]["Row"];
 
+const SUPORTE_LABEL: Record<string, string> = {
+  limitado: "Suporte limitado",
+  prioritario: "Suporte prioritário",
+};
+
+const FLAG_LABEL: Record<string, string> = {
+  whatsapp: "WhatsApp",
+  relatorios: "Relatórios",
+  pagamento_online: "Pagamento online no agendamento",
+};
+
 function listarRecursos(plano: Plano): string[] {
   const itens: string[] = [
     plano.max_profissionais ? `Até ${plano.max_profissionais} profissionais` : "Profissionais ilimitados",
     plano.max_usuarios ? `Até ${plano.max_usuarios} usuários no painel` : "Usuários ilimitados",
     plano.max_fotos ? `Até ${plano.max_fotos} fotos na página pública` : "Fotos ilimitadas",
   ];
-  const recursos = (plano.recursos ?? {}) as Record<string, boolean>;
-  for (const [chave, ativo] of Object.entries(recursos)) {
-    if (ativo) itens.push(chave);
+  const recursos = (plano.recursos ?? {}) as Record<string, boolean | string>;
+  const { suporte, loja, ...flags } = recursos;
+  if (loja === true) {
+    itens.push(plano.max_produtos ? `Loja com até ${plano.max_produtos} produtos` : "Loja com produtos ilimitados");
+  }
+  if (typeof suporte === "string" && SUPORTE_LABEL[suporte]) {
+    itens.push(SUPORTE_LABEL[suporte]);
+  }
+  for (const [chave, ativo] of Object.entries(flags)) {
+    if (ativo === true) itens.push(FLAG_LABEL[chave] ?? chave);
   }
   return itens;
 }

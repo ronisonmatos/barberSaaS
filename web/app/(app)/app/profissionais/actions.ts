@@ -7,6 +7,36 @@ import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 
 export type FormState = { error?: string } | undefined;
 
+async function verificarLimiteProfissionais(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  estabelecimento: { id: string; plano_plataforma_id: string | null },
+  excluirId?: string
+): Promise<string | null> {
+  if (!estabelecimento.plano_plataforma_id) return null;
+
+  let contagem = supabase
+    .from("profissionais")
+    .select("id", { count: "exact", head: true })
+    .eq("estabelecimento_id", estabelecimento.id)
+    .eq("ativo", true);
+  if (excluirId) contagem = contagem.neq("id", excluirId);
+
+  const [{ count: ativos }, { data: plano }] = await Promise.all([
+    contagem,
+    supabase
+      .from("planos_plataforma")
+      .select("max_profissionais")
+      .eq("id", estabelecimento.plano_plataforma_id)
+      .single(),
+  ]);
+
+  const limite = plano?.max_profissionais ?? null;
+  if (limite !== null && (ativos ?? 0) >= limite) {
+    return `Limite de profissionais do plano atingido (${limite}). Faça upgrade de plano para adicionar mais.`;
+  }
+  return null;
+}
+
 const baseSchema = z.object({
   id: z.string().uuid().optional(),
   nome: z.string().trim().min(2, { error: "Nome deve ter ao menos 2 caracteres." }),
@@ -51,11 +81,17 @@ export async function salvarProfissional(
   const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
 
+  if (parsed.data.ativo) {
+    const erroLimite = await verificarLimiteProfissionais(supabase, estabelecimento, parsed.data.id);
+    if (erroLimite) return { error: erroLimite };
+  }
+
   const payload = {
     estabelecimento_id: estabelecimento.id,
     nome: parsed.data.nome,
     comissao_percentual: parsed.data.comissao_percentual,
     ativo: parsed.data.ativo,
+    desativado_por_limite_plano: false,
   };
 
   let profissionalId = parsed.data.id;
@@ -108,8 +144,19 @@ export async function salvarProfissional(
   return undefined;
 }
 
-export async function alternarAtivoProfissional(id: string, ativo: boolean) {
+export async function alternarAtivoProfissional(id: string, ativo: boolean): Promise<{ error?: string }> {
+  const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
-  await supabase.from("profissionais").update({ ativo }).eq("id", id);
+
+  if (ativo) {
+    const erroLimite = await verificarLimiteProfissionais(supabase, estabelecimento, id);
+    if (erroLimite) return { error: erroLimite };
+  }
+
+  await supabase
+    .from("profissionais")
+    .update({ ativo, desativado_por_limite_plano: false })
+    .eq("id", id);
   revalidatePath("/app/profissionais");
+  return {};
 }

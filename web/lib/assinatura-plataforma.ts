@@ -21,6 +21,8 @@ export async function confirmarPagamentoPlataforma(
     .update({ plano_plataforma_id: pagamento.plano_plataforma_id, status: "ativa" })
     .eq("id", pagamento.estabelecimento_id);
 
+  await supabase.rpc("aplicar_limites_plano", { p_estabelecimento_id: pagamento.estabelecimento_id });
+
   const { data: assinaturaExistente } = await supabase
     .from("assinaturas_plataforma")
     .select("id")

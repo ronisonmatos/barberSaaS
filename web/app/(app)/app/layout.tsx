@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
+import { papelLabel } from "@/lib/papel-label";
 import { signOut } from "@/app/actions/auth";
 import { SidebarNav } from "./sidebar-nav";
 import { BottomNav } from "./bottom-nav";
@@ -13,7 +14,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
+  const { estabelecimento, papel, usuarioNome, usuarioGenero } = await getEstabelecimentoAtivo();
   const trialAte = new Date(`${estabelecimento.trial_ate}T00:00:00`).toLocaleDateString("pt-BR");
 
   let planoNome: string | null = null;
@@ -52,11 +53,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
         <SidebarNav papel={papel} />
-        <form action={signOut}>
-          <Button type="submit" variant="ghost" className="w-full justify-start no-underline">
-            Sair
-          </Button>
-        </form>
+        <div className="mt-auto border-t border-linha pt-3">
+          <p className="truncate text-sm font-medium text-carvao">{usuarioNome}</p>
+          <p className="text-xs text-cinza-600">{papelLabel(papel, usuarioGenero)}</p>
+          <form action={signOut}>
+            <Button type="submit" variant="ghost" className="w-full justify-start no-underline">
+              Sair
+            </Button>
+          </form>
+        </div>
         <div className="mt-4 border-t border-linha pt-4">
           <BrandFooter />
         </div>
@@ -78,7 +83,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="mx-auto w-full max-w-5xl">{children}</div>
         </main>
       </div>
-      <BottomNav signOutAction={signOut} />
+      <BottomNav
+        signOutAction={signOut}
+        usuarioNome={usuarioNome}
+        papel={papel}
+        usuarioGenero={usuarioGenero}
+      />
     </div>
   );
 }

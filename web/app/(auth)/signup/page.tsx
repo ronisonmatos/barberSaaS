@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { signUp } from "@/app/actions/auth";
+import { formatarCPF } from "@/lib/cpf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Heading } from "@/components/ui/heading";
@@ -10,6 +11,7 @@ import { FormError } from "@/components/ui/form-error";
 
 export default function SignupPage() {
   const [state, action, pending] = useActionState(signUp, undefined);
+  const [cpf, setCpf] = useState("");
 
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -19,7 +21,35 @@ export default function SignupPage() {
         <label htmlFor="nome" className="text-sm font-medium">
           Seu nome
         </label>
-        <Input id="nome" name="nome" required placeholder="Nome do dono/responsável" />
+        <Input id="nome" name="nome" required placeholder="Nome completo." />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium">Gênero</span>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 text-sm">
+            <input type="radio" name="genero" value="masculino" required />
+            Masculino
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="radio" name="genero" value="feminino" required />
+            Feminino
+          </label>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="cpf" className="text-sm font-medium">
+          CPF
+        </label>
+        <Input
+          id="cpf"
+          name="cpf"
+          required
+          inputMode="numeric"
+          value={cpf}
+          onChange={(e) => setCpf(formatarCPF(e.target.value))}
+        />
       </div>
 
       <div className="flex flex-col gap-1">

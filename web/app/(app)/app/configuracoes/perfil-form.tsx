@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState } from "react";
 import { salvarPerfil, atualizarLogo } from "./actions";
 import { TAMANHO_MAX_LOGO_BYTES } from "./limites";
+import { formatarCNPJ } from "@/lib/cnpj";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
@@ -22,6 +23,7 @@ export function PerfilForm({
   horarioTextoAtual,
   instagramUrlAtual,
   enderecoAtual,
+  cnpjAtual,
 }: {
   nomeAtual: string;
   logoUrl: string | null;
@@ -37,10 +39,12 @@ export function PerfilForm({
     uf?: string | null;
     cep?: string | null;
   } | null;
+  cnpjAtual: string | null;
 }) {
   const [perfilState, perfilAction, perfilPending] = useActionState(salvarPerfil, undefined);
   const [logoState, logoAction, logoPending] = useActionState(atualizarLogo, undefined);
   const [erroArquivo, setErroArquivo] = useState<string | null>(null);
+  const [cnpj, setCnpj] = useState(cnpjAtual ? formatarCNPJ(cnpjAtual) : "");
   const logoFormRef = useRef<HTMLFormElement>(null);
 
   function selecionarLogo(e: React.ChangeEvent<HTMLInputElement>) {
@@ -100,6 +104,20 @@ export function PerfilForm({
             Nome do estabelecimento
           </label>
           <Input id="nome" name="nome" required defaultValue={nomeAtual} className="max-w-sm" />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="cnpj" className="text-sm font-medium">
+            CNPJ (opcional)
+          </label>
+          <Input
+            id="cnpj"
+            name="cnpj"
+            inputMode="numeric"
+            className="max-w-sm"
+            value={cnpj}
+            onChange={(e) => setCnpj(formatarCNPJ(e.target.value))}
+          />
         </div>
 
         <div className="flex flex-col gap-1">

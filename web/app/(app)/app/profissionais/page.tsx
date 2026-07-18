@@ -4,10 +4,10 @@ import { ProfissionaisClient } from "./profissionais-client";
 import { Heading } from "@/components/ui/heading";
 
 export default async function ProfissionaisPage() {
-  const { estabelecimento } = await getEstabelecimentoAtivo();
+  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
 
-  const [{ data: profissionais }, { data: servicos }, { data: jornadas }, { data: vinculos }] =
+  const [{ data: profissionais }, { data: servicos }, { data: jornadas }, { data: vinculos }, { data: membros }] =
     await Promise.all([
       supabase.from("profissionais").select("*").eq("estabelecimento_id", estabelecimento.id).order("nome"),
       supabase.from("servicos").select("*").eq("estabelecimento_id", estabelecimento.id).order("nome"),
@@ -16,7 +16,16 @@ export default async function ProfissionaisPage() {
         .from("profissional_servicos")
         .select("profissional_id, servico_id, profissionais!inner(estabelecimento_id)")
         .eq("profissionais.estabelecimento_id", estabelecimento.id),
+      papel === "owner"
+        ? supabase
+            .from("membros_estabelecimento")
+            .select("usuario_id, usuarios(nome)")
+            .eq("estabelecimento_id", estabelecimento.id)
+            .eq("ativo", true)
+        : Promise.resolve({ data: null }),
     ]);
+
+  const contas = (membros ?? []).map((m) => ({ usuarioId: m.usuario_id, nome: m.usuarios?.nome ?? "—" }));
 
   const jornadasPorProfissional: Record<string, { dia_semana: number; hora_inicio: string; hora_fim: string }[]> =
     {};
@@ -41,6 +50,8 @@ export default async function ProfissionaisPage() {
         servicos={servicos ?? []}
         jornadasPorProfissional={jornadasPorProfissional}
         servicoIdsPorProfissional={servicoIdsPorProfissional}
+        contas={contas}
+        podeVincularConta={papel === "owner"}
       />
     </div>
   );

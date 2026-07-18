@@ -11,6 +11,8 @@ type Estabelecimento = Database["public"]["Tables"]["estabelecimentos"]["Row"];
  */
 export async function getEstabelecimentoAtivo(): Promise<{
   userId: string;
+  usuarioNome: string;
+  usuarioGenero: "masculino" | "feminino" | null;
   papel: "owner" | "staff";
   estabelecimento: Estabelecimento;
 }> {
@@ -22,7 +24,7 @@ export async function getEstabelecimentoAtivo(): Promise<{
 
   const { data: membro } = await supabase
     .from("membros_estabelecimento")
-    .select("papel, ativo, estabelecimentos(*)")
+    .select("papel, ativo, estabelecimentos(*), usuarios(nome, genero)")
     .eq("usuario_id", user.id)
     .limit(1)
     .maybeSingle();
@@ -31,5 +33,11 @@ export async function getEstabelecimentoAtivo(): Promise<{
   if (!membro.ativo) redirect("/conta-desativada");
   if (!membro.estabelecimentos) redirect("/onboarding");
 
-  return { userId: user.id, papel: membro.papel, estabelecimento: membro.estabelecimentos };
+  return {
+    userId: user.id,
+    usuarioNome: membro.usuarios?.nome ?? user.email ?? "",
+    usuarioGenero: membro.usuarios?.genero ?? null,
+    papel: membro.papel,
+    estabelecimento: membro.estabelecimentos,
+  };
 }

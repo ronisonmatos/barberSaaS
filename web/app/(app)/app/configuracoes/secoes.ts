@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { UserRound, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles, Palette } from "lucide-react";
+import { UserRound, Store, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles, Palette, CalendarClock } from "lucide-react";
 
 export type SecaoConfiguracao = {
   href: string;
@@ -11,10 +11,16 @@ export type SecaoConfiguracao = {
 
 export const SECOES_CONFIGURACAO: SecaoConfiguracao[] = [
   {
-    href: "/app/configuracoes/perfil",
-    label: "Perfil",
-    descricao: "Nome, logo, endereço e dados públicos.",
+    href: "/app/configuracoes/minha-conta",
+    label: "Minha conta",
+    descricao: "Seus dados.",
     icon: UserRound,
+  },
+  {
+    href: "/app/configuracoes/perfil",
+    label: "Estabelecimento",
+    descricao: "Nome, logo, endereço e dados públicos.",
+    icon: Store,
   },
   {
     href: "/app/configuracoes/fotos",
@@ -53,6 +59,13 @@ export const SECOES_CONFIGURACAO: SecaoConfiguracao[] = [
     label: "Equipe",
     descricao: "Membros com acesso ao painel.",
     icon: Users,
+    ownerOnly: true,
+  },
+  {
+    href: "/app/configuracoes/politica-agendamento",
+    label: "Política de agendamento",
+    descricao: "Prazos para agendar, cancelar e remarcar.",
+    icon: CalendarClock,
     ownerOnly: true,
   },
   {

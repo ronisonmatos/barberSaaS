@@ -7,16 +7,30 @@ import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { criarCobrancaPix, criarCobrancaCartao } from "@/lib/mercadopago";
 import { validarCPF, apenasNumeros } from "@/lib/cpf";
 import { confirmarPagamentoPlataforma } from "@/lib/assinatura-plataforma";
+import { precoVigente } from "@/lib/planos";
+import type { Database } from "@/lib/supabase/types";
+
+type Plano = Database["public"]["Tables"]["planos_plataforma"]["Row"];
 
 async function validarPlano(planoId: string) {
   const supabase = await createClient();
   const { data: plano } = await supabase
     .from("planos_plataforma")
-    .select("id, nome, preco_centavos, ativo")
+    .select("*")
     .eq("id", planoId)
     .maybeSingle();
   if (!plano || !plano.ativo) return null;
   return plano;
+}
+
+async function buscarValorACobrar(estabelecimentoId: string, plano: Plano) {
+  const supabase = await createClient();
+  const { data: assinatura } = await supabase
+    .from("assinaturas_plataforma")
+    .select("plano_plataforma_id, preco_promocional_centavos, preco_promocional_ate")
+    .eq("estabelecimento_id", estabelecimentoId)
+    .maybeSingle();
+  return precoVigente(plano, assinatura ?? null);
 }
 
 async function criarPagamentoPendente(
@@ -40,7 +54,10 @@ async function criarPagamentoPendente(
   return data.id as string;
 }
 
-const pixSchema = z.object({ planoId: z.string().uuid() });
+// Nao usar .uuid() aqui: os planos seed (Essencial/Pro) tem ids sequenciais
+// (00000000-0000-0000-0000-000000000001/2) que nao passam na validacao estrita
+// de RFC4122 do Zod v4 (versao/variante invalidas) -- so precisa ser uma string nao vazia.
+const pixSchema = z.object({ planoId: z.string().min(1) });
 
 export async function criarCobrancaPixPlano(
   input: z.infer<typeof pixSchema>
@@ -63,13 +80,14 @@ export async function criarCobrancaPixPlano(
   } = await supabaseAuth.auth.getUser();
   if (!user?.email) return { error: "E-mail da conta não encontrado." };
 
-  const pagamentoId = await criarPagamentoPendente(estabelecimento.id, plano.id, plano.preco_centavos, "pix");
+  const valorCentavos = await buscarValorACobrar(estabelecimento.id, plano);
+  const pagamentoId = await criarPagamentoPendente(estabelecimento.id, plano.id, valorCentavos, "pix");
 
   try {
     const cobranca = await criarCobrancaPix({
       accessToken,
       idempotencyKey: pagamentoId,
-      valorCentavos: plano.preco_centavos,
+      valorCentavos,
       descricao: `Assinatura Comptus - ${plano.nome}`,
       emailPagador: user.email,
     });
@@ -85,7 +103,7 @@ export async function criarCobrancaPixPlano(
 }
 
 const cartaoSchema = z.object({
-  planoId: z.string().uuid(),
+  planoId: z.string().min(1),
   cpf: z.string().min(11),
   formData: z.object({
     token: z.string(),
@@ -116,14 +134,15 @@ export async function criarCobrancaCartaoPlano(
   const accessToken = process.env.MERCADO_PAGO_PLATFORM_ACCESS_TOKEN;
   if (!accessToken) return { error: "Pagamento de assinatura ainda não configurado pela plataforma." };
 
-  const pagamentoId = await criarPagamentoPendente(estabelecimento.id, plano.id, plano.preco_centavos, "cartao");
+  const valorCentavos = await buscarValorACobrar(estabelecimento.id, plano);
+  const pagamentoId = await criarPagamentoPendente(estabelecimento.id, plano.id, valorCentavos, "cartao");
   const supabase = createServiceRoleClient();
 
   try {
     const cobranca = await criarCobrancaCartao({
       accessToken,
       idempotencyKey: pagamentoId,
-      valorCentavos: plano.preco_centavos,
+      valorCentavos,
       descricao: `Assinatura Comptus - ${plano.nome}`,
       formData: {
         ...parsed.data.formData,

@@ -24,7 +24,7 @@ export default async function PerfilConfigPage() {
   return (
     <div className="flex flex-col gap-4">
       <VoltarConfiguracoes />
-      <Heading>Perfil</Heading>
+      <Heading>Estabelecimento</Heading>
       <Card className="p-4">
         <PerfilForm
           nomeAtual={estabelecimento.nome}
@@ -34,6 +34,7 @@ export default async function PerfilConfigPage() {
           horarioTextoAtual={estabelecimento.horario_texto}
           instagramUrlAtual={estabelecimento.instagram_url}
           enderecoAtual={parseEndereco(estabelecimento.endereco)}
+          cnpjAtual={estabelecimento.cnpj}
         />
       </Card>
     </div>

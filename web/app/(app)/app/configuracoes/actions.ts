@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
+import { validarCPF, apenasNumeros } from "@/lib/cpf";
+import { validarCNPJ } from "@/lib/cnpj";
 import { TAMANHO_MAX_LOGO_BYTES, TIPOS_LOGO_ACEITOS } from "./limites";
 
 const LIMITE_USUARIOS_SEM_PLANO = 1;
@@ -24,6 +26,11 @@ const schemaPerfil = z.object({
   cidade: z.string().trim().max(80).optional(),
   uf: z.string().trim().max(2).optional(),
   cep: z.string().trim().max(9).optional(),
+  cnpj: z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => !v || validarCNPJ(v), { error: "CNPJ inválido." }),
 });
 
 export async function salvarPerfil(_prevState: FormState, formData: FormData): Promise<FormState> {
@@ -40,6 +47,7 @@ export async function salvarPerfil(_prevState: FormState, formData: FormData): P
     cidade: formData.get("cidade") || undefined,
     uf: formData.get("uf") || undefined,
     cep: formData.get("cep") || undefined,
+    cnpj: formData.get("cnpj") || undefined,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
@@ -61,6 +69,7 @@ export async function salvarPerfil(_prevState: FormState, formData: FormData): P
       sobre: parsed.data.sobre || null,
       horario_texto: parsed.data.horarioTexto || null,
       instagram_url: parsed.data.instagramUrl || null,
+      cnpj: parsed.data.cnpj ? apenasNumeros(parsed.data.cnpj) : null,
       endereco: enderecoPreenchido
         ? {
             rua: parsed.data.rua || null,
@@ -78,6 +87,72 @@ export async function salvarPerfil(_prevState: FormState, formData: FormData): P
   revalidatePath("/app/configuracoes");
   revalidatePath("/app");
   revalidatePath(`/b/${estabelecimento.slug}`);
+  return undefined;
+}
+
+const schemaPoliticaAgendamento = z.object({
+  antecedenciaMinHoras: z.coerce.number().min(0).max(720),
+  antecedenciaCancelamentoHoras: z.coerce.number().min(0).max(720),
+  antecedenciaRemarcacaoHoras: z.coerce.number().min(0).max(720),
+});
+
+export async function salvarPoliticaAgendamento(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
+  if (papel !== "owner") return { error: "Somente o dono do estabelecimento pode alterar essa política." };
+
+  const parsed = schemaPoliticaAgendamento.safeParse({
+    antecedenciaMinHoras: formData.get("antecedenciaMinHoras"),
+    antecedenciaCancelamentoHoras: formData.get("antecedenciaCancelamentoHoras"),
+    antecedenciaRemarcacaoHoras: formData.get("antecedenciaRemarcacaoHoras"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+
+  const supabase = await createClient();
+  const configAtual = (estabelecimento.config ?? {}) as Record<string, unknown>;
+  const { error } = await supabase
+    .from("estabelecimentos")
+    .update({
+      config: {
+        ...configAtual,
+        antecedencia_min_horas: parsed.data.antecedenciaMinHoras,
+        antecedencia_cancelamento_horas: parsed.data.antecedenciaCancelamentoHoras,
+        antecedencia_remarcacao_horas: parsed.data.antecedenciaRemarcacaoHoras,
+      },
+    })
+    .eq("id", estabelecimento.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/app/configuracoes/politica-agendamento");
+  return undefined;
+}
+
+const schemaMinhaConta = z.object({
+  nome: z.string().trim().min(2, { error: "Nome deve ter ao menos 2 caracteres." }),
+  genero: z.enum(["masculino", "feminino"], { error: "Selecione o gênero." }),
+  cpf: z.string().refine(validarCPF, { error: "CPF inválido." }),
+});
+
+export async function salvarMinhaConta(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const { userId } = await getEstabelecimentoAtivo();
+  const parsed = schemaMinhaConta.safeParse({
+    nome: formData.get("nome"),
+    genero: formData.get("genero"),
+    cpf: formData.get("cpf"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("usuarios")
+    .update({ nome: parsed.data.nome, genero: parsed.data.genero, cpf: apenasNumeros(parsed.data.cpf) })
+    .eq("id", userId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/app/configuracoes");
+  revalidatePath("/app");
   return undefined;
 }
 

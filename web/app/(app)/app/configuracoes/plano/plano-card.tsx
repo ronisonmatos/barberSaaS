@@ -3,66 +3,58 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { FaixaPromocional } from "@/components/ui/faixa-promocional";
 import { centavosToBRL } from "@/lib/money";
+import { listarRecursos, precoVigente } from "@/lib/planos";
 import { PlanoCheckout } from "./plano-checkout";
 import type { Database } from "@/lib/supabase/types";
 
 type Plano = Database["public"]["Tables"]["planos_plataforma"]["Row"];
-
-const SUPORTE_LABEL: Record<string, string> = {
-  limitado: "Suporte limitado",
-  prioritario: "Suporte prioritário",
-};
-
-const FLAG_LABEL: Record<string, string> = {
-  whatsapp: "WhatsApp",
-  relatorios: "Relatórios",
-  pagamento_online: "Pagamento online no agendamento",
-};
-
-function listarRecursos(plano: Plano): string[] {
-  const itens: string[] = [
-    plano.max_profissionais ? `Até ${plano.max_profissionais} profissionais` : "Profissionais ilimitados",
-    plano.max_usuarios ? `Até ${plano.max_usuarios} usuários no painel` : "Usuários ilimitados",
-    plano.max_fotos ? `Até ${plano.max_fotos} fotos na página pública` : "Fotos ilimitadas",
-  ];
-  const recursos = (plano.recursos ?? {}) as Record<string, boolean | string>;
-  const { suporte, loja, ...flags } = recursos;
-  if (loja === true) {
-    itens.push(plano.max_produtos ? `Loja com até ${plano.max_produtos} produtos` : "Loja com produtos ilimitados");
-  }
-  if (typeof suporte === "string" && SUPORTE_LABEL[suporte]) {
-    itens.push(SUPORTE_LABEL[suporte]);
-  }
-  for (const [chave, ativo] of Object.entries(flags)) {
-    if (ativo === true) itens.push(FLAG_LABEL[chave] ?? chave);
-  }
-  return itens;
-}
+type AssinaturaAtual = {
+  plano_plataforma_id: string;
+  preco_promocional_centavos: number | null;
+  preco_promocional_ate: string | null;
+} | null;
 
 export function PlanoCard({
   plano,
   ativo,
+  assinaturaAtual,
   podeAssinar,
   publicKey,
   email,
 }: {
   plano: Plano;
   ativo: boolean;
+  assinaturaAtual: AssinaturaAtual;
   podeAssinar: boolean;
   publicKey: string | null;
   email: string;
 }) {
   const [checkoutAberto, setCheckoutAberto] = useState(false);
+  const valorVigente = precoVigente(plano, assinaturaAtual);
+  const emPromocao = valorVigente !== plano.preco_centavos;
 
   return (
-    <Card className={`flex flex-col gap-3 p-4 ${ativo ? "border-latao" : ""}`}>
+    <Card className={`relative flex flex-col gap-3 p-4 ${ativo ? "border-latao" : ""}`}>
+      {emPromocao && <FaixaPromocional texto={plano.promocao_titulo || "Promoção"} />}
       <div>
         <p className="font-display text-xl text-carvao">{plano.nome}</p>
         <p className="text-carvao">
-          <span className="text-2xl">{centavosToBRL(plano.preco_centavos)}</span>
+          {emPromocao && (
+            <span className="mr-2 text-sm text-cinza-600 line-through">
+              {centavosToBRL(plano.preco_centavos)}
+            </span>
+          )}
+          <span className="text-2xl">{centavosToBRL(valorVigente)}</span>
           <span className="text-sm text-cinza-600">/mês</span>
         </p>
+        {emPromocao && plano.promocao_duracao_meses && (
+          <p className="text-xs text-latao-escuro">
+            Por {plano.promocao_duracao_meses} {plano.promocao_duracao_meses === 1 ? "mês" : "meses"}, depois{" "}
+            {centavosToBRL(plano.preco_centavos)}/mês
+          </p>
+        )}
       </div>
       <ul className="flex flex-1 flex-col gap-1 text-sm text-cinza-600">
         {listarRecursos(plano).map((item) => (
@@ -79,7 +71,7 @@ export function PlanoCard({
         <PlanoCheckout
           planoId={plano.id}
           planoNome={plano.nome}
-          valorCentavos={plano.preco_centavos}
+          valorCentavos={valorVigente}
           publicKey={publicKey}
           email={email}
           onFechar={() => setCheckoutAberto(false)}

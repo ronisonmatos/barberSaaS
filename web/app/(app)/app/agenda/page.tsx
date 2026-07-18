@@ -21,13 +21,13 @@ export default async function AgendaPage({
 }: {
   searchParams: Promise<{ data?: string; visao?: string }>;
 }) {
-  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
+  const { estabelecimento, papel, userId } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
   const params = await searchParams;
   const data = params.data ?? hojeNaTimezone(estabelecimento.timezone);
   const visao = params.visao === "semana" ? "semana" : "dia";
 
-  const [{ data: profissionais }, { data: servicos }, { data: clientes }] = await Promise.all([
+  const [{ data: profissionaisData }, { data: servicos }, { data: clientes }] = await Promise.all([
     supabase
       .from("profissionais")
       .select("*")
@@ -43,6 +43,13 @@ export default async function AgendaPage({
     supabase.from("clientes").select("*").eq("estabelecimento_id", estabelecimento.id).order("nome"),
   ]);
 
+  // Staff vinculado a um profissional (profissionais.usuario_id) so ve/agenda pra si mesmo --
+  // espelha a mesma regra da RLS de agendamentos (meu_profissional_id). Staff sem vinculo ainda
+  // ve todo mundo (fallback).
+  const meuProfissional = profissionaisData?.find((p) => p.usuario_id === userId);
+  const profissionais =
+    papel === "staff" && meuProfissional ? [meuProfissional] : (profissionaisData ?? []);
+
   const rangeInicio =
     visao === "dia" ? limitesDoDiaUTC(data, estabelecimento.timezone).inicio : limitesDoDiaUTC(inicioDaSemana(data), estabelecimento.timezone).inicio;
   const rangeFim =
@@ -53,32 +60,32 @@ export default async function AgendaPage({
   const { data: agendamentos } = await supabase
     .from("agendamentos")
     .select(
-      "id, inicio, fim, status, chegou_em, profissional_id, clientes(nome), servicos(nome), pagamentos(status, metodo, valor_centavos)"
+      "id, inicio, fim, status, chegou_em, profissional_id, servico_id, cancelado_fora_do_prazo, clientes(nome), servicos(nome), pagamentos(status, metodo, valor_centavos)"
     )
     .eq("estabelecimento_id", estabelecimento.id)
     .gte("inicio", rangeInicio.toISOString())
     .lt("inicio", rangeFim.toISOString())
     .order("inicio");
 
-  const detalhados: (AgendamentoDetalhado & { profissional_id: string })[] = (agendamentos ?? []).map(
-    (ag) => ({
-      id: ag.id,
-      inicio: ag.inicio,
-      fim: ag.fim,
-      status: ag.status,
-      chegou_em: ag.chegou_em,
-      profissional_id: ag.profissional_id,
-      cliente_nome: ag.clientes?.nome ?? "—",
-      servico_nome: ag.servicos?.nome ?? "—",
-      pagamento: ag.pagamentos?.[0]
-        ? {
-            status: ag.pagamentos[0].status,
-            metodo: ag.pagamentos[0].metodo,
-            valor_centavos: ag.pagamentos[0].valor_centavos,
-          }
-        : null,
-    })
-  );
+  const detalhados: (AgendamentoDetalhado & { profissional_id: string })[] = (agendamentos ?? []).map((ag) => ({
+    id: ag.id,
+    inicio: ag.inicio,
+    fim: ag.fim,
+    status: ag.status,
+    chegou_em: ag.chegou_em,
+    profissional_id: ag.profissional_id,
+    servico_id: ag.servico_id,
+    cancelado_fora_do_prazo: ag.cancelado_fora_do_prazo,
+    cliente_nome: ag.clientes?.nome ?? "—",
+    servico_nome: ag.servicos?.nome ?? "—",
+    pagamento: ag.pagamentos?.[0]
+      ? {
+          status: ag.pagamentos[0].status,
+          metodo: ag.pagamentos[0].metodo,
+          valor_centavos: ag.pagamentos[0].valor_centavos,
+        }
+      : null,
+  }));
 
   const diaAnterior = somarDias(data, visao === "dia" ? -1 : -7);
   const diaSeguinte = somarDias(data, visao === "dia" ? 1 : 7);

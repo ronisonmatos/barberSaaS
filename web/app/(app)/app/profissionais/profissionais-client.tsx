@@ -18,11 +18,15 @@ export function ProfissionaisClient({
   servicos,
   jornadasPorProfissional,
   servicoIdsPorProfissional,
+  contas,
+  podeVincularConta,
 }: {
   profissionais: Profissional[];
   servicos: Servico[];
   jornadasPorProfissional: Record<string, Jornada[]>;
   servicoIdsPorProfissional: Record<string, string[]>;
+  contas: { usuarioId: string; nome: string }[];
+  podeVincularConta: boolean;
 }) {
   const [editando, setEditando] = useState<Profissional | "novo" | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -46,6 +50,8 @@ export function ProfissionaisClient({
           servicos={servicos}
           jornadasIniciais={editando === "novo" ? [] : jornadasPorProfissional[editando.id] ?? []}
           servicoIdsIniciais={editando === "novo" ? [] : servicoIdsPorProfissional[editando.id] ?? []}
+          contas={contas}
+          podeVincularConta={podeVincularConta}
           onDone={() => setEditando(null)}
         />
       ) : (

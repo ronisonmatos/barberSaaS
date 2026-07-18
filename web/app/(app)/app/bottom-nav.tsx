@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Calendar, Users, UserSquare2, MoreHorizontal, Scissors, Ban, LogOut, LayoutDashboard, Settings, ShoppingBag, Package } from "lucide-react";
+import { papelLabel } from "@/lib/papel-label";
 
 const PRINCIPAIS = [
   { href: "/app/agenda", label: "Agenda", icon: Calendar },
@@ -20,7 +21,17 @@ const MAIS = [
   { href: "/app/configuracoes", label: "Configurações", icon: Settings },
 ];
 
-export function BottomNav({ signOutAction }: { signOutAction: () => void }) {
+export function BottomNav({
+  signOutAction,
+  usuarioNome,
+  papel,
+  usuarioGenero,
+}: {
+  signOutAction: () => void;
+  usuarioNome: string;
+  papel: "owner" | "staff";
+  usuarioGenero: "masculino" | "feminino" | null;
+}) {
   const pathname = usePathname();
   const [aberto, setAberto] = useState(false);
 
@@ -35,6 +46,10 @@ export function BottomNav({ signOutAction }: { signOutAction: () => void }) {
             className="absolute right-0 bottom-16 left-0 flex flex-col gap-1 rounded-t-lg border-t border-linha bg-marfim-2 p-3"
             onClick={(e) => e.stopPropagation()}
           >
+            <div className="mb-1 border-b border-linha px-3 pb-2">
+              <p className="truncate text-sm font-medium text-carvao">{usuarioNome}</p>
+              <p className="text-xs text-cinza-600">{papelLabel(papel, usuarioGenero)}</p>
+            </div>
             {MAIS.map((item) => (
               <Link
                 key={item.href}

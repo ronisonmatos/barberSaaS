@@ -20,12 +20,16 @@ export function ProfissionalForm({
   servicos,
   jornadasIniciais,
   servicoIdsIniciais,
+  contas,
+  podeVincularConta,
   onDone,
 }: {
   profissional?: Profissional | null;
   servicos: Servico[];
   jornadasIniciais: Jornada[];
   servicoIdsIniciais: string[];
+  contas: { usuarioId: string; nome: string }[];
+  podeVincularConta: boolean;
   onDone?: () => void;
 }) {
   const [state, action, pending] = useActionState(salvarProfissional, undefined);
@@ -98,6 +102,27 @@ export function ProfissionalForm({
           </label>
         </div>
       </div>
+
+      {podeVincularConta && (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Conta de acesso vinculada (opcional)</label>
+          <select
+            name="usuario_id"
+            defaultValue={profissional?.usuario_id ?? ""}
+            className="rounded-sm border border-linha bg-marfim-2 px-3 py-2 text-sm text-carvao focus:border-latao focus:outline-none focus:ring-2 focus:ring-latao/30"
+          >
+            <option value="">Nenhuma — ainda vê a agenda de todo mundo</option>
+            {contas.map((c) => (
+              <option key={c.usuarioId} value={c.usuarioId}>
+                {c.nome}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-cinza-600">
+            Vincule pra que essa conta veja e edite só a própria agenda, em vez da agenda de todos.
+          </p>
+        </div>
+      )}
 
       <div>
         <p className="mb-2 text-sm font-medium">Serviços que realiza</p>

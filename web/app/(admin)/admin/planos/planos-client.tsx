@@ -37,6 +37,7 @@ export function PlanosClient({ planos }: { planos: Plano[] }) {
               <th>Máx. usuários</th>
               <th>Máx. fotos</th>
               <th>Máx. produtos</th>
+              <th>Promoção</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -50,6 +51,7 @@ export function PlanosClient({ planos }: { planos: Plano[] }) {
                 <td>{p.max_usuarios ?? "Ilimitado"}</td>
                 <td>{p.max_fotos ?? "Ilimitado"}</td>
                 <td>{p.max_produtos ?? "Ilimitado"}</td>
+                <td>{p.promocao_ativa ? (p.promocao_titulo || "Promoção") : "—"}</td>
                 <td>{p.ativo ? "Ativo" : "Inativo"}</td>
                 <td className="flex gap-2 py-2 text-right">
                   <button className="underline" onClick={() => setEditando(p)}>
@@ -67,7 +69,7 @@ export function PlanosClient({ planos }: { planos: Plano[] }) {
             ))}
             {planos.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-4 text-center text-cinza-600">
+                <td colSpan={9} className="py-4 text-center text-cinza-600">
                   Nenhum plano cadastrado ainda.
                 </td>
               </tr>

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { centavosToBRL } from "@/lib/money";
 import { CancelarButton } from "./cancelar-button";
+import { RemarcarButton } from "./remarcar-button";
 import { StatusBadge, type StatusAgendamento } from "@/components/ui/status-badge";
 import { PAGINA_WRAP, PAGINA_CARTAO, ROTULO_SECAO } from "../../estilos";
 
@@ -57,7 +58,18 @@ export default async function MeusAgendamentosPage({
                   </p>
                   <p className="text-sm tabular-nums text-tenant-fg opacity-70">{centavosToBRL(ag.preco_centavos)}</p>
                   <StatusBadge status={ag.status as StatusAgendamento} />
-                  {podeCancel && <CancelarButton token={token} agendamentoId={ag.agendamento_id} />}
+                  {podeCancel && (
+                    <div className="flex flex-col gap-2">
+                      <RemarcarButton
+                        token={token}
+                        agendamentoId={ag.agendamento_id}
+                        estabelecimentoId={ag.estabelecimento_id}
+                        profissionalId={ag.profissional_id}
+                        servicoId={ag.servico_id}
+                      />
+                      <CancelarButton token={token} agendamentoId={ag.agendamento_id} />
+                    </div>
+                  )}
                 </div>
               );
             })}

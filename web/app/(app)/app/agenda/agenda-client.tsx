@@ -54,7 +54,12 @@ export function AgendaClient({
               </div>
               <div className="flex flex-col gap-2">
                 {(agendamentosPorProfissional[p.id] ?? []).map((ag) => (
-                  <AgendamentoCard key={ag.id} agendamento={ag} podeReembolsar={podeReembolsar} />
+                  <AgendamentoCard
+                    key={ag.id}
+                    agendamento={ag}
+                    profissionalId={p.id}
+                    podeReembolsar={podeReembolsar}
+                  />
                 ))}
                 {(agendamentosPorProfissional[p.id] ?? []).length === 0 && (
                   <div className="rounded-sm border border-dashed border-linha p-2 text-sm text-cinza-300">

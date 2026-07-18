@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { salvarPlano } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,19 @@ type Plano = Database["public"]["Tables"]["planos_plataforma"]["Row"];
 
 export function PlanoForm({ plano, onDone }: { plano?: Plano | null; onDone?: () => void }) {
   const [state, action, pending] = useActionState(salvarPlano, undefined);
+  const enviado = useRef(false);
+
+  useEffect(() => {
+    if (enviado.current && !pending) {
+      enviado.current = false;
+      if (!state?.error) onDone?.();
+    }
+  }, [pending, state, onDone]);
+
+  const [promocaoAtiva, setPromocaoAtiva] = useState(plano?.promocao_ativa ?? false);
+  const [promocaoTipo, setPromocaoTipo] = useState<"preco_fixo" | "percentual">(
+    (plano?.promocao_tipo as "preco_fixo" | "percentual") ?? "preco_fixo"
+  );
   const recursos = (plano?.recursos ?? {}) as {
     whatsapp?: boolean;
     relatorios?: boolean;
@@ -21,9 +34,9 @@ export function PlanoForm({ plano, onDone }: { plano?: Plano | null; onDone?: ()
 
   return (
     <form
-      action={async (formData) => {
-        await action(formData);
-        onDone?.();
+      action={(formData) => {
+        enviado.current = true;
+        action(formData);
       }}
       className="flex flex-col gap-3 rounded-md border border-linha p-4"
     >
@@ -87,6 +100,84 @@ export function PlanoForm({ plano, onDone }: { plano?: Plano | null; onDone?: ()
             Loja de produtos
           </label>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-md border border-linha p-3">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            name="promocaoAtiva"
+            checked={promocaoAtiva}
+            onChange={(e) => setPromocaoAtiva(e.target.checked)}
+          />
+          Plano promocional
+        </label>
+
+        {promocaoAtiva && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2 flex flex-col gap-1">
+              <label className="text-sm font-medium">Título do selo</label>
+              <Input
+                name="promocaoTitulo"
+                placeholder="Oferta de lançamento"
+                defaultValue={plano?.promocao_titulo ?? ""}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium">Tipo de desconto</label>
+              <select
+                name="promocaoTipo"
+                value={promocaoTipo}
+                onChange={(e) => setPromocaoTipo(e.target.value as "preco_fixo" | "percentual")}
+                className="rounded-md border border-linha bg-marfim-2 px-3 py-2 text-sm text-carvao"
+              >
+                <option value="preco_fixo">Preço fixo</option>
+                <option value="percentual">Percentual de desconto</option>
+              </select>
+            </div>
+
+            {promocaoTipo === "preco_fixo" ? (
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium">Preço promocional (R$)</label>
+                <Input
+                  name="promocaoValor"
+                  placeholder="49,00"
+                  defaultValue={
+                    plano?.promocao_valor_centavos != null ? (plano.promocao_valor_centavos / 100).toFixed(2) : ""
+                  }
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium">Percentual de desconto (%)</label>
+                <Input
+                  name="promocaoPercentual"
+                  placeholder="30"
+                  defaultValue={plano?.promocao_percentual ?? ""}
+                />
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium">Duração (meses, vazio = para sempre)</label>
+              <Input
+                name="promocaoDuracaoMeses"
+                type="number"
+                min={1}
+                defaultValue={plano?.promocao_duracao_meses ?? ""}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium">Assinar até (vazio = sem prazo)</label>
+              <Input
+                name="promocaoAssinarAte"
+                type="date"
+                defaultValue={plano?.promocao_assinar_ate ?? ""}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {state?.error && <FormError>{state.error}</FormError>}

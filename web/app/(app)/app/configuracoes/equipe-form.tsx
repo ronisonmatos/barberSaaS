@@ -5,10 +5,12 @@ import { convidarMembro, removerMembro } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
+import { papelLabel } from "@/lib/papel-label";
 
 type Membro = {
   id: string;
   nome: string;
+  genero: "masculino" | "feminino" | null;
   papel: "owner" | "staff";
   usuarioId: string;
   ativo: boolean;
@@ -57,7 +59,7 @@ export function EquipeForm({
             <div>
               <p className="font-medium text-carvao">{m.nome}</p>
               <p className="text-xs text-cinza-600">
-                {m.papel === "owner" ? "Dono" : "Equipe"}
+                {papelLabel(m.papel, m.genero)}
                 {!m.ativo && m.desativadoPorLimitePlano ? " · Desativado (limite do plano)" : ""}
               </p>
             </div>

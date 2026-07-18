@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { validarCPF, apenasNumeros } from "@/lib/cpf";
 
 export type AuthState = { error?: string } | undefined;
 
@@ -12,6 +13,8 @@ const signUpSchema = z.object({
   password: z
     .string()
     .min(8, { error: "A senha deve ter ao menos 8 caracteres." }),
+  genero: z.enum(["masculino", "feminino"], { error: "Selecione o gênero." }),
+  cpf: z.string().refine(validarCPF, { error: "CPF inválido." }),
 });
 
 export async function signUp(_prevState: AuthState, formData: FormData): Promise<AuthState> {
@@ -19,6 +22,8 @@ export async function signUp(_prevState: AuthState, formData: FormData): Promise
     nome: formData.get("nome"),
     email: formData.get("email"),
     password: formData.get("password"),
+    genero: formData.get("genero"),
+    cpf: formData.get("cpf"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -28,7 +33,13 @@ export async function signUp(_prevState: AuthState, formData: FormData): Promise
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { data: { nome: parsed.data.nome } },
+    options: {
+      data: {
+        nome: parsed.data.nome,
+        genero: parsed.data.genero,
+        cpf: apenasNumeros(parsed.data.cpf),
+      },
+    },
   });
 
   if (error) {

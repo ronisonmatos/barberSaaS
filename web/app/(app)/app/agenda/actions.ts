@@ -97,6 +97,49 @@ export async function criarAgendamentoManual(
   return {};
 }
 
+export async function remarcarAgendamento(
+  agendamentoId: string,
+  novoInicio: string
+): Promise<{ error?: string }> {
+  const { estabelecimento } = await getEstabelecimentoAtivo();
+  const supabase = await createClient();
+
+  const { data: agendamento } = await supabase
+    .from("agendamentos")
+    .select("id, servico_id, status")
+    .eq("id", agendamentoId)
+    .eq("estabelecimento_id", estabelecimento.id)
+    .single();
+  if (!agendamento) return { error: "Agendamento não encontrado." };
+  if (agendamento.status !== "pendente" && agendamento.status !== "confirmado") {
+    return { error: "Só é possível remarcar agendamentos pendentes ou confirmados." };
+  }
+
+  const { data: servico } = await supabase
+    .from("servicos")
+    .select("duracao_minutos")
+    .eq("id", agendamento.servico_id)
+    .single();
+  if (!servico) return { error: "Serviço não encontrado." };
+
+  const inicio = new Date(novoInicio);
+  const fim = new Date(inicio.getTime() + servico.duracao_minutos * 60_000);
+
+  const { error } = await supabase
+    .from("agendamentos")
+    .update({ inicio: inicio.toISOString(), fim: fim.toISOString() })
+    .eq("id", agendamentoId);
+  if (error) {
+    if (error.message.includes("agendamentos_sem_conflito")) {
+      return { error: "Esse horário acabou de ficar indisponível para este profissional." };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath("/app/agenda");
+  return {};
+}
+
 export async function atualizarStatusAgendamento(
   id: string,
   status: "confirmado" | "concluido" | "cancelado" | "no_show"

@@ -24,7 +24,7 @@ export default async function EquipeConfigPage() {
   const [{ data: membrosData }, { data: plano }] = await Promise.all([
     supabase
       .from("membros_estabelecimento")
-      .select("id, papel, usuario_id, ativo, desativado_por_limite_plano, usuarios(nome)")
+      .select("id, papel, usuario_id, ativo, desativado_por_limite_plano, usuarios(nome, genero)")
       .eq("estabelecimento_id", estabelecimento.id)
       .order("papel"),
     estabelecimento.plano_plataforma_id
@@ -38,6 +38,7 @@ export default async function EquipeConfigPage() {
   const membros = (membrosData ?? []).map((m) => ({
     id: m.id,
     nome: m.usuarios?.nome ?? "—",
+    genero: m.usuarios?.genero ?? null,
     papel: m.papel,
     usuarioId: m.usuario_id,
     ativo: m.ativo,

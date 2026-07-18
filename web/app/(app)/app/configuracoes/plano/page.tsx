@@ -13,7 +13,7 @@ export default async function PlanoConfigPage() {
     supabase.from("planos_plataforma").select("*").eq("ativo", true).order("preco_centavos"),
     supabase
       .from("assinaturas_plataforma")
-      .select("plano_plataforma_id, status, proximo_vencimento")
+      .select("plano_plataforma_id, status, proximo_vencimento, preco_promocional_centavos, preco_promocional_ate")
       .eq("estabelecimento_id", estabelecimento.id)
       .maybeSingle(),
     supabase.auth.getUser(),
@@ -58,6 +58,7 @@ export default async function PlanoConfigPage() {
             key={plano.id}
             plano={plano}
             ativo={estabelecimento.plano_plataforma_id === plano.id && estabelecimento.status === "ativa"}
+            assinaturaAtual={assinatura ?? null}
             podeAssinar={papel === "owner"}
             publicKey={publicKey}
             email={userData.user?.email ?? ""}

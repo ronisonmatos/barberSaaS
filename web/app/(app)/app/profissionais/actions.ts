@@ -42,6 +42,7 @@ const baseSchema = z.object({
   nome: z.string().trim().min(2, { error: "Nome deve ter ao menos 2 caracteres." }),
   comissao_percentual: z.coerce.number().min(0).max(100),
   ativo: z.boolean(),
+  usuario_id: z.string().uuid().optional(),
 });
 
 const jornadaSchema = z.object({
@@ -59,6 +60,7 @@ export async function salvarProfissional(
     nome: formData.get("nome"),
     comissao_percentual: formData.get("comissao_percentual"),
     ativo: formData.get("ativo") === "on",
+    usuario_id: formData.get("usuario_id") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -92,19 +94,30 @@ export async function salvarProfissional(
     comissao_percentual: parsed.data.comissao_percentual,
     ativo: parsed.data.ativo,
     desativado_por_limite_plano: false,
+    usuario_id: parsed.data.usuario_id ?? null,
   };
 
   let profissionalId = parsed.data.id;
   if (profissionalId) {
     const { error } = await supabase.from("profissionais").update(payload).eq("id", profissionalId);
-    if (error) return { error: error.message };
+    if (error) {
+      if (error.message.includes("profissionais_usuario_id_unique")) {
+        return { error: "Essa conta já está vinculada a outro profissional." };
+      }
+      return { error: error.message };
+    }
   } else {
     const { data, error } = await supabase
       .from("profissionais")
       .insert(payload)
       .select("id")
       .single();
-    if (error) return { error: error.message };
+    if (error) {
+      if (error.message.includes("profissionais_usuario_id_unique")) {
+        return { error: "Essa conta já está vinculada a outro profissional." };
+      }
+      return { error: error.message };
+    }
     profissionalId = data.id;
   }
 

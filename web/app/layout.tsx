@@ -15,6 +15,7 @@ const instrumentSans = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://comptus.com.br"),
   title: "Comptus",
   description: "Agendamento online para barbearias e salões de beleza.",
 };

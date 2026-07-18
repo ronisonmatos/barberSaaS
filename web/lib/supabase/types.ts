@@ -42,6 +42,7 @@ export type Database = {
       agendamentos: {
         Row: {
           assinatura_cliente_id: string | null
+          cancelado_fora_do_prazo: boolean
           chegou_em: string | null
           cliente_id: string
           created_at: string
@@ -58,6 +59,7 @@ export type Database = {
         }
         Insert: {
           assinatura_cliente_id?: string | null
+          cancelado_fora_do_prazo?: boolean
           chegou_em?: string | null
           cliente_id: string
           created_at?: string
@@ -74,6 +76,7 @@ export type Database = {
         }
         Update: {
           assinatura_cliente_id?: string | null
+          cancelado_fora_do_prazo?: boolean
           chegou_em?: string | null
           cliente_id?: string
           created_at?: string
@@ -194,6 +197,8 @@ export type Database = {
           gateway_subscription_id: string | null
           id: string
           plano_plataforma_id: string
+          preco_promocional_ate: string | null
+          preco_promocional_centavos: number | null
           proximo_vencimento: string | null
           status: Database["public"]["Enums"]["status_assinatura"]
         }
@@ -203,6 +208,8 @@ export type Database = {
           gateway_subscription_id?: string | null
           id?: string
           plano_plataforma_id: string
+          preco_promocional_ate?: string | null
+          preco_promocional_centavos?: number | null
           proximo_vencimento?: string | null
           status?: Database["public"]["Enums"]["status_assinatura"]
         }
@@ -212,6 +219,8 @@ export type Database = {
           gateway_subscription_id?: string | null
           id?: string
           plano_plataforma_id?: string
+          preco_promocional_ate?: string | null
+          preco_promocional_centavos?: number | null
           proximo_vencimento?: string | null
           status?: Database["public"]["Enums"]["status_assinatura"]
         }
@@ -412,6 +421,7 @@ export type Database = {
           asaas_customer_id: string | null
           asaas_subconta_id: string | null
           ativacao_manual: boolean
+          cnpj: string | null
           config: Json
           created_at: string
           descricao: string | null
@@ -433,6 +443,7 @@ export type Database = {
           asaas_customer_id?: string | null
           asaas_subconta_id?: string | null
           ativacao_manual?: boolean
+          cnpj?: string | null
           config?: Json
           created_at?: string
           descricao?: string | null
@@ -454,6 +465,7 @@ export type Database = {
           asaas_customer_id?: string | null
           asaas_subconta_id?: string | null
           ativacao_manual?: boolean
+          cnpj?: string | null
           config?: Json
           created_at?: string
           descricao?: string | null
@@ -946,6 +958,13 @@ export type Database = {
           max_usuarios: number | null
           nome: string
           preco_centavos: number
+          promocao_assinar_ate: string | null
+          promocao_ativa: boolean
+          promocao_duracao_meses: number | null
+          promocao_percentual: number | null
+          promocao_tipo: string | null
+          promocao_titulo: string | null
+          promocao_valor_centavos: number | null
           recursos: Json
         }
         Insert: {
@@ -958,6 +977,13 @@ export type Database = {
           max_usuarios?: number | null
           nome: string
           preco_centavos: number
+          promocao_assinar_ate?: string | null
+          promocao_ativa?: boolean
+          promocao_duracao_meses?: number | null
+          promocao_percentual?: number | null
+          promocao_tipo?: string | null
+          promocao_titulo?: string | null
+          promocao_valor_centavos?: number | null
           recursos?: Json
         }
         Update: {
@@ -970,6 +996,13 @@ export type Database = {
           max_usuarios?: number | null
           nome?: string
           preco_centavos?: number
+          promocao_assinar_ate?: string | null
+          promocao_ativa?: boolean
+          promocao_duracao_meses?: number | null
+          promocao_percentual?: number | null
+          promocao_tipo?: string | null
+          promocao_titulo?: string | null
+          promocao_valor_centavos?: number | null
           recursos?: Json
         }
         Relationships: []
@@ -1244,21 +1277,27 @@ export type Database = {
       }
       usuarios: {
         Row: {
+          cpf: string | null
           created_at: string
+          genero: Database["public"]["Enums"]["genero_usuario"] | null
           id: string
           nome: string
           papel: Database["public"]["Enums"]["papel_global"]
           telefone: string | null
         }
         Insert: {
+          cpf?: string | null
           created_at?: string
+          genero?: Database["public"]["Enums"]["genero_usuario"] | null
           id: string
           nome: string
           papel?: Database["public"]["Enums"]["papel_global"]
           telefone?: string | null
         }
         Update: {
+          cpf?: string | null
           created_at?: string
+          genero?: Database["public"]["Enums"]["genero_usuario"] | null
           id?: string
           nome?: string
           papel?: Database["public"]["Enums"]["papel_global"]
@@ -1304,6 +1343,7 @@ export type Database = {
           asaas_customer_id: string | null
           asaas_subconta_id: string | null
           ativacao_manual: boolean
+          cnpj: string | null
           config: Json
           created_at: string
           descricao: string | null
@@ -1333,12 +1373,15 @@ export type Database = {
         Returns: {
           agendamento_id: string
           cliente_nome: string
+          estabelecimento_id: string
           estabelecimento_nome: string
           estabelecimento_slug: string
           fim: string
           inicio: string
           preco_centavos: number
+          profissional_id: string
           profissional_nome: string
+          servico_id: string
           servico_nome: string
           status: Database["public"]["Enums"]["status_agendamento"]
         }[]
@@ -1456,6 +1499,10 @@ export type Database = {
         Args: { p_produto_id: string; p_quantidade: number }
         Returns: undefined
       }
+      meu_profissional_id: {
+        Args: { p_estabelecimento_id: string }
+        Returns: string
+      }
       meus_estabelecimentos: { Args: never; Returns: string[] }
       onboarding_criar_estabelecimento: {
         Args: { p_nome: string; p_slug: string }
@@ -1463,6 +1510,7 @@ export type Database = {
           asaas_customer_id: string | null
           asaas_subconta_id: string | null
           ativacao_manual: boolean
+          cnpj: string | null
           config: Json
           created_at: string
           descricao: string | null
@@ -1506,6 +1554,14 @@ export type Database = {
         }
         Returns: number
       }
+      remarcar_agendamento_via_token: {
+        Args: {
+          p_agendamento_id: string
+          p_novo_inicio: string
+          p_token: string
+        }
+        Returns: undefined
+      }
       slots_disponiveis: {
         Args: {
           p_data: string
@@ -1528,6 +1584,7 @@ export type Database = {
       }
     }
     Enums: {
+      genero_usuario: "masculino" | "feminino"
       metodo_pagamento:
         | "pix"
         | "cartao"
@@ -1692,6 +1749,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      genero_usuario: ["masculino", "feminino"],
       metodo_pagamento: ["pix", "cartao", "dinheiro", "no_local", "assinatura"],
       modo_cobranca: ["integral", "sinal", "no_local"],
       papel_global: ["super_admin", "usuario"],

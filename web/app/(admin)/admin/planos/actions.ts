@@ -9,7 +9,10 @@ import { brlToCentavos } from "@/lib/money";
 export type FormState = { error?: string } | undefined;
 
 const schema = z.object({
-  id: z.string().uuid().optional(),
+  // Nao usar .uuid() aqui: os planos seed (Essencial/Pro) tem ids sequenciais
+  // (00000000-0000-0000-0000-000000000001/2) que nao passam na validacao estrita
+  // de RFC4122 do Zod v4 (versao/variante invalidas) -- so precisa ser uma string nao vazia.
+  id: z.string().min(1).optional(),
   nome: z.string().trim().min(2, { error: "Nome deve ter ao menos 2 caracteres." }),
   preco: z.string().min(1, { error: "Informe o preço." }),
   maxProfissionais: z.string().optional(),
@@ -21,6 +24,13 @@ const schema = z.object({
   pagamentoOnline: z.boolean(),
   loja: z.boolean(),
   suporte: z.enum(["limitado", "prioritario"]),
+  promocaoAtiva: z.boolean(),
+  promocaoTipo: z.enum(["preco_fixo", "percentual"]).optional(),
+  promocaoValor: z.string().optional(),
+  promocaoPercentual: z.string().optional(),
+  promocaoDuracaoMeses: z.string().optional(),
+  promocaoAssinarAte: z.string().optional(),
+  promocaoTitulo: z.string().optional(),
 });
 
 export async function salvarPlano(_prevState: FormState, formData: FormData): Promise<FormState> {
@@ -39,6 +49,13 @@ export async function salvarPlano(_prevState: FormState, formData: FormData): Pr
     pagamentoOnline: formData.get("pagamentoOnline") === "on",
     loja: formData.get("loja") === "on",
     suporte: formData.get("suporte") || "limitado",
+    promocaoAtiva: formData.get("promocaoAtiva") === "on",
+    promocaoTipo: formData.get("promocaoTipo") || undefined,
+    promocaoValor: formData.get("promocaoValor") || undefined,
+    promocaoPercentual: formData.get("promocaoPercentual") || undefined,
+    promocaoDuracaoMeses: formData.get("promocaoDuracaoMeses") || undefined,
+    promocaoAssinarAte: formData.get("promocaoAssinarAte") || undefined,
+    promocaoTitulo: formData.get("promocaoTitulo") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -47,6 +64,16 @@ export async function salvarPlano(_prevState: FormState, formData: FormData): Pr
   const preco_centavos = brlToCentavos(parsed.data.preco);
   if (!Number.isFinite(preco_centavos) || preco_centavos < 0) {
     return { error: "Preço inválido." };
+  }
+
+  if (parsed.data.promocaoAtiva) {
+    if (!parsed.data.promocaoTipo) return { error: "Escolha o tipo da promoção." };
+    if (parsed.data.promocaoTipo === "preco_fixo" && !parsed.data.promocaoValor) {
+      return { error: "Informe o preço promocional." };
+    }
+    if (parsed.data.promocaoTipo === "percentual" && !parsed.data.promocaoPercentual) {
+      return { error: "Informe o percentual de desconto." };
+    }
   }
 
   const supabase = await createClient();
@@ -64,6 +91,22 @@ export async function salvarPlano(_prevState: FormState, formData: FormData): Pr
       loja: parsed.data.loja,
       suporte: parsed.data.suporte,
     },
+    promocao_ativa: parsed.data.promocaoAtiva,
+    promocao_tipo: parsed.data.promocaoAtiva ? parsed.data.promocaoTipo : null,
+    promocao_valor_centavos:
+      parsed.data.promocaoAtiva && parsed.data.promocaoTipo === "preco_fixo" && parsed.data.promocaoValor
+        ? brlToCentavos(parsed.data.promocaoValor)
+        : null,
+    promocao_percentual:
+      parsed.data.promocaoAtiva && parsed.data.promocaoTipo === "percentual" && parsed.data.promocaoPercentual
+        ? Number.parseFloat(parsed.data.promocaoPercentual.replace(",", "."))
+        : null,
+    promocao_duracao_meses:
+      parsed.data.promocaoAtiva && parsed.data.promocaoDuracaoMeses
+        ? Number.parseInt(parsed.data.promocaoDuracaoMeses, 10)
+        : null,
+    promocao_assinar_ate: parsed.data.promocaoAtiva ? parsed.data.promocaoAssinarAte || null : null,
+    promocao_titulo: parsed.data.promocaoAtiva ? parsed.data.promocaoTitulo || null : null,
   };
 
   const { error } = parsed.data.id

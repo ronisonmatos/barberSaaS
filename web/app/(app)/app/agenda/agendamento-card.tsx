@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { atualizarStatusAgendamento, reembolsarAgendamento, marcarChegada } from "./actions";
+import { RemarcarDialog } from "./remarcar-dialog";
 import { centavosToBRL } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
@@ -16,20 +17,25 @@ export type AgendamentoDetalhado = {
   chegou_em?: string | null;
   cliente_nome: string;
   servico_nome: string;
+  servico_id: string;
+  cancelado_fora_do_prazo?: boolean;
   pagamento?: { status: string; metodo: string; valor_centavos: number } | null;
 };
 
 export function AgendamentoCard({
   agendamento,
+  profissionalId,
   podeReembolsar,
 }: {
   agendamento: AgendamentoDetalhado;
+  profissionalId: string;
   podeReembolsar: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [reembolsoSolicitado, setReembolsoSolicitado] = useState(false);
   const [erroReembolso, setErroReembolso] = useState<string | null>(null);
+  const [remarcando, setRemarcando] = useState(false);
 
   const hora = (iso: string) =>
     new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -90,17 +96,33 @@ export function AgendamentoCard({
         )
       )}
       {editavel && (
-        <div className="mt-1 flex gap-2 text-xs">
+        <div className="mt-1 flex flex-wrap gap-2 text-xs">
           <Button variant="ghost" disabled={pending} onClick={() => atualizar("concluido")}>
             Concluir
           </Button>
           <Button variant="ghost" disabled={pending} onClick={() => atualizar("no_show")}>
             Marcar não compareceu
           </Button>
+          <Button variant="ghost" disabled={pending} onClick={() => setRemarcando(true)}>
+            Remarcar
+          </Button>
           <Button variant="perigo" disabled={pending} onClick={() => atualizar("cancelado")}>
             Cancelar
           </Button>
         </div>
+      )}
+      {remarcando && (
+        <RemarcarDialog
+          agendamentoId={agendamento.id}
+          profissionalId={profissionalId}
+          servicoId={agendamento.servico_id}
+          onClose={() => setRemarcando(false)}
+        />
+      )}
+      {encerrado && (agendamento.cancelado_fora_do_prazo || agendamento.status === "no_show") && (
+        <p className="mt-1 text-xs text-aviso">
+          Fora do prazo da política de cancelamento — reembolso é opcional.
+        </p>
       )}
       {encerrado && pagamento?.status === "pago" && (
         <div className="mt-1 flex flex-col gap-1">

@@ -1,4 +1,5 @@
 import type { Database } from "@/lib/supabase/types";
+import { plural } from "@/lib/plural";
 
 type Plano = Database["public"]["Tables"]["planos_plataforma"]["Row"];
 type AssinaturaAtual = {
@@ -98,14 +99,24 @@ export const FLAG_LABEL: Record<string, string> = {
 
 export function listarRecursos(plano: Plano): string[] {
   const itens: string[] = [
-    plano.max_profissionais ? `Até ${plano.max_profissionais} profissionais` : "Profissionais ilimitados",
-    plano.max_usuarios ? `Até ${plano.max_usuarios} usuários no painel` : "Usuários ilimitados",
-    plano.max_fotos ? `Até ${plano.max_fotos} fotos na página pública` : "Fotos ilimitadas",
+    plano.max_profissionais
+      ? `Até ${plano.max_profissionais} ${plural(plano.max_profissionais, "profissional", "profissionais")}`
+      : "Profissionais ilimitados",
+    plano.max_usuarios
+      ? `Até ${plano.max_usuarios} ${plural(plano.max_usuarios, "usuário", "usuários")} no painel`
+      : "Usuários ilimitados",
+    plano.max_fotos
+      ? `Até ${plano.max_fotos} ${plural(plano.max_fotos, "foto", "fotos")} na página pública`
+      : "Fotos ilimitadas",
   ];
   const recursos = (plano.recursos ?? {}) as Record<string, boolean | string>;
   const { suporte, loja, ...flags } = recursos;
   if (loja === true) {
-    itens.push(plano.max_produtos ? `Loja com até ${plano.max_produtos} produtos` : "Loja com produtos ilimitados");
+    itens.push(
+      plano.max_produtos
+        ? `Loja com até ${plano.max_produtos} ${plural(plano.max_produtos, "produto", "produtos")}`
+        : "Loja com produtos ilimitados"
+    );
   }
   if (typeof suporte === "string" && SUPORTE_LABEL[suporte]) {
     itens.push(SUPORTE_LABEL[suporte]);

@@ -9,6 +9,7 @@ import type { Database } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormError } from "@/components/ui/form-error";
+import { plural } from "@/lib/plural";
 
 type Produto = Database["public"]["Tables"]["produtos"]["Row"];
 
@@ -38,7 +39,8 @@ export function ProdutosClient({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-cinza-600">
-        {ativos} de {limite ?? "∞"} produto{ativos === 1 ? "" : "s"} ativos
+        {ativos} de {limite ?? "∞"} {plural(limite ?? 0, "produto", "produtos")}{" "}
+        {plural(limite ?? 0, "ativo", "ativos")}
       </p>
       {erroToggle && <FormError>{erroToggle}</FormError>}
 

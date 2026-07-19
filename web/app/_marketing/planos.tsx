@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { centavosToBRL } from "@/lib/money";
 import { listarRecursos, precoVigente } from "@/lib/planos";
 import { FaixaPromocional } from "@/components/ui/faixa-promocional";
+import { plural } from "@/lib/plural";
 
 export async function Planos() {
   const supabase = await createClient();
@@ -50,7 +51,7 @@ export async function Planos() {
                 </p>
                 {emPromocao && plano.promocao_duracao_meses && (
                   <p className="mt-1 text-xs text-latao">
-                    Por {plano.promocao_duracao_meses} {plano.promocao_duracao_meses === 1 ? "mês" : "meses"},
+                    Por {plano.promocao_duracao_meses} {plural(plano.promocao_duracao_meses, "mês", "meses")},
                     depois {centavosToBRL(plano.preco_centavos)}/mês
                   </p>
                 )}

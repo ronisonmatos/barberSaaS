@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { Card } from "@/components/ui/card";
+import { plural } from "@/lib/plural";
 import { Heading } from "@/components/ui/heading";
 
 type BarraStatus = { rotulo: string; valor: number; cor: string };
@@ -40,7 +41,9 @@ function TooltipDia({ active, payload }: { active?: boolean; payload?: { payload
   const item = payload[0].payload;
   return (
     <div className="rounded-md border border-linha bg-marfim-2 px-3 py-2 text-sm shadow-[0_1px_2px_rgb(0_0_0_/_0.06)]">
-      <p className="font-medium text-carvao">{item.valor} agendamento{item.valor === 1 ? "" : "s"}</p>
+      <p className="font-medium text-carvao">
+        {item.valor} {plural(item.valor, "agendamento", "agendamentos")}
+      </p>
       <p className="text-cinza-600">{item.rotulo}</p>
     </div>
   );

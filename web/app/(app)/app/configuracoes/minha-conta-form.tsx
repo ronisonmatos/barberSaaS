@@ -30,7 +30,7 @@ export function MinhaContaForm({
 
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium">Gênero</span>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <label className="flex items-center gap-2 text-sm">
             <input
               type="radio"
@@ -56,16 +56,18 @@ export function MinhaContaForm({
 
       <div className="flex flex-col gap-1">
         <label htmlFor="cpf" className="text-sm font-medium">
-          CPF
+          CPF (opcional)
         </label>
         <Input
           id="cpf"
           name="cpf"
-          required
           inputMode="numeric"
           value={cpf}
           onChange={(e) => setCpf(formatarCPF(e.target.value))}
         />
+        <p className="text-xs text-cinza-600">
+          Só é necessário se você for contratar um plano pago com cartão de crédito.
+        </p>
       </div>
 
       {state?.error && <FormError>{state.error}</FormError>}

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
 import { papelLabel } from "@/lib/papel-label";
+import { plural } from "@/lib/plural";
 
 type Membro = {
   id: string;
@@ -47,7 +48,8 @@ export function EquipeForm({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-cinza-600">
-        {usados} de {limite ?? "∞"} usuário{usados === 1 ? "" : "s"} usados
+        {usados} de {limite ?? "∞"} {plural(limite ?? 0, "usuário", "usuários")}{" "}
+        {plural(limite ?? 0, "usado", "usados")}
       </p>
 
       <ul className="flex flex-col gap-2">

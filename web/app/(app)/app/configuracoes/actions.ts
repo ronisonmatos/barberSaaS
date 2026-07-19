@@ -132,7 +132,11 @@ export async function salvarPoliticaAgendamento(
 const schemaMinhaConta = z.object({
   nome: z.string().trim().min(2, { error: "Nome deve ter ao menos 2 caracteres." }),
   genero: z.enum(["masculino", "feminino"], { error: "Selecione o gênero." }),
-  cpf: z.string().refine(validarCPF, { error: "CPF inválido." }),
+  cpf: z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => !v || validarCPF(v), { error: "CPF inválido." }),
 });
 
 export async function salvarMinhaConta(_prevState: FormState, formData: FormData): Promise<FormState> {
@@ -140,14 +144,18 @@ export async function salvarMinhaConta(_prevState: FormState, formData: FormData
   const parsed = schemaMinhaConta.safeParse({
     nome: formData.get("nome"),
     genero: formData.get("genero"),
-    cpf: formData.get("cpf"),
+    cpf: formData.get("cpf") || undefined,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("usuarios")
-    .update({ nome: parsed.data.nome, genero: parsed.data.genero, cpf: apenasNumeros(parsed.data.cpf) })
+    .update({
+      nome: parsed.data.nome,
+      genero: parsed.data.genero,
+      cpf: parsed.data.cpf ? apenasNumeros(parsed.data.cpf) : null,
+    })
     .eq("id", userId);
   if (error) return { error: error.message };
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { BrandFooter } from "@/components/brand-footer";
 
@@ -7,6 +8,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* eslint-disable-next-line @next/next/no-img-element -- SVG estático, sem necessidade de otimização do next/image */}
       <img src="/brand/comptus-logotipo-fundo-claro.svg" alt="Comptus" className="h-8 w-auto" />
       <Card className="w-full max-w-sm">{children}</Card>
+      <div className="flex gap-3 text-xs text-cinza-600">
+        <Link href="/termos" className="underline hover:text-carvao">
+          Termos de Uso
+        </Link>
+        <Link href="/privacidade" className="underline hover:text-carvao">
+          Política de Privacidade
+        </Link>
+      </div>
       <BrandFooter />
     </div>
   );

@@ -5,6 +5,7 @@ import { ImagePlus, X } from "lucide-react";
 import { adicionarFotos, removerFoto } from "./actions";
 import { TAMANHO_MAX_LOGO_BYTES } from "./limites";
 import { FormError } from "@/components/ui/form-error";
+import { plural } from "@/lib/plural";
 
 function formatarMB(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(0)}MB`;
@@ -52,7 +53,8 @@ export function GaleriaForm({ fotos, limite }: { fotos: Foto[]; limite: number |
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-cinza-600">
-        {usadas} de {limite ?? "∞"} foto{usadas === 1 ? "" : "s"} usadas · PNG, JPEG, WEBP ou SVG, até{" "}
+        {usadas} de {limite ?? "∞"} {plural(limite ?? 0, "foto", "fotos")}{" "}
+        {plural(limite ?? 0, "usada", "usadas")} · PNG, JPEG, WEBP ou SVG, até{" "}
         {formatarMB(TAMANHO_MAX_LOGO_BYTES)} cada
       </p>
 

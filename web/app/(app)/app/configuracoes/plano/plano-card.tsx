@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FaixaPromocional } from "@/components/ui/faixa-promocional";
 import { centavosToBRL } from "@/lib/money";
 import { listarRecursos, precoVigente } from "@/lib/planos";
+import { plural } from "@/lib/plural";
 import { PlanoCheckout } from "./plano-checkout";
 import type { Database } from "@/lib/supabase/types";
 
@@ -51,7 +52,7 @@ export function PlanoCard({
         </p>
         {emPromocao && plano.promocao_duracao_meses && (
           <p className="text-xs text-latao-escuro">
-            Por {plano.promocao_duracao_meses} {plano.promocao_duracao_meses === 1 ? "mês" : "meses"}, depois{" "}
+            Por {plano.promocao_duracao_meses} {plural(plano.promocao_duracao_meses, "mês", "meses")}, depois{" "}
             {centavosToBRL(plano.preco_centavos)}/mês
           </p>
         )}

@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { UserRound, Store, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles, Palette, CalendarClock, LayoutTemplate } from "lucide-react";
+import { UserRound, Store, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles, Palette, CalendarClock, LayoutTemplate, Award, Repeat } from "lucide-react";
 
 export type SecaoConfiguracao = {
   href: string;
@@ -73,6 +73,20 @@ export const SECOES_CONFIGURACAO: SecaoConfiguracao[] = [
     label: "Política de agendamento",
     descricao: "Prazos para agendar, cancelar e remarcar.",
     icon: CalendarClock,
+    ownerOnly: true,
+  },
+  {
+    href: "/app/configuracoes/fidelidade",
+    label: "Cartão fidelidade",
+    descricao: "Programas de selos e brindes por serviço.",
+    icon: Award,
+    ownerOnly: true,
+  },
+  {
+    href: "/app/configuracoes/assinaturas",
+    label: "Clube de assinatura",
+    descricao: "Planos recorrentes vendidos aos seus clientes.",
+    icon: Repeat,
     ownerOnly: true,
   },
   {

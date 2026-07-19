@@ -314,5 +314,178 @@ temas por tenant na página pública, texto de interface e acessibilidade.
   - Validado com script transacional (`supabase/tests/produtos_slug.sql`): índice único bloqueia
     slug duplicado dentro do mesmo estabelecimento, mas permite o mesmo slug em estabelecimentos
     diferentes.
+- **Cartão fidelidade**: concluído. Estabelecimento decide se ativa (recurso de plano pago,
+  `recursos.fidelidade`, mesmo padrão booleano de `pagamento_online`) e configura, por programa
+  (`/app/configuracoes/fidelidade`, owner-only), qual serviço conta selo, quantos selos completam
+  o cartão, e o brinde (um serviço ou um produto específico). Selo só é concedido quando o
+  agendamento daquele serviço é marcado **concluído** no painel — nunca no ato de agendar ou
+  pagar — e resgate é uma ação manual do painel (`/app/fidelidade`, aberta a qualquer staff, não
+  integrada ao wizard público nem à loja, por decisão explícita do usuário pra manter o escopo
+  pequeno nesta leva).
+  - **Desenho anti-fraude** (era a preocupação central do pedido): toda a lógica de
+    concessão/revogação de selo virou uma única RPC `security definer`
+    (`atualizar_status_agendamento`) que substitui o que antes era um update direto e sem
+    validação nenhuma — achado de segurança de passagem: essa action (`agenda/actions.ts`) era a
+    única do arquivo que não escopava por `estabelecimento_id`, corrigido de quebra. A tabela
+    `fidelidade_selos` tem `unique(agendamento_id)`, então cada visita concedida vira uma linha
+    auditável e nunca duplica; reverter um "concluído" por engano revoga o selo automaticamente,
+    exceto se o cartão correspondente já foi **resgatado** (o brinde já saiu fisicamente) — nesse
+    caso a correção de status é bloqueada com erro explícito, exigindo intervenção manual.
+  - Downgrade de plano não apaga programas nem cartões existentes; só bloqueia criar programas
+    novos e a RPC passa a pular a concessão de selo silenciosamente (o "Concluir" continua
+    funcionando sempre).
+  - **Limitação conhecida**: estorno de pagamento após a conclusão não revoga selo
+    automaticamente — fica pra revisão manual do dono.
+  - Validado com script transacional (`supabase/tests/cartao_fidelidade.sql`, sempre com
+    `rollback`) cobrindo concessão, idempotência, revogação, bloqueio de reversão pós-resgate,
+    conclusão exata no N-ésimo selo, resgate único, gate por plano e isolamento entre
+    estabelecimentos — todos contra o Supabase real. Não testado com login real no navegador
+    (exigiria mexer em agendamentos de verdade da "Clube do Homem" em produção, evitado de
+    propósito); smoke test confirmou que as rotas novas compilam e redirecionam certo sem sessão.
+- **Cartão fidelidade — visibilidade pública, popup no check-in e notificações no painel**:
+  concluído (leva 2, na sequência da leva acima). Cliente final passa a ver o próprio cartão em
+  dois lugares — nunca integrado ao wizard de agendamento nem à loja, mantendo a decisão de
+  resgate manual da leva 1:
+  - **RPCs públicas novas** (`fidelidade_status_cliente`, `cartoes_fidelidade_publico_por_telefone`,
+    `cartao_fidelidade_por_token`) — `programas_fidelidade`/`cartoes_fidelidade` não tinham
+    nenhuma policy `anon` de propósito na leva 1; agora resolvem a identidade do cliente
+    internamente (por telefone no check-in, por `token_acesso` em `/meus-agendamentos`), nunca
+    aceitando `cliente_id`/`cartao_id` cru do client — mesmo padrão de
+    `checkin_buscar_agendamentos_publico`/`agendamento_por_token`.
+  - Componente `CartaoFidelidadePublico` (`web/app/(public)/b/[slug]/cartao-fidelidade.tsx`) usa
+    os tokens `--tenant-*` (não a paleta fixa do painel), então se adapta automaticamente aos 4
+    presets de tema — reaproveitado em dois pontos: seção persistente em
+    `/b/{slug}/meus-agendamentos/{token}` (100% server-rendered, terceira RPC no `Promise.all`
+    que já existia) e no passo final do check-in (`checkin-form.tsx`), sempre inline.
+  - **Popup de parabéns**: só interrompe a tela (overlay `fixed inset-0`, primeiro modal do
+    projeto) quando o cartão está `completo` no momento do check-in — como a conclusão real
+    acontece depois, quando a equipe marca "Concluir" no painel (às vezes com o cliente já fora),
+    não dá pra mostrar o popup no instante exato; o check-in é o próximo ponto de contato viável,
+    e mostra o status atual (progresso ou parabéns) toda vez, decisão confirmada com o usuário.
+  - **Notificações no painel, em tempo real (Supabase Realtime)** — primeira feature do projeto
+    usando Realtime; tabela `notificacoes` (`tipo`/`payload jsonb` genéricos tipo `eventos_admin`,
+    `lida boolean`, só `fidelidade_completo` por enquanto) alimentada de dentro da própria RPC
+    `atualizar_status_agendamento` (reaproveita o ponto onde ela já detecta que um cartão virou
+    `completo`, sem trigger separada). Sino (`notificacoes-bell.tsx`) monta em dois pontos do
+    `layout.tsx` (sidebar desktop + topbar mobile), assina `postgres_changes` filtrado por
+    `estabelecimento_id` (RLS se aplica igual a qualquer outra leitura, o filtro do canal é só
+    otimização). **Achado real durante a verificação**: `createClient()` do browser
+    (`@supabase/ssr`) é singleton, e o Strict Mode do React em dev monta o efeito duas vezes —
+    o segundo `.channel()` com o mesmo nome reaproveitava um canal já inscrito pelo primeiro, e
+    `.on()` numa inscrição já feita lança exceção. Corrigido removendo qualquer canal do mesmo
+    tópico (`supabase.getChannels()`) antes de criar um novo.
+  - Validado com script transacional (`supabase/tests/fidelidade_publico.sql`, sempre com
+    `rollback`): telefone/token inexistente retorna vazio, RPCs refletem status/brinde corretos
+    depois de completar via `atualizar_status_agendamento`, isolamento entre estabelecimentos
+    mesmo com o mesmo telefone cadastrado nos dois, notificação criada exatamente uma vez ao
+    completar (idempotente em chamada repetida). Smoke test das rotas públicas contra
+    `clube-do-homem` em produção só via GET (sem submeter check-in real nem adivinhar token de
+    cliente de verdade — `token_acesso` é credencial).
+- **Cartão fidelidade — ajustes pós-feedback (participação visível no wizard + popup corrigido)**:
+  concluído. Dois problemas reais reportados ao testar a leva anterior:
+  - **Cliente não via nada durante/depois do agendamento**: a causa raiz era esperada (cartão só
+    nasce depois da primeira visita **concluída**), mas o usuário queria participação visível
+    desde o agendamento. `fidelidade_status_cliente` (RPC helper de leva anterior) ganhou uma
+    entrada "virtual" (0 selos, sem `cartao_id`) via `union all` pra todo programa ativo cujo
+    serviço o cliente já tenha **agendado** (qualquer status, não precisa estar concluído) e ainda
+    não tenha cartão — efeito só de leitura, não mexe na concessão de selo (continua só em
+    `concluido`). Isso propaga automaticamente pros 3 consumidores da RPC (check-in, `/meus-
+    agendamentos`, e o próprio catálogo). Também abriu **leitura pública nova** em
+    `programas_fidelidade` (`to anon`, gate por `estabelecimento_permite_fidelidade` + `ativo`,
+    mesmo molde de `produtos`) — diferente das RPCs de progresso (que resolvem identidade por
+    telefone/token), essa é só o catálogo do programa, sem estado de cliente nenhum, usada pelo
+    wizard de agendamento (`agendar-wizard.tsx`) pra mostrar "Participa do cartão fidelidade" na
+    lista de serviços e um aviso completo (selos necessários + brinde) ao escolher o serviço —
+    tudo isso **antes** de o cliente informar telefone/nome (que só acontece no último passo).
+  - **Popup do sino cortado na sidebar**: `NotificacoesBell` sempre abria o dropdown alinhado à
+    direita (`right-0`), que funciona na topbar mobile (botão perto da borda direita) mas estoura
+    pra fora da tela na sidebar desktop (`md:w-56`, só 224px de largura, botão perto da borda
+    esquerda). Ganhou prop `alinhamento` ("esquerda"/"direita"); a instância da sidebar usa
+    "esquerda" (abre pra dentro do conteúdo principal, sempre visível).
+  - Validado: `supabase/tests/fidelidade_publico.sql` ganhou cenário cobrindo o progresso "0 de N"
+    antes de qualquer conclusão; `supabase/tests/cartao_fidelidade.sql` (leva anterior) rodado de
+    novo pra confirmar que a concessão/revogação de selo não mudou de comportamento.
+    Lint/typecheck limpos; smoke test (só GET) das rotas novas/alteradas contra `clube-do-homem`
+    em produção.
+- **Clube de assinatura do cliente final**: concluído. Estabelecimento vende planos tipo "2
+  cortes/mês" pros próprios clientes (diferente de `planos_plataforma`, que é o que a plataforma
+  vende PRO estabelecimento) — schema (`planos_estabelecimento`, `assinaturas_clientes`,
+  `agendamentos.assinatura_cliente_id`, `pagamentos.assinatura_cliente_id`, enum
+  `metodo_pagamento` já com valor `'assinatura'`) já existia desde a fundação do projeto sem
+  nenhuma UI/RPC — essa leva só construiu a lógica em cima.
+  - **Cliente assina sozinho pela página pública** (`/b/{slug}/clube`, decisão explícita do
+    usuário), pagando o 1º ciclo via Pix/cartão — reaproveita a mesma infra de pagamento já usada
+    em agendamentos/loja (`web/lib/mercadopago.ts`, `ResultadoPagamento`, `CardPaymentBrick`).
+    Sem opção "pagar depois" (diferente de agendamento/loja): assinatura sempre exige prepagamento
+    do 1º ciclo. Teaser na home (`home-classico.tsx`/`home-prestigio.tsx`), mesmo tratamento que
+    "Produtos" já tinha.
+  - **Só quantidade fixa por ciclo nesta leva** (ex: "2 cortes/mês de um serviço específico") —
+    decisão explícita do usuário pra não entrar ainda em plano "ilimitado" (que precisaria de
+    trava de intervalo mínimo pra não ser abusado, conforme o levantamento de mercado da leva
+    anterior). `planos_estabelecimento.regras` usa só `[{"servico_id","quantidade_mes"}]`.
+  - **Consumo automático e transparente no agendamento**: `criar_agendamento_publico` e
+    `criar_agendamento_publico_pix` ganharam a checagem `assinatura_disponivel_para_servico`
+    (RPC nova) logo após resolver o cliente por telefone — se há assinatura `ativa` cobrindo o
+    serviço com saldo no ciclo (`usos_ciclo` vs `quantidade_mes`), o agendamento confirma na hora
+    sem cobrança (`pagamentos.metodo = 'assinatura'`, `valor_centavos = 0`, preço de tabela
+    continua gravado em `agendamentos.preco_centavos` só pra relatório) e incrementa `usos_ciclo`
+    — **sem tocar no wizard público** (mesmo desenho que o cartão fidelidade tinha originalmente
+    antes do ajuste pedido pelo usuário: servidor decide de forma transparente, já que o telefone
+    só é conhecido no último passo do wizard). Simplificação desta leva: só se aplica quando não
+    há itens de loja no carrinho (cobertura parcial serviço-grátis-produto-pago fica pra depois).
+  - **Estado novo**: `status_assinatura` ganhou o valor `'pendente'` (aguardando confirmação do 1º
+    pagamento, mesmo papel que já existia em `status_agendamento`) — precisou de migration própria
+    porque `ALTER TYPE ... ADD VALUE` não pode ser usado na mesma transação em que o valor é
+    referenciado. `assinaturas_clientes` ganhou `unique(cliente_id, plano_id)`: um cliente tem no
+    máximo uma linha por plano, o estado transiciona na mesma linha (histórico de cobranças já
+    vive em `pagamentos`) — isso também é o que permite `criar_assinatura_publica_pix` reativar
+    uma assinatura `inadimplente`/`cancelada` só reassinando pelo mesmo fluxo público (`on
+    conflict`), sem tela de "renovação" dedicada.
+  - **Renovação/cobrança: manual, sem Mercado Pago Preapproval** (decisão já validada numa leva
+    anterior) — cron novo `expirar-assinaturas-clube` (mesmo padrão de
+    `expirar-trial`/`expirar-pendentes`) marca `inadimplente` quando `ciclo_fim` vence; cliente
+    inadimplente simplesmente deixa de ser "coberto" e reativa revisitando `/b/{slug}/clube`.
+  - Webhook do Mercado Pago (`app/api/webhooks/mercadopago/route.ts`) ganhou branch pra
+    `assinatura_cliente_id`: `approved` ativa (zera `usos_ciclo`, novo ciclo de 30 dias — serve
+    tanto pra 1ª ativação quanto reativação pós-inadimplência), `rejected`/`cancelled`/`refunded`
+    cancelam.
+  - Painel: `/app/configuracoes/assinaturas` (owner-only, gate de plano — `recursos.clube_assinatura`,
+    mesmo padrão booleano de `fidelidade`/`loja`/`pagamento_online`) faz CRUD dos planos com uma
+    lista repetível de regras (serviço + quantidade/mês); `/app/assinaturas` (topo, qualquer
+    staff) lista assinantes com botão "Cancelar" (owner-only, mesmo critério de ações financeiras
+    tipo reembolso). RLS de escrita em `planos_estabelecimento` endurecida pra owner-only de
+    passagem (mesmo achado de segurança já corrigido em `programas_fidelidade` — staff só lê).
+  - **Bug real corrigido durante a verificação**: `criar_agendamento_publico_pix` tinha um `CASE
+    WHEN ... THEN 'confirmado' ELSE 'pendente' END` sem cast explícito — Postgres não infere que
+    os dois ramos (literais de texto) são do tipo `status_agendamento` nesse contexto, erro 42804
+    detectado pelo script de teste. Corrigido com `::status_agendamento` explícito.
+  - Validado com script transacional novo (`supabase/tests/clube_assinatura.sql`, sempre com
+    `rollback`): gate por plano, assinar cria `pendente` e bloqueia no Free, cobertura respeita a
+    quota do ciclo (e para de cobrir quando esgota), agendamento coberto confirma sem cobrança e
+    incrementa `usos_ciclo`, cron marca inadimplente e a cobertura para, reativação reusa a mesma
+    linha via `on conflict`, isolamento entre estabelecimentos. Reexecutados os testes das levas
+    anteriores (`cartao_fidelidade.sql`, `fidelidade_publico.sql`, `loja.sql` — esse último tinha
+    um fixture desatualizado com `slug` faltando, corrigido de passagem, bug pré-existente não
+    causado por esta leva) pra confirmar que as RPCs compartilhadas (`criar_agendamento_publico*`)
+    não regrediram. Lint/typecheck limpos; smoke test (só GET, sem pagamento real) das rotas novas
+    contra `clube-do-homem` em produção.
+- **Bug real: campos de preço inflavam ao resalvar sem editar o valor**: corrigido. Todo
+  `defaultValue` de campo de preço (`servicos`, `produtos`, `configuracoes/assinaturas`,
+  `admin/planos` preço e preço promocional, `admin/temas`) usava `(centavos / 100).toFixed(2)`
+  — que formata com **ponto** ("80.00") — enquanto `brlToCentavos()` (`web/lib/money.ts`) espera
+  formato brasileiro e trata ponto como separador de milhar. Resultado: se o formulário fosse
+  reenviado sem o usuário reescrever o campo de preço (ex: editou só a descrição e salvou), o
+  "80.00" antigo virava "8000" antes do parse, multiplicando o valor por ~100 a cada resave.
+  Corrigido com `centavosParaCampoBRL()` novo em `web/lib/money.ts` (usa vírgula, mesmo formato
+  que `brlToCentavos` espera de volta — round-trip consistente). O único lugar com `.toFixed(2)`
+  que **não** foi alterado é `web/app/(public)/b/[slug]/loja/[produto]/page.tsx` — é dado
+  estruturado JSON-LD (schema.org), que corretamente usa ponto, não é campo de formulário.
+  Campos de data (`type="date"`, `promocao_assinar_ate` etc.) revisados de passagem — usam ISO
+  internamente e exibição pt-BR já formatada em todo lugar, sem o mesmo tipo de bug.
+  **Dado real corrompido encontrado e corrigido**: o plano "Clube do Homem"
+  (`planos_estabelecimento`, id `32553d89-7de5-464f-a994-ccc8cb8e7ee1`) estava em R$ 8.000,00
+  (era R$ 80,00 antes do bug inflar) — corrigido no banco de produção com autorização do usuário.
+  Vale o usuário conferir preços de serviços/produtos/outros planos que tenham sido editados mais
+  de uma vez, caso algum outro tenha sido afetado antes desta correção.
 - Próxima onda da Fase 1 (ver seção 8 da ORIENTACAO-BARBERSAAS.md): terminar o deploy/webhook de
   verdade, Asaas, e WhatsApp (Cloud API + links wa.me) por último, como o usuário pediu.

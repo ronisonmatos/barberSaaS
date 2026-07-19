@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { salvarServico } from "./actions";
+import { centavosParaCampoBRL } from "@/lib/money";
 import type { Database } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +49,7 @@ export function ServicoForm({
           <Input
             name="preco"
             required
-            defaultValue={servico ? (servico.preco_centavos / 100).toFixed(2) : ""}
+            defaultValue={servico ? centavosParaCampoBRL(servico.preco_centavos) : ""}
             placeholder="40,00"
           />
         </div>

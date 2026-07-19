@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { salvarPlano } from "./actions";
+import { centavosParaCampoBRL } from "@/lib/money";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
@@ -49,7 +50,7 @@ export function PlanoForm({ plano, onDone }: { plano?: Plano | null; onDone?: ()
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Preço mensal (R$)</label>
-          <Input name="preco" required placeholder="99,00" defaultValue={plano ? (plano.preco_centavos / 100).toFixed(2) : ""} />
+          <Input name="preco" required placeholder="99,00" defaultValue={plano ? centavosParaCampoBRL(plano.preco_centavos) : ""} />
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Máx. profissionais (vazio = ilimitado)</label>
@@ -144,7 +145,7 @@ export function PlanoForm({ plano, onDone }: { plano?: Plano | null; onDone?: ()
                   name="promocaoValor"
                   placeholder="49,00"
                   defaultValue={
-                    plano?.promocao_valor_centavos != null ? (plano.promocao_valor_centavos / 100).toFixed(2) : ""
+                    plano?.promocao_valor_centavos != null ? centavosParaCampoBRL(plano.promocao_valor_centavos) : ""
                   }
                 />
               </div>

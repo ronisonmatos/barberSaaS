@@ -4,6 +4,7 @@ import { centavosToBRL } from "@/lib/money";
 import { CancelarButton } from "./cancelar-button";
 import { RemarcarButton } from "./remarcar-button";
 import { StatusBadge, type StatusAgendamento } from "@/components/ui/status-badge";
+import { CartaoFidelidadePublico, type FidelidadeStatusPublico } from "../../cartao-fidelidade";
 import { PAGINA_WRAP, PAGINA_CARTAO, ROTULO_SECAO } from "../../estilos";
 
 const STATUS_PEDIDO_LABEL: Record<string, string> = {
@@ -23,10 +24,20 @@ export default async function MeusAgendamentosPage({
   const { token } = await params;
   const supabase = await createClient();
 
-  const [{ data: agendamentos, error }, { data: pedidos }] = await Promise.all([
+  const [{ data: agendamentos, error }, { data: pedidos }, { data: cartoesFidelidade }] = await Promise.all([
     supabase.rpc("agendamento_por_token", { p_token: token }),
     supabase.rpc("pedido_por_token", { p_token: token }),
+    supabase.rpc("cartao_fidelidade_por_token", { p_token: token }),
   ]);
+
+  const cartoes: FidelidadeStatusPublico[] = (cartoesFidelidade ?? []).map((c) => ({
+    cartaoId: c.cartao_id,
+    programaNome: c.programa_nome,
+    brinde: c.brinde,
+    selosAtual: c.selos_atual,
+    selosNecessarios: c.selos_necessarios,
+    status: c.status as FidelidadeStatusPublico["status"],
+  }));
 
   if ((error || !agendamentos || agendamentos.length === 0) && (!pedidos || pedidos.length === 0)) {
     notFound();
@@ -40,9 +51,16 @@ export default async function MeusAgendamentosPage({
         <h1 className="font-display text-2xl text-tenant-fg">
           Meus agendamentos e pedidos{nomeEstabelecimento ? ` — ${nomeEstabelecimento}` : ""}
         </h1>
+
+        {cartoes.length > 0 && (
+          <div className="border-b border-tenant-linha pb-4">
+            <CartaoFidelidadePublico cartoes={cartoes} />
+          </div>
+        )}
+
         {agendamentos && agendamentos.length > 0 && (
           <div className="flex flex-col gap-3">
-            {(pedidos?.length ?? 0) > 0 && <p className={ROTULO_SECAO}>Agendamentos</p>}
+            <p className={ROTULO_SECAO}>Agendamentos</p>
             {agendamentos.map((ag) => {
               const podeCancel = ag.status === "pendente" || ag.status === "confirmado";
               return (
@@ -77,7 +95,11 @@ export default async function MeusAgendamentosPage({
         )}
 
         {pedidos && pedidos.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <div
+            className={`flex flex-col gap-3 ${
+              agendamentos && agendamentos.length > 0 ? "border-t border-tenant-linha pt-4" : ""
+            }`}
+          >
             <p className={ROTULO_SECAO}>Meus pedidos</p>
             {pedidos.map((pd) => (
               <div

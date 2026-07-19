@@ -95,6 +95,8 @@ export const FLAG_LABEL: Record<string, string> = {
   whatsapp: "WhatsApp",
   relatorios: "Relatórios",
   pagamento_online: "Pagamento online no agendamento",
+  fidelidade: "Cartão fidelidade",
+  clube_assinatura: "Clube de assinatura",
 };
 
 export function listarRecursos(plano: Plano): string[] {

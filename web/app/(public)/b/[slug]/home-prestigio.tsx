@@ -10,6 +10,7 @@ type Servico = Database["public"]["Tables"]["servicos"]["Row"];
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 type Foto = { id: string; url: string };
 type Produto = { id: string; nome: string; preco_centavos: number; foto_url: string | null; slug: string };
+type Plano = { id: string; nome: string; preco_centavos: number };
 
 export function HomePrestigio({
   slug,
@@ -18,6 +19,7 @@ export function HomePrestigio({
   profissionais,
   fotos,
   produtos,
+  planos,
 }: {
   slug: string;
   estabelecimento: Estabelecimento;
@@ -25,6 +27,7 @@ export function HomePrestigio({
   profissionais: Profissional[];
   fotos: Foto[];
   produtos: Produto[];
+  planos: Plano[];
 }) {
   const endereco = formatarEndereco(estabelecimento.endereco);
   const whatsapp = linkWhatsApp(estabelecimento.telefone_whatsapp);
@@ -33,6 +36,7 @@ export function HomePrestigio({
   const NAV = [
     servicos.length > 0 ? { href: "#servicos", label: "Serviços" } : null,
     produtos.length > 0 ? { href: "#produtos", label: "Produtos" } : null,
+    planos.length > 0 ? { href: "#clube", label: "Clube" } : null,
     profissionais.length > 0 ? { href: "#profissionais", label: "Profissionais" } : null,
     estabelecimento.sobre ? { href: "#sobre", label: "Sobre" } : null,
   ].filter((n): n is { href: string; label: string } => n !== null);
@@ -152,6 +156,30 @@ export function HomePrestigio({
                 <p className="truncate text-sm font-medium">{p.nome}</p>
                 <p className="text-sm font-semibold tabular-nums text-tenant-acento">{centavosToBRL(p.preco_centavos)}</p>
               </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {planos.length > 0 && (
+        <section id="clube" className={`${CONTAINER_LARGO} ${SECAO} border-t border-tenant-linha`}>
+          <div className="mb-8 flex items-end justify-between">
+            <div>
+              <p className={`${ROTULO_SECAO} mb-2`}>Recorrência</p>
+              <h2 className="font-display text-2xl">Clube de assinatura</h2>
+            </div>
+            <Link href={`/b/${slug}/clube`} className={BOTAO_GHOST}>
+              Ver planos
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {planos.map((p) => (
+              <div key={p.id} className="flex flex-col gap-2 rounded-2xl border border-tenant-linha bg-tenant-bg-2 p-5">
+                <p className="text-lg font-semibold">{p.nome}</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-tenant-acento">
+                  {centavosToBRL(p.preco_centavos)}/mês
+                </p>
+              </div>
             ))}
           </div>
         </section>

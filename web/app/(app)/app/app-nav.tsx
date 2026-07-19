@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, Scissors, UserSquare2, Ban, Users, Settings, ShoppingBag, Package } from "lucide-react";
+import { LayoutDashboard, Calendar, Scissors, UserSquare2, Ban, Users, Settings, ShoppingBag, Package, Award, Repeat } from "lucide-react";
 
 const LINKS = [
   { href: "/app", label: "Painel", icon: LayoutDashboard },
@@ -10,6 +10,8 @@ const LINKS = [
   { href: "/app/servicos", label: "Serviços", icon: Scissors },
   { href: "/app/produtos", label: "Produtos", icon: ShoppingBag },
   { href: "/app/pedidos", label: "Pedidos", icon: Package },
+  { href: "/app/fidelidade", label: "Fidelidade", icon: Award },
+  { href: "/app/assinaturas", label: "Assinaturas", icon: Repeat },
   { href: "/app/profissionais", label: "Profissionais", icon: UserSquare2 },
   { href: "/app/bloqueios", label: "Bloqueios", icon: Ban },
   { href: "/app/clientes", label: "Clientes", icon: Users },

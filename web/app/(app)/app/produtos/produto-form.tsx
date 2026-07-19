@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { salvarProduto } from "./actions";
 import { slugify } from "@/lib/slug";
+import { centavosParaCampoBRL } from "@/lib/money";
 import type { Database } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,7 +96,7 @@ export function ProdutoForm({
             <Input
               name="preco"
               required
-              defaultValue={produto ? (produto.preco_centavos / 100).toFixed(2) : ""}
+              defaultValue={produto ? centavosParaCampoBRL(produto.preco_centavos) : ""}
               placeholder="40,00"
             />
           </div>

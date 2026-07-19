@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   const { data: pagamento } = await supabase
     .from("pagamentos")
-    .select("id, estabelecimento_id, agendamento_id, pedido_id")
+    .select("id, estabelecimento_id, agendamento_id, pedido_id, assinatura_cliente_id")
     .eq("gateway_payment_id", dataId)
     .maybeSingle();
 
@@ -68,14 +68,33 @@ export async function POST(request: NextRequest) {
     if (pagamento.pedido_id) {
       await supabase.from("pedidos").update({ status: "aguardando_retirada" }).eq("id", pagamento.pedido_id);
     }
+    if (pagamento.assinatura_cliente_id) {
+      const cicloFim = new Date();
+      cicloFim.setDate(cicloFim.getDate() + 30);
+      await supabase
+        .from("assinaturas_clientes")
+        .update({
+          status: "ativa",
+          ciclo_inicio: new Date().toISOString(),
+          ciclo_fim: cicloFim.toISOString(),
+          usos_ciclo: {},
+        })
+        .eq("id", pagamento.assinatura_cliente_id);
+    }
   } else if (["rejected", "cancelled"].includes(pagamentoMercadoPago.status)) {
     await supabase.from("pagamentos").update({ status: "falhou" }).eq("id", pagamento.id);
     if (pagamento.pedido_id) {
       await devolverEstoquePedido(supabase, pagamento.pedido_id);
       await supabase.from("pedidos").update({ status: "cancelado" }).eq("id", pagamento.pedido_id);
     }
+    if (pagamento.assinatura_cliente_id) {
+      await supabase.from("assinaturas_clientes").update({ status: "cancelada" }).eq("id", pagamento.assinatura_cliente_id);
+    }
   } else if (pagamentoMercadoPago.status === "refunded") {
     await supabase.from("pagamentos").update({ status: "estornado" }).eq("id", pagamento.id);
+    if (pagamento.assinatura_cliente_id) {
+      await supabase.from("assinaturas_clientes").update({ status: "cancelada" }).eq("id", pagamento.assinatura_cliente_id);
+    }
   }
 
   await supabase

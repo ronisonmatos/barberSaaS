@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePhoneBR } from "@/lib/phone";
+import type { FidelidadeStatusPublico } from "../cartao-fidelidade";
 
 export type AgendamentoCheckin = {
   agendamentoId: string;
@@ -77,4 +78,42 @@ export async function confirmarChegada(
 
   if (error) return { error: error.message };
   return {};
+}
+
+const cartoesSchema = z.object({
+  estabelecimentoId: z.string().uuid(),
+  telefone: z.string().min(1),
+});
+
+export async function buscarCartoesFidelidadeCheckin(
+  input: z.infer<typeof cartoesSchema>
+): Promise<{ error?: string; cartoes?: FidelidadeStatusPublico[] }> {
+  const parsed = cartoesSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Dados inválidos." };
+  }
+
+  const telefone = normalizePhoneBR(parsed.data.telefone);
+  if (!telefone) {
+    return { error: "WhatsApp inválido." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("cartoes_fidelidade_publico_por_telefone", {
+    p_estabelecimento_id: parsed.data.estabelecimentoId,
+    p_telefone: telefone,
+  });
+
+  if (error) return { error: error.message };
+
+  const cartoes: FidelidadeStatusPublico[] = (data ?? []).map((c) => ({
+    cartaoId: c.cartao_id,
+    programaNome: c.programa_nome,
+    brinde: c.brinde,
+    selosAtual: c.selos_atual,
+    selosNecessarios: c.selos_necessarios,
+    status: c.status as FidelidadeStatusPublico["status"],
+  }));
+
+  return { cartoes };
 }

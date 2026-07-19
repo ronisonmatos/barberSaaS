@@ -43,6 +43,8 @@ const QUALQUER = "qualquer";
 const CARTAO_ESCOLHA =
   "flex justify-between rounded-md border border-tenant-linha bg-tenant-bg p-3 text-left text-current transition-colors duration-150 hover:border-tenant-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tenant-acento focus-visible:ring-offset-2";
 
+type ProgramaFidelidadeServico = { servicoId: string; selosNecessarios: number; brinde: string };
+
 export function AgendarWizard({
   estabelecimento,
   servicos,
@@ -50,6 +52,7 @@ export function AgendarWizard({
   vinculos,
   formasPagamento,
   produtos,
+  programasFidelidade,
 }: {
   estabelecimento: Estabelecimento;
   servicos: Servico[];
@@ -57,6 +60,7 @@ export function AgendarWizard({
   vinculos: { profissional_id: string; servico_id: string }[];
   formasPagamento: FormasPagamento;
   produtos: ProdutoCarrinho[];
+  programasFidelidade: ProgramaFidelidadeServico[];
 }) {
   const [passo, setPasso] = useState<Passo>("servico");
   const [servicoId, setServicoId] = useState<string | null>(null);
@@ -104,6 +108,7 @@ export function AgendarWizard({
   const numero = (p: Passo) => passosAtivos.indexOf(p) + 1;
 
   const servicoSelecionado = servicos.find((s) => s.id === servicoId) ?? null;
+  const programaDoServicoSelecionado = programasFidelidade.find((p) => p.servicoId === servicoId) ?? null;
   const totalProdutosCentavos = Object.entries(carrinho).reduce((soma, [produtoId, qtd]) => {
     const produto = produtos.find((p) => p.id === produtoId);
     return soma + (produto ? produto.preco_centavos * qtd : 0);
@@ -275,7 +280,12 @@ export function AgendarWizard({
               }}
               className={CARTAO_ESCOLHA}
             >
-              <span>{s.nome}</span>
+              <span className="flex flex-col items-start gap-0.5">
+                <span>{s.nome}</span>
+                {programasFidelidade.some((p) => p.servicoId === s.id) && (
+                  <span className="text-xs text-tenant-acento">Participa do cartão fidelidade</span>
+                )}
+              </span>
               <span className="tabular-nums">{centavosToBRL(s.preco_centavos)}</span>
             </button>
           ))}
@@ -285,6 +295,13 @@ export function AgendarWizard({
       {passo === "profissional" && (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-tenant-fg opacity-70">2. Escolha o profissional</p>
+          {programaDoServicoSelecionado && (
+            <p className="rounded-md border border-tenant-linha bg-tenant-bg p-3 text-sm text-tenant-fg">
+              Esse serviço participa do cartão fidelidade: a cada visita você ganha um selo.
+              Complete {programaDoServicoSelecionado.selosNecessarios} e ganhe{" "}
+              <span className="font-medium">{programaDoServicoSelecionado.brinde}</span>.
+            </p>
+          )}
           {profissionaisQualificados.map((p) => (
             <button
               key={p.id}

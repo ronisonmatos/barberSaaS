@@ -35,14 +35,20 @@ export function AgendamentoCard({
   const [pending, startTransition] = useTransition();
   const [reembolsoSolicitado, setReembolsoSolicitado] = useState(false);
   const [erroReembolso, setErroReembolso] = useState<string | null>(null);
+  const [erroStatus, setErroStatus] = useState<string | null>(null);
   const [remarcando, setRemarcando] = useState(false);
 
   const hora = (iso: string) =>
     new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   function atualizar(status: "concluido" | "cancelado" | "no_show") {
+    setErroStatus(null);
     startTransition(async () => {
-      await atualizarStatusAgendamento(agendamento.id, status);
+      const r = await atualizarStatusAgendamento(agendamento.id, status);
+      if (r.error) {
+        setErroStatus(r.error);
+        return;
+      }
       router.refresh();
     });
   }
@@ -111,6 +117,7 @@ export function AgendamentoCard({
           </Button>
         </div>
       )}
+      {erroStatus && <FormError className="mt-1 text-xs">{erroStatus}</FormError>}
       {remarcando && (
         <RemarcarDialog
           agendamentoId={agendamento.id}

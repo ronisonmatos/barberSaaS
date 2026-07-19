@@ -19,33 +19,41 @@ export default async function EstabelecimentoPublicaPage({
 
   if (!estabelecimento) notFound();
 
-  const [{ data: servicos }, { data: profissionais }, { data: fotos }, { data: produtos }] = await Promise.all([
-    supabase
-      .from("servicos")
-      .select("*")
-      .eq("estabelecimento_id", estabelecimento.id)
-      .eq("ativo", true)
-      .order("nome"),
-    supabase
-      .from("profissionais")
-      .select("*")
-      .eq("estabelecimento_id", estabelecimento.id)
-      .eq("ativo", true)
-      .order("nome"),
-    supabase
-      .from("estabelecimento_fotos")
-      .select("id, url")
-      .eq("estabelecimento_id", estabelecimento.id)
-      .eq("ativo", true)
-      .order("ordem"),
-    supabase
-      .from("produtos")
-      .select("id, nome, preco_centavos, foto_url, slug")
-      .eq("estabelecimento_id", estabelecimento.id)
-      .eq("ativo", true)
-      .order("ordem")
-      .limit(4),
-  ]);
+  const [{ data: servicos }, { data: profissionais }, { data: fotos }, { data: produtos }, { data: planos }] =
+    await Promise.all([
+      supabase
+        .from("servicos")
+        .select("*")
+        .eq("estabelecimento_id", estabelecimento.id)
+        .eq("ativo", true)
+        .order("nome"),
+      supabase
+        .from("profissionais")
+        .select("*")
+        .eq("estabelecimento_id", estabelecimento.id)
+        .eq("ativo", true)
+        .order("nome"),
+      supabase
+        .from("estabelecimento_fotos")
+        .select("id, url")
+        .eq("estabelecimento_id", estabelecimento.id)
+        .eq("ativo", true)
+        .order("ordem"),
+      supabase
+        .from("produtos")
+        .select("id, nome, preco_centavos, foto_url, slug")
+        .eq("estabelecimento_id", estabelecimento.id)
+        .eq("ativo", true)
+        .order("ordem")
+        .limit(4),
+      supabase
+        .from("planos_estabelecimento")
+        .select("id, nome, preco_centavos")
+        .eq("estabelecimento_id", estabelecimento.id)
+        .eq("ativo", true)
+        .order("preco_centavos")
+        .limit(3),
+    ]);
 
   const props = {
     slug,
@@ -54,6 +62,7 @@ export default async function EstabelecimentoPublicaPage({
     profissionais: profissionais ?? [],
     fotos: fotos ?? [],
     produtos: produtos ?? [],
+    planos: planos ?? [],
   };
 
   const config = (estabelecimento.config ?? {}) as Record<string, unknown>;

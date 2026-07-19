@@ -283,6 +283,64 @@ export type Database = {
           },
         ]
       }
+      cartoes_fidelidade: {
+        Row: {
+          cliente_id: string
+          completado_em: string | null
+          created_at: string
+          estabelecimento_id: string
+          id: string
+          programa_id: string
+          resgatado_em: string | null
+          selos_atual: number
+          status: string
+        }
+        Insert: {
+          cliente_id: string
+          completado_em?: string | null
+          created_at?: string
+          estabelecimento_id: string
+          id?: string
+          programa_id: string
+          resgatado_em?: string | null
+          selos_atual?: number
+          status?: string
+        }
+        Update: {
+          cliente_id?: string
+          completado_em?: string | null
+          created_at?: string
+          estabelecimento_id?: string
+          id?: string
+          programa_id?: string
+          resgatado_em?: string | null
+          selos_atual?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cartoes_fidelidade_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cartoes_fidelidade_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cartoes_fidelidade_programa_id_fkey"
+            columns: ["programa_id"]
+            isOneToOne: false
+            referencedRelation: "programas_fidelidade"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           created_at: string
@@ -581,6 +639,42 @@ export type Database = {
           },
         ]
       }
+      fidelidade_selos: {
+        Row: {
+          agendamento_id: string
+          cartao_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          agendamento_id: string
+          cartao_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          agendamento_id?: string
+          cartao_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fidelidade_selos_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: true
+            referencedRelation: "agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fidelidade_selos_cartao_id_fkey"
+            columns: ["cartao_id"]
+            isOneToOne: false
+            referencedRelation: "cartoes_fidelidade"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jornadas: {
         Row: {
           dia_semana: number
@@ -716,6 +810,47 @@ export type Database = {
           },
           {
             foreignKeyName: "mensagens_whatsapp_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notificacoes: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          estabelecimento_id: string
+          id: string
+          lida: boolean
+          payload: Json
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          estabelecimento_id: string
+          id?: string
+          lida?: boolean
+          payload?: Json
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          estabelecimento_id?: string
+          id?: string
+          lida?: boolean
+          payload?: Json
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_estabelecimento_id_fkey"
             columns: ["estabelecimento_id"]
             isOneToOne: false
             referencedRelation: "estabelecimentos"
@@ -1206,6 +1341,74 @@ export type Database = {
           },
         ]
       }
+      programas_fidelidade: {
+        Row: {
+          ativo: boolean
+          brinde_produto_id: string | null
+          brinde_servico_id: string | null
+          brinde_tipo: string
+          created_at: string
+          estabelecimento_id: string
+          id: string
+          nome: string
+          selos_necessarios: number
+          servico_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          brinde_produto_id?: string | null
+          brinde_servico_id?: string | null
+          brinde_tipo: string
+          created_at?: string
+          estabelecimento_id: string
+          id?: string
+          nome: string
+          selos_necessarios: number
+          servico_id: string
+        }
+        Update: {
+          ativo?: boolean
+          brinde_produto_id?: string | null
+          brinde_servico_id?: string | null
+          brinde_tipo?: string
+          created_at?: string
+          estabelecimento_id?: string
+          id?: string
+          nome?: string
+          selos_necessarios?: number
+          servico_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programas_fidelidade_brinde_produto_id_fkey"
+            columns: ["brinde_produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programas_fidelidade_brinde_servico_id_fkey"
+            columns: ["brinde_servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programas_fidelidade_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programas_fidelidade_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       servicos: {
         Row: {
           ativo: boolean
@@ -1482,9 +1685,42 @@ export type Database = {
         Args: { p_estabelecimento_id: string }
         Returns: undefined
       }
+      assinatura_disponivel_para_servico: {
+        Args: { p_cliente_id: string; p_servico_id: string }
+        Returns: string
+      }
+      atualizar_status_agendamento: {
+        Args: {
+          p_agendamento_id: string
+          p_novo_status: Database["public"]["Enums"]["status_agendamento"]
+        }
+        Returns: undefined
+      }
       cancelar_agendamento_via_token: {
         Args: { p_agendamento_id: string; p_token: string }
         Returns: undefined
+      }
+      cartao_fidelidade_por_token: {
+        Args: { p_token: string }
+        Returns: {
+          brinde: string
+          cartao_id: string
+          programa_nome: string
+          selos_atual: number
+          selos_necessarios: number
+          status: string
+        }[]
+      }
+      cartoes_fidelidade_publico_por_telefone: {
+        Args: { p_estabelecimento_id: string; p_telefone: string }
+        Returns: {
+          brinde: string
+          cartao_id: string
+          programa_nome: string
+          selos_atual: number
+          selos_necessarios: number
+          status: string
+        }[]
       }
       checkin_buscar_agendamentos_publico: {
         Args: { p_estabelecimento_id: string; p_telefone: string }
@@ -1540,6 +1776,21 @@ export type Database = {
           token_acesso: string
         }[]
       }
+      criar_assinatura_publica_pix: {
+        Args: {
+          p_email: string
+          p_estabelecimento_id: string
+          p_metodo?: Database["public"]["Enums"]["metodo_pagamento"]
+          p_nome: string
+          p_plano_id: string
+          p_telefone: string
+        }
+        Returns: {
+          assinatura_id: string
+          pagamento_id: string
+          token_acesso: string
+        }[]
+      }
       criar_pedido_publico: {
         Args: {
           p_email?: string
@@ -1569,6 +1820,14 @@ export type Database = {
         }[]
       }
       eh_super_admin: { Args: never; Returns: boolean }
+      estabelecimento_permite_clube_assinatura: {
+        Args: { p_estabelecimento_id: string }
+        Returns: boolean
+      }
+      estabelecimento_permite_fidelidade: {
+        Args: { p_estabelecimento_id: string }
+        Returns: boolean
+      }
       estabelecimento_permite_loja: {
         Args: { p_estabelecimento_id: string }
         Returns: boolean
@@ -1578,6 +1837,17 @@ export type Database = {
         Returns: boolean
       }
       estabelecimentos_que_possuo: { Args: never; Returns: string[] }
+      fidelidade_status_cliente: {
+        Args: { p_cliente_id: string }
+        Returns: {
+          brinde: string
+          cartao_id: string
+          programa_nome: string
+          selos_atual: number
+          selos_necessarios: number
+          status: string
+        }[]
+      }
       formas_pagamento_publico: {
         Args: { p_estabelecimento_id: string }
         Returns: {
@@ -1654,6 +1924,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      resgatar_cartao_fidelidade: {
+        Args: { p_cartao_id: string }
+        Returns: undefined
+      }
       slots_disponiveis: {
         Args: {
           p_data: string
@@ -1670,6 +1944,7 @@ export type Database = {
         Args: { p_pagamento_id: string; p_token: string }
         Returns: {
           status_agendamento: Database["public"]["Enums"]["status_agendamento"]
+          status_assinatura: Database["public"]["Enums"]["status_assinatura"]
           status_pagamento: Database["public"]["Enums"]["status_pagamento"]
           status_pedido: Database["public"]["Enums"]["status_pedido"]
         }[]
@@ -1692,7 +1967,12 @@ export type Database = {
         | "concluido"
         | "cancelado"
         | "no_show"
-      status_assinatura: "ativa" | "inadimplente" | "cancelada" | "pausada"
+      status_assinatura:
+        | "ativa"
+        | "inadimplente"
+        | "cancelada"
+        | "pausada"
+        | "pendente"
       status_estabelecimento:
         | "trial"
         | "ativa"
@@ -1853,7 +2133,13 @@ export const Constants = {
         "cancelado",
         "no_show",
       ],
-      status_assinatura: ["ativa", "inadimplente", "cancelada", "pausada"],
+      status_assinatura: [
+        "ativa",
+        "inadimplente",
+        "cancelada",
+        "pausada",
+        "pendente",
+      ],
       status_estabelecimento: [
         "trial",
         "ativa",

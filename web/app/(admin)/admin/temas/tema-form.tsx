@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { salvarTema, atualizarPreviewTema } from "./actions";
+import { centavosParaCampoBRL } from "@/lib/money";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
@@ -56,7 +57,7 @@ export function TemaForm({ tema, onDone }: { tema?: Tema | null; onDone?: () => 
               name="preco"
               required
               placeholder="149,00"
-              defaultValue={tema ? (tema.preco_centavos / 100).toFixed(2) : ""}
+              defaultValue={tema ? centavosParaCampoBRL(tema.preco_centavos) : ""}
             />
           </div>
           <div className="flex items-end gap-2">

@@ -12,9 +12,9 @@ values
     (select id from planos_plataforma where nome = 'Free')),
   ('50000000-0000-0000-0000-000000000003', 'Loja Teste Trial', 'loja-teste-trial', 'America/Sao_Paulo', 'trial', null);
 
-insert into produtos (id, estabelecimento_id, nome, preco_centavos, estoque, ativo) values
-  ('50000000-0000-0000-0000-000000000011', '50000000-0000-0000-0000-000000000001', 'Pomada', 3000, 5, true),
-  ('50000000-0000-0000-0000-000000000012', '50000000-0000-0000-0000-000000000002', 'Oleo de barba', 2000, 5, true);
+insert into produtos (id, estabelecimento_id, nome, slug, preco_centavos, estoque, ativo) values
+  ('50000000-0000-0000-0000-000000000011', '50000000-0000-0000-0000-000000000001', 'Pomada', 'pomada-loja-teste', 3000, 5, true),
+  ('50000000-0000-0000-0000-000000000012', '50000000-0000-0000-0000-000000000002', 'Oleo de barba', 'oleo-barba-loja-teste', 2000, 5, true);
 
 -- ============================================================
 -- Cenario 1: gate por plano

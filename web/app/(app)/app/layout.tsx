@@ -4,6 +4,7 @@ import { papelLabel } from "@/lib/papel-label";
 import { signOut } from "@/app/actions/auth";
 import { SidebarNav } from "./sidebar-nav";
 import { BottomNav } from "./bottom-nav";
+import { NotificacoesBell } from "./notificacoes-bell";
 import { Button } from "@/components/ui/button";
 import { BrandFooter } from "@/components/brand-footer";
 
@@ -17,9 +18,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { estabelecimento, papel, usuarioNome, usuarioGenero } = await getEstabelecimentoAtivo();
   const trialAte = new Date(`${estabelecimento.trial_ate}T00:00:00`).toLocaleDateString("pt-BR");
 
+  const supabase = await createClient();
+
   let planoNome: string | null = null;
   if (estabelecimento.plano_plataforma_id) {
-    const supabase = await createClient();
     const { data: plano } = await supabase
       .from("planos_plataforma")
       .select("nome")
@@ -27,6 +29,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .maybeSingle();
     planoNome = plano?.nome ?? null;
   }
+
+  const { data: notificacoes } = await supabase
+    .from("notificacoes")
+    .select("*")
+    .eq("estabelecimento_id", estabelecimento.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
 
   const statusTexto =
     estabelecimento.status === "trial"
@@ -39,6 +48,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen">
       <aside className="hidden shrink-0 flex-col border-r border-linha bg-marfim-2 p-4 md:flex md:w-56">
         <div className="mb-6 flex flex-col items-start gap-2">
+          <div className="flex w-full items-center justify-end">
+            <NotificacoesBell
+              estabelecimentoId={estabelecimento.id}
+              notificacoesIniciais={notificacoes ?? []}
+              alinhamento="esquerda"
+            />
+          </div>
           {estabelecimento.logo_url ? (
             /* eslint-disable-next-line @next/next/no-img-element -- logo em bucket público, sem necessidade de otimização do next/image */
             <img
@@ -77,7 +93,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               className="h-8 w-8 shrink-0 rounded-md border border-linha object-cover"
             />
           ) : null}
-          <p className="truncate font-display text-base text-carvao">{estabelecimento.nome}</p>
+          <p className="min-w-0 flex-1 truncate font-display text-base text-carvao">{estabelecimento.nome}</p>
+          <NotificacoesBell estabelecimentoId={estabelecimento.id} notificacoesIniciais={notificacoes ?? []} />
         </header>
         <main className="min-w-0 flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
           <div className="mx-auto w-full max-w-5xl">{children}</div>

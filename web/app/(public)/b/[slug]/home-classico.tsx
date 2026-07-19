@@ -10,6 +10,7 @@ type Servico = Database["public"]["Tables"]["servicos"]["Row"];
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 type Foto = { id: string; url: string };
 type Produto = { id: string; nome: string; preco_centavos: number; foto_url: string | null; slug: string };
+type Plano = { id: string; nome: string; preco_centavos: number };
 
 export function HomeClassico({
   slug,
@@ -18,6 +19,7 @@ export function HomeClassico({
   profissionais,
   fotos,
   produtos,
+  planos,
 }: {
   slug: string;
   estabelecimento: Estabelecimento;
@@ -25,6 +27,7 @@ export function HomeClassico({
   profissionais: Profissional[];
   fotos: Foto[];
   produtos: Produto[];
+  planos: Plano[];
 }) {
   const endereco = formatarEndereco(estabelecimento.endereco);
   const whatsapp = linkWhatsApp(estabelecimento.telefone_whatsapp);
@@ -133,6 +136,25 @@ export function HomeClassico({
                   </Link>
                 ))}
               </div>
+            </section>
+          )}
+
+          {planos.length > 0 && (
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <p className={ROTULO_SECAO}>Clube de assinatura</p>
+                <Link href={`/b/${slug}/clube`} className={BOTAO_GHOST}>
+                  Ver planos
+                </Link>
+              </div>
+              <ul className="flex flex-col gap-2">
+                {planos.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between rounded-xl bg-tenant-bg p-4">
+                    <p className="text-[15px] font-semibold">{p.nome}</p>
+                    <p className="text-base font-bold tabular-nums">{centavosToBRL(p.preco_centavos)}/mês</p>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 

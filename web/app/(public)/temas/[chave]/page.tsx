@@ -79,6 +79,7 @@ export default async function TemaDemoPage({ params }: { params: Promise<{ chave
         profissionais={PROFISSIONAIS_DEMO}
         fotos={[]}
         produtos={PRODUTOS_DEMO}
+        planos={[]}
       />
     </div>
   );

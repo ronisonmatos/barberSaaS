@@ -3,7 +3,13 @@
 import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { FormError } from "@/components/ui/form-error";
-import { buscarAgendamentosCheckin, confirmarChegada, type AgendamentoCheckin } from "./actions";
+import {
+  buscarAgendamentosCheckin,
+  confirmarChegada,
+  buscarCartoesFidelidadeCheckin,
+  type AgendamentoCheckin,
+} from "./actions";
+import { CartaoFidelidadePublico, type FidelidadeStatusPublico } from "../cartao-fidelidade";
 import { BOTAO_PRIMARIO, BOTAO_GHOST } from "../estilos";
 
 type Passo = "botao" | "telefone" | "lista" | "sucesso";
@@ -23,6 +29,8 @@ export function CheckinForm({
   const [telefone, setTelefone] = useState("");
   const [agendamentos, setAgendamentos] = useState<AgendamentoCheckin[]>([]);
   const [confirmado, setConfirmado] = useState<AgendamentoCheckin | null>(null);
+  const [cartoes, setCartoes] = useState<FidelidadeStatusPublico[]>([]);
+  const [parabensAberto, setParabensAberto] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -105,6 +113,13 @@ export function CheckinForm({
                     }
                     setConfirmado(a);
                     setPasso("sucesso");
+
+                    const rCartoes = await buscarCartoesFidelidadeCheckin({ estabelecimentoId, telefone });
+                    const encontrados = rCartoes.cartoes ?? [];
+                    setCartoes(encontrados);
+                    if (encontrados.some((c) => c.status === "completo")) {
+                      setParabensAberto(true);
+                    }
                   });
                 }}
               >
@@ -121,14 +136,38 @@ export function CheckinForm({
   }
 
   return (
-    <div className="flex flex-col gap-1 rounded-xl border border-tenant-linha bg-tenant-bg p-4 text-center">
-      <p className="font-medium text-tenant-fg">Chegada confirmada!</p>
-      {confirmado && (
-        <p className="text-tenant-fg opacity-80">
-          {formatarHora(confirmado.inicio)} — {confirmado.servicoNome} com {confirmado.profissionalNome}
-        </p>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1 rounded-xl border border-tenant-linha bg-tenant-bg p-4 text-center">
+        <p className="font-medium text-tenant-fg">Chegada confirmada!</p>
+        {confirmado && (
+          <p className="text-tenant-fg opacity-80">
+            {formatarHora(confirmado.inicio)} — {confirmado.servicoNome} com {confirmado.profissionalNome}
+          </p>
+        )}
+        <p className="text-sm text-tenant-fg opacity-70">Aguarde ser chamado.</p>
+      </div>
+
+      <CartaoFidelidadePublico cartoes={cartoes} />
+
+      {parabensAberto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-carvao/50 p-4"
+          onClick={() => setParabensAberto(false)}
+        >
+          <div
+            className="flex max-w-[360px] flex-col gap-3 rounded-xl bg-tenant-bg-2 p-6 text-center text-tenant-fg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-display text-xl">Parabéns!</p>
+            <p className="text-tenant-fg opacity-80">
+              Você completou o cartão fidelidade. Avise a equipe para retirar seu prêmio.
+            </p>
+            <button onClick={() => setParabensAberto(false)} className={BOTAO_PRIMARIO}>
+              Entendi
+            </button>
+          </div>
+        </div>
       )}
-      <p className="text-sm text-tenant-fg opacity-70">Aguarde ser chamado.</p>
     </div>
   );
 }

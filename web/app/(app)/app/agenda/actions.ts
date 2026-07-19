@@ -143,10 +143,16 @@ export async function remarcarAgendamento(
 export async function atualizarStatusAgendamento(
   id: string,
   status: "confirmado" | "concluido" | "cancelado" | "no_show"
-) {
+): Promise<{ error?: string }> {
   const supabase = await createClient();
-  await supabase.from("agendamentos").update({ status }).eq("id", id);
+  const { error } = await supabase.rpc("atualizar_status_agendamento", {
+    p_agendamento_id: id,
+    p_novo_status: status,
+  });
+  if (error) return { error: error.message };
+
   revalidatePath("/app/agenda");
+  return {};
 }
 
 export async function marcarChegada(id: string) {

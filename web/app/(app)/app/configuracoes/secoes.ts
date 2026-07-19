@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { UserRound, Store, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles, Palette, CalendarClock } from "lucide-react";
+import { UserRound, Store, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles, Palette, CalendarClock, LayoutTemplate } from "lucide-react";
 
 export type SecaoConfiguracao = {
   href: string;
@@ -27,6 +27,13 @@ export const SECOES_CONFIGURACAO: SecaoConfiguracao[] = [
     label: "Fotos",
     descricao: "Galeria exibida na página pública.",
     icon: Images,
+  },
+  {
+    href: "/app/configuracoes/template",
+    label: "Template",
+    descricao: "Layout da página pública.",
+    icon: LayoutTemplate,
+    ownerOnly: true,
   },
   {
     href: "/app/configuracoes/aparencia",

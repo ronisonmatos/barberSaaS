@@ -125,6 +125,18 @@ body {
   --tenant-acento-fg: #faf7f4;
 }
 
+/* Tema premium vendido avulso (ver estabelecimento_temas_comprados) — verde profundo (--cedro,
+   definido desde a Fase 0 mas nunca usado em nenhum preset) + dourado (--latao). */
+[data-tema="prestigio"] {
+  color-scheme: dark;
+  --tenant-bg: #1b2a22;
+  --tenant-bg-2: var(--cedro);
+  --tenant-fg: var(--marfim);
+  --tenant-linha: #3f5347;
+  --tenant-acento: var(--latao);
+  --tenant-acento-fg: var(--carvao);
+}
+
 [data-tema] {
   background: var(--tenant-bg);
   color: var(--tenant-fg);

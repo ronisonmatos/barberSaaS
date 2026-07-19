@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { consultarPagamentoMercadoPago, verificarAssinaturaWebhookMercadoPago } from "@/lib/mercadopago";
 import { confirmarPagamentoPlataforma } from "@/lib/assinatura-plataforma";
+import { confirmarCompraTema } from "@/lib/tema-plataforma";
 
 export async function POST(request: NextRequest) {
   const corpo = await request.json().catch(() => null);
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   const { data: pagamento } = await supabase
     .from("pagamentos_plataforma")
-    .select("id, estabelecimento_id, plano_plataforma_id")
+    .select("id, estabelecimento_id, plano_plataforma_id, tema_plataforma_id")
     .eq("gateway_payment_id", dataId)
     .maybeSingle();
 
@@ -54,7 +55,19 @@ export async function POST(request: NextRequest) {
   const pagamentoMercadoPago = await consultarPagamentoMercadoPago(dataId, accessToken);
 
   if (pagamentoMercadoPago.status === "approved") {
-    await confirmarPagamentoPlataforma(supabase, pagamento);
+    if (pagamento.plano_plataforma_id) {
+      await confirmarPagamentoPlataforma(supabase, {
+        id: pagamento.id,
+        estabelecimento_id: pagamento.estabelecimento_id,
+        plano_plataforma_id: pagamento.plano_plataforma_id,
+      });
+    } else if (pagamento.tema_plataforma_id) {
+      await confirmarCompraTema(supabase, {
+        id: pagamento.id,
+        estabelecimento_id: pagamento.estabelecimento_id,
+        tema_plataforma_id: pagamento.tema_plataforma_id,
+      });
+    }
   } else if (["rejected", "cancelled"].includes(pagamentoMercadoPago.status)) {
     await supabase.from("pagamentos_plataforma").update({ status: "falhou" }).eq("id", pagamento.id);
   }

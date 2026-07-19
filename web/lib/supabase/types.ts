@@ -416,6 +416,52 @@ export type Database = {
           },
         ]
       }
+      estabelecimento_temas_comprados: {
+        Row: {
+          comprado_em: string
+          estabelecimento_id: string
+          id: string
+          pagamento_plataforma_id: string | null
+          tema_plataforma_id: string
+        }
+        Insert: {
+          comprado_em?: string
+          estabelecimento_id: string
+          id?: string
+          pagamento_plataforma_id?: string | null
+          tema_plataforma_id: string
+        }
+        Update: {
+          comprado_em?: string
+          estabelecimento_id?: string
+          id?: string
+          pagamento_plataforma_id?: string | null
+          tema_plataforma_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estabelecimento_temas_comprados_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estabelecimento_temas_comprados_pagamento_plataforma_id_fkey"
+            columns: ["pagamento_plataforma_id"]
+            isOneToOne: false
+            referencedRelation: "pagamentos_plataforma"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estabelecimento_temas_comprados_tema_plataforma_id_fkey"
+            columns: ["tema_plataforma_id"]
+            isOneToOne: false
+            referencedRelation: "temas_plataforma"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estabelecimentos: {
         Row: {
           asaas_customer_id: string | null
@@ -766,8 +812,9 @@ export type Database = {
           id: string
           metodo: Database["public"]["Enums"]["metodo_pagamento"]
           pago_em: string | null
-          plano_plataforma_id: string
+          plano_plataforma_id: string | null
           status: Database["public"]["Enums"]["status_pagamento"]
+          tema_plataforma_id: string | null
           valor_centavos: number
         }
         Insert: {
@@ -777,8 +824,9 @@ export type Database = {
           id?: string
           metodo: Database["public"]["Enums"]["metodo_pagamento"]
           pago_em?: string | null
-          plano_plataforma_id: string
+          plano_plataforma_id?: string | null
           status?: Database["public"]["Enums"]["status_pagamento"]
+          tema_plataforma_id?: string | null
           valor_centavos: number
         }
         Update: {
@@ -788,8 +836,9 @@ export type Database = {
           id?: string
           metodo?: Database["public"]["Enums"]["metodo_pagamento"]
           pago_em?: string | null
-          plano_plataforma_id?: string
+          plano_plataforma_id?: string | null
           status?: Database["public"]["Enums"]["status_pagamento"]
+          tema_plataforma_id?: string | null
           valor_centavos?: number
         }
         Relationships: [
@@ -805,6 +854,13 @@ export type Database = {
             columns: ["plano_plataforma_id"]
             isOneToOne: false
             referencedRelation: "planos_plataforma"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_plataforma_tema_plataforma_id_fkey"
+            columns: ["tema_plataforma_id"]
+            isOneToOne: false
+            referencedRelation: "temas_plataforma"
             referencedColumns: ["id"]
           },
         ]
@@ -1193,6 +1249,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      temas_plataforma: {
+        Row: {
+          ativo: boolean
+          chave: string
+          created_at: string
+          descricao: string | null
+          foto_preview_url: string | null
+          gratis: boolean
+          id: string
+          nome: string
+          preco_centavos: number
+        }
+        Insert: {
+          ativo?: boolean
+          chave: string
+          created_at?: string
+          descricao?: string | null
+          foto_preview_url?: string | null
+          gratis?: boolean
+          id?: string
+          nome: string
+          preco_centavos: number
+        }
+        Update: {
+          ativo?: boolean
+          chave?: string
+          created_at?: string
+          descricao?: string | null
+          foto_preview_url?: string | null
+          gratis?: boolean
+          id?: string
+          nome?: string
+          preco_centavos?: number
+        }
+        Relationships: []
       }
       tickets_suporte: {
         Row: {

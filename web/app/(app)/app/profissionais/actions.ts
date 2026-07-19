@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
+import { TAMANHO_MAX_LOGO_BYTES, TIPOS_LOGO_ACEITOS } from "@/app/(app)/app/configuracoes/limites";
 
 export type FormState = { error?: string } | undefined;
 
@@ -171,5 +172,54 @@ export async function alternarAtivoProfissional(id: string, ativo: boolean): Pro
     .update({ ativo, desativado_por_limite_plano: false })
     .eq("id", id);
   revalidatePath("/app/profissionais");
+  return {};
+}
+
+export async function atualizarFotoProfissional(
+  profissionalId: string,
+  formData: FormData
+): Promise<{ error?: string }> {
+  const { estabelecimento } = await getEstabelecimentoAtivo();
+  const arquivo = formData.get("foto");
+
+  if (!(arquivo instanceof File) || arquivo.size === 0) return { error: "Escolha uma imagem." };
+  if (!TIPOS_LOGO_ACEITOS.includes(arquivo.type)) return { error: "Use PNG, JPEG, WEBP ou SVG." };
+  if (arquivo.size > TAMANHO_MAX_LOGO_BYTES) return { error: "Imagem muito grande (máx. 5MB)." };
+
+  const supabase = await createClient();
+
+  // Confirma que o profissional é mesmo deste estabelecimento antes de gravar (defesa em
+  // profundidade: o path do storage já é isolado por estabelecimento_id, mas a linha em
+  // `profissionais` também precisa pertencer a ele).
+  const { data: profissional } = await supabase
+    .from("profissionais")
+    .select("id")
+    .eq("id", profissionalId)
+    .eq("estabelecimento_id", estabelecimento.id)
+    .maybeSingle();
+  if (!profissional) return { error: "Profissional não encontrado." };
+
+  const extensao = arquivo.name.split(".").pop() ?? "png";
+  const caminho = `${estabelecimento.id}/profissionais/${profissionalId}.${extensao}`;
+
+  const { error: uploadError } = await supabase.storage.from("logos").upload(caminho, arquivo, {
+    upsert: true,
+    contentType: arquivo.type,
+  });
+  if (uploadError) return { error: uploadError.message };
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("logos").getPublicUrl(caminho);
+
+  const { error: updateError } = await supabase
+    .from("profissionais")
+    .update({ foto_url: `${publicUrl}?v=${Date.now()}` })
+    .eq("id", profissionalId);
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath("/app/profissionais");
+  revalidatePath("/app/configuracoes/template");
+  revalidatePath(`/b/${estabelecimento.slug}`);
   return {};
 }

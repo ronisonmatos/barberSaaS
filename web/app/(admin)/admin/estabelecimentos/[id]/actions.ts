@@ -1,8 +1,10 @@
 "use server";
 
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getSuperAdmin } from "@/lib/admin-guard";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { getSuperAdmin, getSuperAdminERascunho } from "@/lib/admin-guard";
 
 type StatusEstabelecimento = "trial" | "ativa" | "inadimplente" | "suspensa" | "cancelada";
 
@@ -103,4 +105,59 @@ export async function alterarPlanoEstabelecimento(estabelecimentoId: string, pla
   });
 
   revalidatePath(`/admin/estabelecimentos/${estabelecimentoId}`);
+}
+
+export type ConvidarDonoRascunhoState = { error?: string } | undefined;
+
+const schemaConvidarDono = z.object({
+  nome: z.string().trim().min(2, { error: "Nome deve ter ao menos 2 caracteres." }),
+  email: z.email({ error: "Informe um e-mail válido." }),
+});
+
+export async function convidarDonoRascunho(
+  _prevState: ConvidarDonoRascunhoState,
+  formData: FormData
+): Promise<ConvidarDonoRascunhoState> {
+  const estabelecimentoId = formData.get("estabelecimentoId") as string;
+  const { userId } = await getSuperAdminERascunho(estabelecimentoId);
+
+  const parsed = schemaConvidarDono.safeParse({
+    nome: formData.get("nome"),
+    email: formData.get("email"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+
+  const serviceRole = createServiceRoleClient();
+  const { data: convidado, error: inviteError } = await serviceRole.auth.admin.inviteUserByEmail(
+    parsed.data.email,
+    {
+      data: { nome: parsed.data.nome },
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/definir-senha`,
+    }
+  );
+  if (inviteError) {
+    return { error: `Erro ao convidar: ${inviteError.message}` };
+  }
+
+  const supabase = await createClient();
+  const { error: rpcError } = await supabase.rpc("admin_reivindicar_rascunho", {
+    p_estabelecimento_id: estabelecimentoId,
+    p_owner_id: convidado.user.id,
+  });
+  if (rpcError) {
+    return { error: rpcError.message };
+  }
+
+  await supabase.from("eventos_admin").insert({
+    estabelecimento_id: estabelecimentoId,
+    super_admin_id: userId,
+    tipo: "pagina_demonstracao_reivindicada",
+    detalhes: { nome: parsed.data.nome, email: parsed.data.email },
+  });
+
+  revalidatePath(`/admin/estabelecimentos/${estabelecimentoId}`);
+  revalidatePath("/admin/estabelecimentos");
+  return undefined;
 }

@@ -31,7 +31,9 @@ export function HomePrestigio({
 }) {
   const endereco = formatarEndereco(estabelecimento.endereco);
   const whatsapp = linkWhatsApp(estabelecimento.telefone_whatsapp);
-  const fotosHero = fotos.slice(0, 3);
+  // Sem corte fixo aqui: quantas fotos existem já é limitado no cadastro pelo max_fotos do plano
+  // (ver estabelecimento_fotos/aplicar_limites_plano), não faz sentido duplicar o limite no template.
+  const fotosGaleria = fotos;
 
   const NAV = [
     servicos.length > 0 ? { href: "#servicos", label: "Serviços" } : null,
@@ -83,9 +85,9 @@ export function HomePrestigio({
           </div>
         </div>
 
-        {fotosHero.length > 0 ? (
+        {fotosGaleria.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
-            {fotosHero.map((f, i) => (
+            {fotosGaleria.map((f, i) => (
               /* eslint-disable-next-line @next/next/no-img-element -- foto em bucket público, sem necessidade de otimização do next/image */
               <img
                 key={f.id}

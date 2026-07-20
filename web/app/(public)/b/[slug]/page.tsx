@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { HomeClassico } from "./home-classico";
 import { HomePrestigio } from "./home-prestigio";
+import { DemonstracaoBanner } from "./demonstracao-banner";
 
 export default async function EstabelecimentoPublicaPage({
   params,
@@ -68,8 +69,12 @@ export default async function EstabelecimentoPublicaPage({
   const config = (estabelecimento.config ?? {}) as Record<string, unknown>;
   const layout = typeof config.layout === "string" ? config.layout : "classico";
 
-  if (layout === "prestigio") {
-    return <HomePrestigio {...props} />;
-  }
-  return <HomeClassico {...props} />;
+  return (
+    <>
+      {estabelecimento.rascunho && (
+        <DemonstracaoBanner estabelecimentoId={estabelecimento.id} nome={estabelecimento.nome} />
+      )}
+      {layout === "prestigio" ? <HomePrestigio {...props} /> : <HomeClassico {...props} />}
+    </>
+  );
 }

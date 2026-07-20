@@ -536,6 +536,8 @@ export type Database = {
           logo_url: string | null
           nome: string
           plano_plataforma_id: string | null
+          rascunho: boolean
+          rascunho_expira_em: string | null
           slug: string
           sobre: string | null
           status: Database["public"]["Enums"]["status_estabelecimento"]
@@ -558,6 +560,8 @@ export type Database = {
           logo_url?: string | null
           nome: string
           plano_plataforma_id?: string | null
+          rascunho?: boolean
+          rascunho_expira_em?: string | null
           slug: string
           sobre?: string | null
           status?: Database["public"]["Enums"]["status_estabelecimento"]
@@ -580,6 +584,8 @@ export type Database = {
           logo_url?: string | null
           nome?: string
           plano_plataforma_id?: string | null
+          rascunho?: boolean
+          rascunho_expira_em?: string | null
           slug?: string
           sobre?: string | null
           status?: Database["public"]["Enums"]["status_estabelecimento"]
@@ -1649,6 +1655,74 @@ export type Database = {
           logo_url: string | null
           nome: string
           plano_plataforma_id: string | null
+          rascunho: boolean
+          rascunho_expira_em: string | null
+          slug: string
+          sobre: string | null
+          status: Database["public"]["Enums"]["status_estabelecimento"]
+          telefone_whatsapp: string | null
+          timezone: string
+          trial_ate: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "estabelecimentos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_criar_estabelecimento_rascunho: {
+        Args: { p_nome: string; p_slug: string }
+        Returns: {
+          asaas_customer_id: string | null
+          asaas_subconta_id: string | null
+          ativacao_manual: boolean
+          cnpj: string | null
+          config: Json
+          created_at: string
+          descricao: string | null
+          endereco: Json | null
+          horario_texto: string | null
+          id: string
+          instagram_url: string | null
+          logo_url: string | null
+          nome: string
+          plano_plataforma_id: string | null
+          rascunho: boolean
+          rascunho_expira_em: string | null
+          slug: string
+          sobre: string | null
+          status: Database["public"]["Enums"]["status_estabelecimento"]
+          telefone_whatsapp: string | null
+          timezone: string
+          trial_ate: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "estabelecimentos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_reivindicar_rascunho: {
+        Args: { p_estabelecimento_id: string; p_owner_id: string }
+        Returns: {
+          asaas_customer_id: string | null
+          asaas_subconta_id: string | null
+          ativacao_manual: boolean
+          cnpj: string | null
+          config: Json
+          created_at: string
+          descricao: string | null
+          endereco: Json | null
+          horario_texto: string | null
+          id: string
+          instagram_url: string | null
+          logo_url: string | null
+          nome: string
+          plano_plataforma_id: string | null
+          rascunho: boolean
+          rascunho_expira_em: string | null
           slug: string
           sobre: string | null
           status: Database["public"]["Enums"]["status_estabelecimento"]
@@ -1883,6 +1957,8 @@ export type Database = {
           logo_url: string | null
           nome: string
           plano_plataforma_id: string | null
+          rascunho: boolean
+          rascunho_expira_em: string | null
           slug: string
           sobre: string | null
           status: Database["public"]["Enums"]["status_estabelecimento"]
@@ -1939,6 +2015,10 @@ export type Database = {
           fim: string
           inicio: string
         }[]
+      }
+      solicitar_ativacao_rascunho: {
+        Args: { p_email: string; p_estabelecimento_id: string; p_nome: string }
+        Returns: undefined
       }
       status_pagamento_publico: {
         Args: { p_pagamento_id: string; p_token: string }

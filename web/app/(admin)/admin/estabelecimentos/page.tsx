@@ -23,6 +23,12 @@ const STATUS_COR: Record<StatusEstabelecimento, string> = {
   cancelada: "text-cinza-600",
 };
 
+function diasRestantes(expiraEm: string | null): string {
+  if (!expiraEm) return "—";
+  const dias = Math.max(0, Math.ceil((new Date(expiraEm).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+  return dias === 1 ? "1 dia" : `${dias} dias`;
+}
+
 export default async function AdminEstabelecimentosPage({
   searchParams,
 }: {
@@ -34,7 +40,7 @@ export default async function AdminEstabelecimentosPage({
 
   let query = supabase
     .from("estabelecimentos")
-    .select("id, nome, slug, status, trial_ate, planos_plataforma(nome)")
+    .select("id, nome, slug, status, trial_ate, rascunho, rascunho_expira_em, planos_plataforma(nome)")
     .order("created_at", { ascending: false });
 
   if (params.q) {
@@ -53,12 +59,20 @@ export default async function AdminEstabelecimentosPage({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-2xl text-carvao">Estabelecimentos</h1>
-        <Link
-          href="/admin/estabelecimentos/novo"
-          className="inline-flex h-11 items-center justify-center rounded-md bg-latao px-4 font-medium text-carvao hover:bg-latao-escuro"
-        >
-          Cadastrar manualmente
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/estabelecimentos/rascunho/novo"
+            className="inline-flex h-11 items-center justify-center rounded-md border border-linha px-4 font-medium text-carvao hover:bg-marfim"
+          >
+            Criar página de demonstração
+          </Link>
+          <Link
+            href="/admin/estabelecimentos/novo"
+            className="inline-flex h-11 items-center justify-center rounded-md bg-latao px-4 font-medium text-carvao hover:bg-latao-escuro"
+          >
+            Cadastrar manualmente
+          </Link>
+        </div>
       </div>
 
       <form className="flex flex-wrap gap-2" action="/admin/estabelecimentos">
@@ -110,7 +124,9 @@ export default async function AdminEstabelecimentosPage({
                     </Link>
                   </td>
                   <td className="text-cinza-600">/b/{e.slug}</td>
-                  <td className={`font-medium ${STATUS_COR[e.status]}`}>{STATUS_LABEL[e.status]}</td>
+                  <td className={`font-medium ${e.rascunho ? "text-latao-escuro" : STATUS_COR[e.status]}`}>
+                    {e.rascunho ? `Rascunho (${diasRestantes(e.rascunho_expira_em)})` : STATUS_LABEL[e.status]}
+                  </td>
                   <td>{e.planos_plataforma?.nome ?? "—"}</td>
                   <td>{e.trial_ate ?? "—"}</td>
                 </tr>

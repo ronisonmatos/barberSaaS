@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getSuperAdmin } from "@/lib/admin-guard";
 import { createClient } from "@/lib/supabase/server";
@@ -6,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Heading } from "@/components/ui/heading";
 import { centavosToBRL } from "@/lib/money";
 import { EstabelecimentoAcoes } from "./estabelecimento-acoes";
+import { ReivindicarRascunhoForm } from "./reivindicar-rascunho-form";
 
 const STATUS_LABEL: Record<string, string> = {
   trial: "Trial",
@@ -14,6 +16,12 @@ const STATUS_LABEL: Record<string, string> = {
   suspensa: "Suspensa",
   cancelada: "Cancelada",
 };
+
+function diasRestantes(expiraEm: string | null): string {
+  if (!expiraEm) return "—";
+  const dias = Math.max(0, Math.ceil((new Date(expiraEm).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+  return dias === 1 ? "1 dia" : `${dias} dias`;
+}
 
 export default async function AdminEstabelecimentoDetalhePage({
   params,
@@ -68,10 +76,37 @@ export default async function AdminEstabelecimentoDetalhePage({
         </Link>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <Heading>{estabelecimento.nome}</Heading>
-          <span className="text-sm font-medium text-carvao">{STATUS_LABEL[estabelecimento.status]}</span>
+          <span className="text-sm font-medium text-carvao">
+            {estabelecimento.rascunho
+              ? `Rascunho — expira em ${diasRestantes(estabelecimento.rascunho_expira_em)}`
+              : STATUS_LABEL[estabelecimento.status]}
+          </span>
         </div>
         <p className="text-sm text-cinza-600">/b/{estabelecimento.slug}</p>
+        {estabelecimento.rascunho && (
+          <Link
+            href={`/admin/estabelecimentos/${estabelecimento.id}/editar`}
+            className="text-sm text-carvao underline"
+          >
+            Editar conteúdo da demonstração →
+          </Link>
+        )}
       </div>
+
+      {estabelecimento.rascunho && (
+        <Card className="p-4">
+          <Heading as="h2" className="mb-2">
+            Reivindicação
+          </Heading>
+          <p className="mb-4 text-sm text-cinza-600">
+            Convide o cliente por e-mail. A conta que ele criar já vem vinculada como dono deste
+            estabelecimento, com tudo pré-configurado.
+          </p>
+          <Suspense fallback={null}>
+            <ReivindicarRascunhoForm estabelecimentoId={estabelecimento.id} />
+          </Suspense>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="flex flex-col gap-1 p-4">

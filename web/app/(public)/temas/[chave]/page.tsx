@@ -44,6 +44,8 @@ const ESTABELECIMENTO_DEMO: Estabelecimento = {
   asaas_subconta_id: null,
   cnpj: null,
   config: {},
+  rascunho: false,
+  rascunho_expira_em: null,
   created_at: new Date().toISOString(),
 };
 

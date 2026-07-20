@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signUp } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Heading } from "@/components/ui/heading";
 import { FormError } from "@/components/ui/form-error";
 
@@ -47,7 +48,7 @@ export default function SignupPage() {
         <label htmlFor="password" className="text-sm font-medium">
           Senha
         </label>
-        <Input id="password" name="password" type="password" required minLength={8} />
+        <PasswordInput id="password" name="password" required minLength={8} />
       </div>
 
       {state?.error && <FormError>{state.error}</FormError>}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signIn } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Heading } from "@/components/ui/heading";
 import { FormError } from "@/components/ui/form-error";
 
@@ -26,7 +27,7 @@ export default function LoginPage() {
         <label htmlFor="password" className="text-sm font-medium">
           Senha
         </label>
-        <Input id="password" name="password" type="password" required />
+        <PasswordInput id="password" name="password" required />
         <Link href="/esqueci-senha" className="w-fit text-xs text-latao-escuro underline">
           Esqueci minha senha
         </Link>

@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { salvarConfigPagamento } from "./actions";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
 
@@ -76,9 +77,8 @@ export function PagamentoForm({
           <label className="text-sm">
             Access token {mercadoPagoTokenMascarado ? `(atual: ${mercadoPagoTokenMascarado})` : "(não configurado)"}
           </label>
-          <Input
+          <PasswordInput
             name="mercadoPagoAccessToken"
-            type="password"
             placeholder={mercadoPagoTokenMascarado ? "Deixe em branco para manter" : "Colar access token"}
           />
         </div>
@@ -91,9 +91,8 @@ export function PagamentoForm({
             Webhook secret{" "}
             {mercadoPagoWebhookSecretMascarado ? `(atual: ${mercadoPagoWebhookSecretMascarado})` : "(não configurado)"}
           </label>
-          <Input
+          <PasswordInput
             name="mercadoPagoWebhookSecret"
-            type="password"
             placeholder={mercadoPagoWebhookSecretMascarado ? "Deixe em branco para manter" : "Colar webhook secret"}
           />
           <p className="text-xs text-cinza-600">
@@ -109,9 +108,8 @@ export function PagamentoForm({
           <label className="text-sm">
             API key {asaasChaveMascarada ? `(atual: ${asaasChaveMascarada})` : "(não configurada)"}
           </label>
-          <Input
+          <PasswordInput
             name="asaasApiKey"
-            type="password"
             placeholder={asaasChaveMascarada ? "Deixe em branco para manter" : "Colar API key"}
           />
         </div>

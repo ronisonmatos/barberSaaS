@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { definirSenha } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Heading } from "@/components/ui/heading";
 import { FormError } from "@/components/ui/form-error";
 
@@ -24,10 +24,9 @@ export default function DefinirSenhaPage() {
         <label htmlFor="password" className="text-sm font-medium">
           Nova senha
         </label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           required
           minLength={8}
           value={senha}
@@ -39,9 +38,8 @@ export default function DefinirSenhaPage() {
         <label htmlFor="confirmacao" className="text-sm font-medium">
           Confirmar senha
         </label>
-        <Input
+        <PasswordInput
           id="confirmacao"
-          type="password"
           required
           minLength={8}
           value={confirmacao}

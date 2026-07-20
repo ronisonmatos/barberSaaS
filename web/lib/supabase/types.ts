@@ -392,6 +392,33 @@ export type Database = {
           },
         ]
       }
+      configuracao_plataforma: {
+        Row: {
+          asaas_api_key: string | null
+          id: string
+          mercado_pago_access_token: string | null
+          mercado_pago_public_key: string | null
+          mercado_pago_webhook_secret: string | null
+          updated_at: string
+        }
+        Insert: {
+          asaas_api_key?: string | null
+          id?: string
+          mercado_pago_access_token?: string | null
+          mercado_pago_public_key?: string | null
+          mercado_pago_webhook_secret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asaas_api_key?: string | null
+          id?: string
+          mercado_pago_access_token?: string | null
+          mercado_pago_public_key?: string | null
+          mercado_pago_webhook_secret?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       estabelecimento_fotos: {
         Row: {
           ativo: boolean
@@ -1935,6 +1962,7 @@ export type Database = {
         Args: { p_produto_id: string; p_quantidade: number }
         Returns: undefined
       }
+      mercado_pago_platform_public_key: { Args: never; Returns: string }
       meu_profissional_id: {
         Args: { p_estabelecimento_id: string }
         Returns: string
@@ -1973,6 +2001,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      pagamento_plataforma_configurado: { Args: never; Returns: boolean }
       pedido_por_token: {
         Args: { p_token: string }
         Returns: {

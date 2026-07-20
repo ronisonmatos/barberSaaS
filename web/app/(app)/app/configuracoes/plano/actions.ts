@@ -8,6 +8,7 @@ import { criarCobrancaPix, criarCobrancaCartao } from "@/lib/mercadopago";
 import { validarCPF, apenasNumeros } from "@/lib/cpf";
 import { confirmarPagamentoPlataforma } from "@/lib/assinatura-plataforma";
 import { precoVigente } from "@/lib/planos";
+import { getConfiguracaoPlataforma } from "@/lib/configuracao-plataforma";
 import type { Database } from "@/lib/supabase/types";
 
 type Plano = Database["public"]["Tables"]["planos_plataforma"]["Row"];
@@ -71,7 +72,7 @@ export async function criarCobrancaPixPlano(
   const plano = await validarPlano(parsed.data.planoId);
   if (!plano) return { error: "Plano não encontrado ou indisponível." };
 
-  const accessToken = process.env.MERCADO_PAGO_PLATFORM_ACCESS_TOKEN;
+  const accessToken = (await getConfiguracaoPlataforma())?.mercado_pago_access_token;
   if (!accessToken) return { error: "Pagamento de assinatura ainda não configurado pela plataforma." };
 
   const supabaseAuth = await createClient();
@@ -131,7 +132,7 @@ export async function criarCobrancaCartaoPlano(
   const plano = await validarPlano(parsed.data.planoId);
   if (!plano) return { error: "Plano não encontrado ou indisponível." };
 
-  const accessToken = process.env.MERCADO_PAGO_PLATFORM_ACCESS_TOKEN;
+  const accessToken = (await getConfiguracaoPlataforma())?.mercado_pago_access_token;
   if (!accessToken) return { error: "Pagamento de assinatura ainda não configurado pela plataforma." };
 
   const valorCentavos = await buscarValorACobrar(estabelecimento.id, plano);

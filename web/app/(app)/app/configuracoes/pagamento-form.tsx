@@ -73,6 +73,55 @@ export function PagamentoForm({
 
       <div className="flex flex-col gap-3 rounded-md border border-linha p-4">
         <p className="text-sm font-medium">Mercado Pago</p>
+
+        <details className="rounded-md bg-marfim-2 p-3 text-sm text-cinza-600">
+          <summary className="cursor-pointer font-medium text-carvao">
+            Não sei onde encontrar essas informações — como faço?
+          </summary>
+          <ol className="mt-2 list-decimal space-y-2 pl-4">
+            <li>
+              Tenha uma conta no{" "}
+              <a
+                href="https://www.mercadopago.com.br"
+                target="_blank"
+                rel="noreferrer"
+                className="text-latao-escuro underline"
+              >
+                Mercado Pago
+              </a>{" "}
+              (a mesma que você usa pra vender, com CPF ou CNPJ).
+            </li>
+            <li>
+              Acesse o{" "}
+              <a
+                href="https://www.mercadopago.com.br/developers/panel/app"
+                target="_blank"
+                rel="noreferrer"
+                className="text-latao-escuro underline"
+              >
+                Painel do Desenvolvedor
+              </a>{" "}
+              (entre com a mesma conta) e crie uma aplicação — pode dar qualquer nome, ex: &quot;Meu
+              site&quot;.
+            </li>
+            <li>
+              Dentro da aplicação, abra a aba <strong>&quot;Credenciais de produção&quot;</strong>. Lá estão a{" "}
+              <strong>Public Key</strong> e o <strong>Access Token</strong> — copie e cole cada um no campo
+              correspondente abaixo.
+            </li>
+            <li>
+              Ainda na mesma aplicação, abra a aba <strong>&quot;Webhooks&quot;</strong>, clique em
+              configurar notificações e cole a URL abaixo no campo de endereço. O Mercado Pago vai gerar uma{" "}
+              <strong>&quot;Chave secreta&quot;</strong> — copie e cole no campo &quot;Webhook secret&quot;
+              abaixo.
+            </li>
+          </ol>
+          <p className="mt-2 text-xs text-cinza-300">
+            Essas são as credenciais de <strong>produção</strong> (não as de teste/sandbox) — são elas que
+            fazem o dinheiro cair de verdade na sua conta.
+          </p>
+        </details>
+
         <div className="flex flex-col gap-1">
           <label className="text-sm">
             Access token {mercadoPagoTokenMascarado ? `(atual: ${mercadoPagoTokenMascarado})` : "(não configurado)"}
@@ -104,6 +153,33 @@ export function PagamentoForm({
 
       <div className="flex flex-col gap-3 rounded-md border border-linha p-4">
         <p className="text-sm font-medium">Asaas</p>
+
+        <details className="rounded-md bg-marfim-2 p-3 text-sm text-cinza-600">
+          <summary className="cursor-pointer font-medium text-carvao">
+            Não sei onde encontrar essa informação — como faço?
+          </summary>
+          <ol className="mt-2 list-decimal space-y-2 pl-4">
+            <li>
+              Tenha uma conta no{" "}
+              <a href="https://www.asaas.com" target="_blank" rel="noreferrer" className="text-latao-escuro underline">
+                Asaas
+              </a>
+              .
+            </li>
+            <li>
+              Depois de entrar, procure no menu por <strong>&quot;Integrações&quot;</strong> (às vezes aparece
+              como um ícone de engrenagem ou &quot;Configurações da conta&quot;).
+            </li>
+            <li>
+              Dentro de Integrações, abra <strong>&quot;Chave de API&quot;</strong> (ou &quot;API Key&quot;) —
+              copie a chave mostrada ali e cole no campo abaixo.
+            </li>
+          </ol>
+          <p className="mt-2 text-xs text-cinza-300">
+            Use a chave do ambiente de <strong>produção</strong>, não a de testes (&quot;sandbox&quot;).
+          </p>
+        </details>
+
         <div className="flex flex-col gap-1">
           <label className="text-sm">
             API key {asaasChaveMascarada ? `(atual: ${asaasChaveMascarada})` : "(não configurada)"}

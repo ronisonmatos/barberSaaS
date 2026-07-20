@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Package, MessageCircle, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, Package, CreditCard, MessageCircle, LogOut } from "lucide-react";
 
 const LINKS = [
   { href: "/admin", label: "Visão geral", icon: LayoutDashboard },
   { href: "/admin/estabelecimentos", label: "Estabelec.", icon: Building2 },
   { href: "/admin/planos", label: "Planos", icon: Package },
+  { href: "/admin/pagamentos", label: "Pagamentos", icon: CreditCard },
   { href: "/admin/suporte", label: "Suporte", icon: MessageCircle },
 ];
 

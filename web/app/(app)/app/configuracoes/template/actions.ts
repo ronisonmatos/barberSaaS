@@ -8,6 +8,7 @@ import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { criarCobrancaPix, criarCobrancaCartao } from "@/lib/mercadopago";
 import { validarCPF, apenasNumeros } from "@/lib/cpf";
 import { confirmarCompraTema } from "@/lib/tema-plataforma";
+import { getConfiguracaoPlataforma } from "@/lib/configuracao-plataforma";
 
 const LAYOUTS_GRATIS = ["classico"];
 
@@ -101,7 +102,7 @@ export async function criarCobrancaPixTema(
   const tema = await validarTema(parsed.data.temaId);
   if (!tema) return { error: "Template não encontrado ou indisponível." };
 
-  const accessToken = process.env.MERCADO_PAGO_PLATFORM_ACCESS_TOKEN;
+  const accessToken = (await getConfiguracaoPlataforma())?.mercado_pago_access_token;
   if (!accessToken) return { error: "Pagamento ainda não configurado pela plataforma." };
 
   const supabaseAuth = await createClient();
@@ -160,7 +161,7 @@ export async function criarCobrancaCartaoTema(
   const tema = await validarTema(parsed.data.temaId);
   if (!tema) return { error: "Template não encontrado ou indisponível." };
 
-  const accessToken = process.env.MERCADO_PAGO_PLATFORM_ACCESS_TOKEN;
+  const accessToken = (await getConfiguracaoPlataforma())?.mercado_pago_access_token;
   if (!accessToken) return { error: "Pagamento ainda não configurado pela plataforma." };
 
   const pagamentoId = await criarPagamentoTemaPendente(estabelecimento.id, tema.id, tema.preco_centavos, "cartao");

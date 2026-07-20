@@ -19,25 +19,26 @@ export default async function TemplateConfigPage() {
   }
 
   const supabase = await createClient();
-  const [{ data: temas }, { data: compras }, { data: userData }, { data: profissionais }] = await Promise.all([
-    supabase.from("temas_plataforma").select("*").eq("ativo", true).order("preco_centavos"),
-    supabase
-      .from("estabelecimento_temas_comprados")
-      .select("tema_plataforma_id")
-      .eq("estabelecimento_id", estabelecimento.id),
-    supabase.auth.getUser(),
-    supabase
-      .from("profissionais")
-      .select("id, nome, foto_url")
-      .eq("estabelecimento_id", estabelecimento.id)
-      .eq("ativo", true)
-      .order("nome"),
-  ]);
+  const [{ data: temas }, { data: compras }, { data: userData }, { data: profissionais }, { data: publicKey }] =
+    await Promise.all([
+      supabase.from("temas_plataforma").select("*").eq("ativo", true).order("preco_centavos"),
+      supabase
+        .from("estabelecimento_temas_comprados")
+        .select("tema_plataforma_id")
+        .eq("estabelecimento_id", estabelecimento.id),
+      supabase.auth.getUser(),
+      supabase
+        .from("profissionais")
+        .select("id, nome, foto_url")
+        .eq("estabelecimento_id", estabelecimento.id)
+        .eq("ativo", true)
+        .order("nome"),
+      supabase.rpc("mercado_pago_platform_public_key"),
+    ]);
 
   const config = (estabelecimento.config ?? {}) as Record<string, unknown>;
   const layoutAtual = typeof config.layout === "string" ? config.layout : "classico";
   const temasComprados = new Set((compras ?? []).map((c) => c.tema_plataforma_id));
-  const publicKey = process.env.MERCADO_PAGO_PLATFORM_PUBLIC_KEY ?? null;
 
   return (
     <div className="flex flex-col gap-4">

@@ -71,6 +71,13 @@ export default async function PagamentosConfigPage() {
     <div className="flex flex-col gap-4">
       <VoltarConfiguracoes />
       <Heading>Pagamentos</Heading>
+      <Card className="bg-marfim p-4 text-sm text-cinza-600">
+        Aqui você conecta uma conta de pagamento (Mercado Pago ou Asaas) pra receber online, na hora
+        do agendamento — o cliente paga pelo Pix (ou cartão, dependendo do gateway) direto pra você,
+        sem precisar de maquininha. Isso é <strong>opcional</strong>: se você não configurar nada, o
+        cliente sempre agenda e paga pessoalmente, como já funciona hoje. Cada seção abaixo tem um
+        &quot;Não sei onde encontrar essas informações&quot; explicando passo a passo.
+      </Card>
       <Card className="p-4">
         <PagamentoForm
           gatewayAtivo={gatewayValido(pagamentoConfig?.gateway_ativo)}

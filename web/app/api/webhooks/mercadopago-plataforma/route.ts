@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { consultarPagamentoMercadoPago, verificarAssinaturaWebhookMercadoPago } from "@/lib/mercadopago";
 import { confirmarPagamentoPlataforma } from "@/lib/assinatura-plataforma";
 import { confirmarCompraTema } from "@/lib/tema-plataforma";
+import { getConfiguracaoPlataforma } from "@/lib/configuracao-plataforma";
 
 export async function POST(request: NextRequest) {
   const corpo = await request.json().catch(() => null);
@@ -13,8 +14,9 @@ export async function POST(request: NextRequest) {
   const dataId =
     request.nextUrl.searchParams.get("data.id") ?? request.nextUrl.searchParams.get("id") ?? String(corpo.data.id);
 
-  const accessToken = process.env.MERCADO_PAGO_PLATFORM_ACCESS_TOKEN;
-  const webhookSecret = process.env.MERCADO_PAGO_PLATFORM_WEBHOOK_SECRET;
+  const configuracao = await getConfiguracaoPlataforma();
+  const accessToken = configuracao?.mercado_pago_access_token;
+  const webhookSecret = configuracao?.mercado_pago_webhook_secret;
   if (!accessToken || !webhookSecret) {
     return NextResponse.json({ error: "configuração da plataforma ausente" }, { status: 500 });
   }

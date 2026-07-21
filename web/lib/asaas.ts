@@ -144,8 +144,7 @@ export async function criarCheckoutAsaas(input: CriarCheckoutAsaasInput): Promis
       chargeTypes: ["DETACHED", "INSTALLMENT"],
       minutesToExpire: 60,
       installment: { maxInstallmentCount: input.maxInstallmentCount },
-      value: input.valorCentavos / 100,
-      description: input.descricao,
+      items: [{ name: input.descricao, quantity: 1, value: input.valorCentavos / 100 }],
       externalReference: input.externalReference,
       callback: {
         successUrl: input.successUrl,

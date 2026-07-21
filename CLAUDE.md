@@ -489,3 +489,41 @@ temas por tenant na página pública, texto de interface e acessibilidade.
   de uma vez, caso algum outro tenha sido afetado antes desta correção.
 - Próxima onda da Fase 1 (ver seção 8 da ORIENTACAO-BARBERSAAS.md): terminar o deploy/webhook de
   verdade, Asaas, e WhatsApp (Cloud API + links wa.me) por último, como o usuário pediu.
+- **Asaas como segundo gateway de pagamento**: concluído, nos dois sistemas de cobrança do
+  projeto — estabelecimento→cliente final (`estabelecimento_pagamento_config`, agendamento/loja/
+  clube) e Comptus→estabelecimento (`configuracao_plataforma`, assinatura de plano e temas
+  premium). `gateway_ativo` (`nenhum`/`mercado_pago`/`asaas`) já existia no primeiro; ganhou o
+  mesmo seletor no segundo (default `mercado_pago`, preserva comportamento antigo).
+  - **Pix**: API direta da Asaas (`web/lib/asaas.ts::criarCobrancaPixAsaas`), mesmo padrão já
+    usado com Mercado Pago (cria cliente + cobrança + busca QR code). CPF passa a ser obrigatório
+    no Pix quando o gateway é Asaas (ela exige `cpfCnpj` pra cadastrar o cliente) — antes só o
+    cartão pedia CPF.
+  - **Cartão parcelado**: via **Asaas Checkout** (`criarCheckoutAsaas`, `POST /v3/checkouts`),
+    não captura de cartão própria — evita nosso servidor tocar em dado de cartão e evita a
+    tokenização da Asaas (que exige aprovação prévia do gerente de conta em produção). Nos dois
+    sistemas, cartão vira um redirect: o usuário sai da tela, paga na página hospedada da Asaas
+    (Pix+cartão juntos na plataforma, só cartão no cliente final — Pix já tinha fluxo inline
+    próprio ali) e volta via `successUrl`/`cancelUrl` com um `?asaas_pagamento_id=` (+`token=` no
+    caso do cliente final) que retoma o polling de confirmação já existente. Parcelamento máximo
+    fixo em 12x (constante no código, não configurável).
+  - Webhook por-tenant (`web/app/api/webhooks/asaas/route.ts`) e por-plataforma (novo,
+    `asaas-plataforma/route.ts`) usam token estático (header `asaas-access-token`, comparação
+    timing-safe) em vez do HMAC da Mercado Pago. Como o Checkout só revela o id do pagamento
+    quando o pagador confirma, o lookup cai pro `externalReference` (id da nossa própria linha de
+    `pagamentos`/`pagamentos_plataforma`) quando a busca por `gateway_payment_id` não acha nada.
+  - Lógica de "aplicar resultado do pagamento" (webhook) extraída pra `web/lib/pagamento-webhook.ts`
+    (`aplicarResultadoPagamento`), reaproveitada pelo webhook da Mercado Pago também — evita duas
+    cópias divergentes da mesma cascata (`agendamentos`/`pedidos`/`assinaturas_clientes`).
+  - **Duas pegadinhas reais da API da Asaas descobertas testando**: (1) contas sandbox sem chave
+    Pix cadastrada dependem de uma chave temporária de terceiro, o que atrasa a geração do QR code
+    — `criarCobrancaPixAsaas` tenta de novo por até ~6s antes de desistir, mas o certo mesmo é
+    cadastrar uma chave Pix na conta (documentado na tela de Configurações → Pagamentos e em
+    `/admin/pagamentos`); (2) `POST /v3/checkouts` exige um array `items` (nome/quantidade/valor)
+    — mandar só `value` solto no corpo é rejeitado.
+  - `successUrl`/`cancelUrl` do Checkout **exigem HTTPS público** — a Asaas rejeita
+    `http://localhost`, então o retorno do Checkout só é testável de verdade depois do deploy
+    (mesma limitação que já existia pro webhook da Mercado Pago). Documentado no formulário de
+    `/admin/pagamentos`.
+  - Validado com teste transacional (`supabase/tests/gate_asaas_pix.sql`,
+    `supabase/tests/gateway_plataforma.sql`, sempre com `rollback`); lint/typecheck limpos; não
+    testado ainda de ponta a ponta com Checkout de verdade (bloqueado pelo HTTPS acima).

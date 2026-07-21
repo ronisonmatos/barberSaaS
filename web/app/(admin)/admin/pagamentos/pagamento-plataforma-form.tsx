@@ -100,6 +100,13 @@ export function PagamentoPlataformaForm({
           Quando ativo, a cobrança de plano/template usa o Checkout hospedado da própria Asaas
           (Pix e cartão parcelado) — o dono é redirecionado pra lá e volta automaticamente.
         </p>
+        <p className="text-xs text-cinza-600">
+          Antes de ativar: (1) cadastre uma <strong>chave Pix</strong> na conta Asaas (&quot;Minha
+          conta&quot; → &quot;Chaves Pix&quot;), senão o Pix usa uma chave temporária de outra
+          instituição e demora mais; (2) o Checkout só funciona com <code>NEXT_PUBLIC_APP_URL</code>{" "}
+          apontando pra uma URL <strong>https</strong> pública — não funciona testando local
+          (<code>localhost</code>), a Asaas recusa o retorno.
+        </p>
         <div className="flex flex-col gap-1">
           <label className="text-sm">
             API key {asaasChaveMascarada ? `(atual: ${asaasChaveMascarada})` : "(não configurada)"}

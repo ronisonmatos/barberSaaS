@@ -183,6 +183,11 @@ export function PagamentoForm({
               abaixo e defina um <strong>&quot;Token de autenticação&quot;</strong> (qualquer valor forte) —
               cole o mesmo valor no campo &quot;Webhook token&quot; abaixo.
             </li>
+            <li>
+              <strong>Importante:</strong> cadastre uma <strong>chave Pix</strong> na sua conta Asaas (menu
+              &quot;Minha conta&quot; → &quot;Chaves Pix&quot;) antes de usar. Sem isso, o Pix ainda funciona,
+              mas usa uma chave temporária de outra instituição e pode demorar mais pra gerar o QR code.
+            </li>
           </ol>
           <p className="mt-2 text-xs text-cinza-300">
             Tanto a chave de produção quanto a de testes (&quot;sandbox&quot;, começando com{" "}

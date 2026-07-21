@@ -129,6 +129,86 @@ export type Database = {
           },
         ]
       }
+      assinatura_horarios_fixos: {
+        Row: {
+          assinatura_cliente_id: string
+          ativo: boolean
+          created_at: string
+          dia_semana: number | null
+          estabelecimento_id: string
+          horario: string
+          id: string
+          intervalo_dias: number | null
+          ordinal_semana: number | null
+          profissional_id: string
+          proxima_data: string
+          reservar_automaticamente: boolean
+          servico_id: string
+          tipo_recorrencia: string
+        }
+        Insert: {
+          assinatura_cliente_id: string
+          ativo?: boolean
+          created_at?: string
+          dia_semana?: number | null
+          estabelecimento_id: string
+          horario: string
+          id?: string
+          intervalo_dias?: number | null
+          ordinal_semana?: number | null
+          profissional_id: string
+          proxima_data: string
+          reservar_automaticamente?: boolean
+          servico_id: string
+          tipo_recorrencia?: string
+        }
+        Update: {
+          assinatura_cliente_id?: string
+          ativo?: boolean
+          created_at?: string
+          dia_semana?: number | null
+          estabelecimento_id?: string
+          horario?: string
+          id?: string
+          intervalo_dias?: number | null
+          ordinal_semana?: number | null
+          profissional_id?: string
+          proxima_data?: string
+          reservar_automaticamente?: boolean
+          servico_id?: string
+          tipo_recorrencia?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinatura_horarios_fixos_assinatura_cliente_id_fkey"
+            columns: ["assinatura_cliente_id"]
+            isOneToOne: false
+            referencedRelation: "assinaturas_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinatura_horarios_fixos_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: false
+            referencedRelation: "estabelecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinatura_horarios_fixos_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinatura_horarios_fixos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assinaturas_clientes: {
         Row: {
           ciclo_fim: string
@@ -1968,6 +2048,10 @@ export type Database = {
         }[]
       }
       gateway_plataforma_ativo: { Args: never; Returns: string }
+      gerar_ocorrencia_horario_fixo: {
+        Args: { p_horario_fixo_id: string }
+        Returns: undefined
+      }
       incrementar_estoque_produto: {
         Args: { p_produto_id: string; p_quantidade: number }
         Returns: undefined
@@ -1978,6 +2062,15 @@ export type Database = {
         Returns: string
       }
       meus_estabelecimentos: { Args: never; Returns: string[] }
+      nth_dia_semana_do_mes: {
+        Args: {
+          p_ano: number
+          p_dia_semana: number
+          p_mes: number
+          p_ordinal: number
+        }
+        Returns: string
+      }
       onboarding_criar_estabelecimento: {
         Args: { p_nome: string; p_slug: string }
         Returns: {

@@ -10,6 +10,8 @@ export type FormState = { error?: string } | undefined;
 
 const LAYOUTS_GRATIS = ["classico"];
 
+const corSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, { error: "Cor inválida." });
+
 const schema = z.object({
   estabelecimentoId: z.string().uuid(),
   nome: z.string().trim().min(2, { error: "Nome deve ter ao menos 2 caracteres." }),
@@ -18,8 +20,14 @@ const schema = z.object({
     .trim()
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, { error: "Use apenas letras minúsculas, números e hífen." })
     .min(3, { error: "O endereço deve ter ao menos 3 caracteres." }),
-  tema: z.enum(["classica", "moderna", "delicada"]),
+  tema: z.enum(["classica", "moderna", "delicada", "personalizado"]),
   layout: z.string().min(1),
+  bg: corSchema,
+  bg2: corSchema,
+  fg: corSchema,
+  linha: corSchema,
+  acento: corSchema,
+  acentoFg: corSchema,
 });
 
 export async function salvarIdentidadeRascunho(_prevState: FormState, formData: FormData): Promise<FormState> {
@@ -29,6 +37,12 @@ export async function salvarIdentidadeRascunho(_prevState: FormState, formData: 
     slug: formData.get("slug"),
     tema: formData.get("tema"),
     layout: formData.get("layout"),
+    bg: formData.get("bg"),
+    bg2: formData.get("bg2"),
+    fg: formData.get("fg"),
+    linha: formData.get("linha"),
+    acento: formData.get("acento"),
+    acentoFg: formData.get("acentoFg"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -57,7 +71,19 @@ export async function salvarIdentidadeRascunho(_prevState: FormState, formData: 
     .update({
       nome: parsed.data.nome,
       slug: parsed.data.slug,
-      config: { ...configAtual, tema: parsed.data.tema, layout: parsed.data.layout },
+      config: {
+        ...configAtual,
+        tema: parsed.data.tema,
+        layout: parsed.data.layout,
+        cores: {
+          bg: parsed.data.bg,
+          bg2: parsed.data.bg2,
+          fg: parsed.data.fg,
+          linha: parsed.data.linha,
+          acento: parsed.data.acento,
+          acentoFg: parsed.data.acentoFg,
+        },
+      },
     })
     .eq("id", parsed.data.estabelecimentoId);
 

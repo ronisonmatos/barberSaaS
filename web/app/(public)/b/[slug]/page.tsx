@@ -20,41 +20,59 @@ export default async function EstabelecimentoPublicaPage({
 
   if (!estabelecimento) notFound();
 
-  const [{ data: servicos }, { data: profissionais }, { data: fotos }, { data: produtos }, { data: planos }] =
-    await Promise.all([
-      supabase
-        .from("servicos")
-        .select("*")
-        .eq("estabelecimento_id", estabelecimento.id)
-        .eq("ativo", true)
-        .order("nome"),
-      supabase
-        .from("profissionais")
-        .select("*")
-        .eq("estabelecimento_id", estabelecimento.id)
-        .eq("ativo", true)
-        .order("nome"),
-      supabase
-        .from("estabelecimento_fotos")
-        .select("id, url")
-        .eq("estabelecimento_id", estabelecimento.id)
-        .eq("ativo", true)
-        .order("ordem"),
-      supabase
-        .from("produtos")
-        .select("id, nome, preco_centavos, foto_url, slug")
-        .eq("estabelecimento_id", estabelecimento.id)
-        .eq("ativo", true)
-        .order("ordem")
-        .limit(4),
-      supabase
-        .from("planos_estabelecimento")
-        .select("id, nome, preco_centavos")
-        .eq("estabelecimento_id", estabelecimento.id)
-        .eq("ativo", true)
-        .order("preco_centavos")
-        .limit(3),
-    ]);
+  const [
+    { data: servicos },
+    { data: profissionais },
+    { data: fotos },
+    { data: produtos },
+    { data: planos },
+    { data: nomesServicos },
+  ] = await Promise.all([
+    supabase
+      .from("servicos")
+      .select("*")
+      .eq("estabelecimento_id", estabelecimento.id)
+      .eq("ativo", true)
+      .order("nome"),
+    supabase
+      .from("profissionais")
+      .select("*")
+      .eq("estabelecimento_id", estabelecimento.id)
+      .eq("ativo", true)
+      .order("nome"),
+    supabase
+      .from("estabelecimento_fotos")
+      .select("id, url")
+      .eq("estabelecimento_id", estabelecimento.id)
+      .eq("ativo", true)
+      .order("ordem"),
+    supabase
+      .from("produtos")
+      .select("id, nome, preco_centavos, foto_url, slug")
+      .eq("estabelecimento_id", estabelecimento.id)
+      .eq("ativo", true)
+      .order("ordem")
+      .limit(4),
+    supabase
+      .from("planos_estabelecimento")
+      .select("id, nome, preco_centavos, regras")
+      .eq("estabelecimento_id", estabelecimento.id)
+      .eq("ativo", true)
+      .order("preco_centavos")
+      .limit(3),
+    supabase.from("servicos").select("id, nome").eq("estabelecimento_id", estabelecimento.id),
+  ]);
+
+  const nomeServico = (id: string) => nomesServicos?.find((s) => s.id === id)?.nome ?? "serviço removido";
+  const planosComRegras = (planos ?? []).map((p) => ({
+    id: p.id,
+    nome: p.nome,
+    preco_centavos: p.preco_centavos,
+    regras: ((p.regras as { servico_id: string; quantidade_mes: number }[] | null) ?? []).map((r) => ({
+      servicoNome: nomeServico(r.servico_id),
+      quantidadeMes: r.quantidade_mes,
+    })),
+  }));
 
   const props = {
     slug,
@@ -63,7 +81,7 @@ export default async function EstabelecimentoPublicaPage({
     profissionais: profissionais ?? [],
     fotos: fotos ?? [],
     produtos: produtos ?? [],
-    planos: planos ?? [],
+    planos: planosComRegras,
   };
 
   const config = (estabelecimento.config ?? {}) as Record<string, unknown>;
@@ -72,7 +90,11 @@ export default async function EstabelecimentoPublicaPage({
   return (
     <>
       {estabelecimento.rascunho && (
-        <DemonstracaoBanner estabelecimentoId={estabelecimento.id} nome={estabelecimento.nome} />
+        <DemonstracaoBanner
+          estabelecimentoId={estabelecimento.id}
+          nome={estabelecimento.nome}
+          expiraEm={estabelecimento.rascunho_expira_em}
+        />
       )}
       {layout === "prestigio" ? <HomePrestigio {...props} /> : <HomeClassico {...props} />}
     </>

@@ -11,4 +11,4 @@ export const ROTULO_SECAO = "text-xs font-bold uppercase tracking-[0.08em] text-
 // agendar e meus-agendamentos — para todas ficarem visualmente consistentes.
 export const PAGINA_WRAP = "min-h-screen px-4 py-10";
 export const PAGINA_CARTAO =
-  "mx-auto w-full max-w-[480px] overflow-hidden rounded-[20px] bg-tenant-bg-2 text-tenant-fg shadow-xl";
+  "mx-auto w-full max-w-[480px] overflow-hidden rounded-[20px] border border-tenant-linha bg-tenant-bg-2 text-tenant-fg shadow-xl";

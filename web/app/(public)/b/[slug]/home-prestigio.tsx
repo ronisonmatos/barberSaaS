@@ -10,7 +10,12 @@ type Servico = Database["public"]["Tables"]["servicos"]["Row"];
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 type Foto = { id: string; url: string };
 type Produto = { id: string; nome: string; preco_centavos: number; foto_url: string | null; slug: string };
-type Plano = { id: string; nome: string; preco_centavos: number };
+type Plano = {
+  id: string;
+  nome: string;
+  preco_centavos: number;
+  regras: { servicoNome: string; quantidadeMes: number }[];
+};
 
 export function HomePrestigio({
   slug,
@@ -181,6 +186,11 @@ export function HomePrestigio({
                 <p className="mt-2 text-xl font-bold tabular-nums text-tenant-acento">
                   {centavosToBRL(p.preco_centavos)}/mês
                 </p>
+                {p.regras.length > 0 && (
+                  <p className="text-sm opacity-70">
+                    {p.regras.map((r) => `${r.quantidadeMes}x ${r.servicoNome}`).join(", ")} por mês
+                  </p>
+                )}
               </div>
             ))}
           </div>

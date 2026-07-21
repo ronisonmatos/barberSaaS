@@ -23,6 +23,7 @@ export default async function EditarRascunhoLayout({
     { href: `/admin/estabelecimentos/${id}/editar/servicos`, label: "Serviços" },
     { href: `/admin/estabelecimentos/${id}/editar/profissionais`, label: "Profissionais" },
     { href: `/admin/estabelecimentos/${id}/editar/produtos`, label: "Produtos" },
+    { href: `/admin/estabelecimentos/${id}/editar/assinaturas`, label: "Assinaturas" },
     { href: `/admin/estabelecimentos/${id}/editar/fotos`, label: "Fotos" },
   ];
 

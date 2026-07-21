@@ -10,7 +10,12 @@ type Servico = Database["public"]["Tables"]["servicos"]["Row"];
 type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 type Foto = { id: string; url: string };
 type Produto = { id: string; nome: string; preco_centavos: number; foto_url: string | null; slug: string };
-type Plano = { id: string; nome: string; preco_centavos: number };
+type Plano = {
+  id: string;
+  nome: string;
+  preco_centavos: number;
+  regras: { servicoNome: string; quantidadeMes: number }[];
+};
 
 export function HomeClassico({
   slug,
@@ -45,10 +50,10 @@ export function HomeClassico({
             <img
               src={estabelecimento.logo_url}
               alt={estabelecimento.nome}
-              className="size-[88px] rounded-full border border-tenant-linha object-cover"
+              className="size-[88px] rounded-full object-cover shadow-[0_0_0_2px_var(--tenant-linha)]"
             />
           ) : (
-            <div className="flex size-[88px] items-center justify-center rounded-full border border-tenant-linha text-xs opacity-60">
+            <div className="flex size-[88px] items-center justify-center rounded-full text-xs opacity-60 shadow-[0_0_0_2px_var(--tenant-linha)]">
               Logo
             </div>
           )}
@@ -97,7 +102,10 @@ export function HomeClassico({
             <p className={`${ROTULO_SECAO} mb-2`}>Serviços</p>
             <ul className="flex flex-col gap-2">
               {servicos.map((s) => (
-                <li key={s.id} className="flex items-center justify-between rounded-xl bg-tenant-bg p-4">
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between rounded-xl border border-tenant-linha bg-tenant-bg p-4"
+                >
                   <div>
                     <p className="text-[15px] font-semibold">{s.nome}</p>
                     <p className="mt-0.5 text-[13px] opacity-60">{s.duracao_minutos}min</p>
@@ -149,9 +157,16 @@ export function HomeClassico({
               </div>
               <ul className="flex flex-col gap-2">
                 {planos.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between rounded-xl bg-tenant-bg p-4">
-                    <p className="text-[15px] font-semibold">{p.nome}</p>
-                    <p className="text-base font-bold tabular-nums">{centavosToBRL(p.preco_centavos)}/mês</p>
+                  <li key={p.id} className="flex flex-col gap-1 rounded-xl bg-tenant-bg p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[15px] font-semibold">{p.nome}</p>
+                      <p className="text-base font-bold tabular-nums">{centavosToBRL(p.preco_centavos)}/mês</p>
+                    </div>
+                    {p.regras.length > 0 && (
+                      <p className="text-sm opacity-70">
+                        {p.regras.map((r) => `${r.quantidadeMes}x ${r.servicoNome}`).join(", ")} por mês
+                      </p>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -18,6 +18,9 @@ export default async function EditarIdentidadeRascunhoPage({ params }: { params:
   const config = (estabelecimento.config ?? {}) as Record<string, unknown>;
   const tema = typeof config.tema === "string" ? config.tema : "classica";
   const layout = typeof config.layout === "string" ? config.layout : "classico";
+  const cores = config.cores as
+    | { bg: string; bg2: string; fg: string; linha: string; acento: string; acentoFg: string }
+    | undefined;
 
   return (
     <Card className="p-4">
@@ -27,6 +30,7 @@ export default async function EditarIdentidadeRascunhoPage({ params }: { params:
         slugAtual={estabelecimento.slug}
         temaAtual={tema}
         layoutAtual={layout}
+        coresAtuais={cores ?? null}
         temasGratisPremium={(temasGratis ?? []).map((t) => ({
           chave: t.chave,
           nome: t.nome,

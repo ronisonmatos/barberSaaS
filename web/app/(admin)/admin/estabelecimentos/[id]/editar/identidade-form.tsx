@@ -8,13 +8,39 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
 
-const TEMAS = [
-  { valor: "classica", label: "Clássica", bg: "#17191C", acento: "#C9A15C" },
-  { valor: "moderna", label: "Moderna", bg: "#F4F2ED", acento: "#17191C" },
-  { valor: "delicada", label: "Delicada", bg: "#FAF7F4", acento: "#B4826E" },
-] as const;
-
+type Tema = "classica" | "moderna" | "delicada" | "personalizado";
+type Cores = { bg: string; bg2: string; fg: string; linha: string; acento: string; acentoFg: string };
 type TemaGratisPremium = { chave: string; nome: string; descricao: string | null; fotoPreviewUrl: string | null };
+
+// Precisam ficar em sincronia com os presets [data-tema] em app/globals.css (mesmos valores de
+// configuracoes/aparencia/aparencia-form.tsx, o equivalente pro estabelecimento real).
+const PRESETS: Record<Exclude<Tema, "personalizado">, Cores> = {
+  classica: { bg: "#17191c", bg2: "#22262a", fg: "#f4f2ed", linha: "#2e3237", acento: "#c9a15c", acentoFg: "#17191c" },
+  moderna: { bg: "#f4f2ed", bg2: "#ffffff", fg: "#17191c", linha: "#e5e1d8", acento: "#17191c", acentoFg: "#f4f2ed" },
+  delicada: { bg: "#faf7f4", bg2: "#ffffff", fg: "#3a3330", linha: "#ecdfd9", acento: "#b4826e", acentoFg: "#faf7f4" },
+};
+
+const PRESETS_LABEL: Record<Exclude<Tema, "personalizado">, string> = {
+  classica: "Clássica",
+  moderna: "Moderna",
+  delicada: "Delicada",
+};
+
+const CAMPOS: { chave: keyof Cores; label: string; descricao: string }[] = [
+  { chave: "bg", label: "Fundo", descricao: "Fundo da página e dos blocos internos." },
+  { chave: "bg2", label: "Fundo do cartão", descricao: "Fundo do cartão principal que envolve a página pública." },
+  { chave: "fg", label: "Texto", descricao: "Cor do texto em toda a página pública." },
+  { chave: "linha", label: "Linhas e bordas", descricao: "Bordas de cards, divisórias e contorno dos profissionais." },
+  { chave: "acento", label: "Destaque", descricao: 'Botão "Agendar horário", títulos de seção, seleção de data e horário.' },
+  { chave: "acentoFg", label: "Texto sobre o destaque", descricao: 'Cor do texto em cima do destaque — ex: dentro do botão "Agendar horário".' },
+];
+
+function corEquivalenteAPreset(cores: Cores): Tema {
+  for (const [tema, preset] of Object.entries(PRESETS) as [Exclude<Tema, "personalizado">, Cores][]) {
+    if (Object.keys(preset).every((k) => preset[k as keyof Cores] === cores[k as keyof Cores])) return tema;
+  }
+  return "personalizado";
+}
 
 function formatarMB(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(0)}MB`;
@@ -26,6 +52,7 @@ export function IdentidadeForm({
   slugAtual,
   temaAtual,
   layoutAtual,
+  coresAtuais,
   temasGratisPremium,
   logoUrl,
 }: {
@@ -34,6 +61,7 @@ export function IdentidadeForm({
   slugAtual: string;
   temaAtual: string;
   layoutAtual: string;
+  coresAtuais: Cores | null;
   temasGratisPremium: TemaGratisPremium[];
   logoUrl: string | null;
 }) {
@@ -41,14 +69,20 @@ export function IdentidadeForm({
   const [logoState, logoAction, logoPending] = useActionState(enviarLogoRascunho, undefined);
   const [nome, setNome] = useState(nomeAtual);
   const [slug, setSlug] = useState(slugAtual);
-  const [tema, setTema] = useState<(typeof TEMAS)[number]["valor"]>(
-    (TEMAS.find((t) => t.valor === temaAtual)?.valor ?? "classica") as (typeof TEMAS)[number]["valor"]
-  );
   const [layout, setLayout] = useState(layoutAtual);
+  const [cores, setCores] = useState<Cores>(
+    coresAtuais ?? PRESETS[(temaAtual as Exclude<Tema, "personalizado">) in PRESETS ? (temaAtual as Exclude<Tema, "personalizado">) : "classica"]
+  );
   const [erroArquivo, setErroArquivo] = useState<string | null>(null);
   const logoFormRef = useRef<HTMLFormElement>(null);
 
-  function selecionarLogo(e: React.ChangeEvent<HTMLInputElement>) {
+  const temaAtivo = corEquivalenteAPreset(cores);
+
+  function atualizarCor(chave: keyof Cores, valor: string) {
+    setCores((c) => ({ ...c, [chave]: valor }));
+  }
+
+  async function selecionarLogo(e: React.ChangeEvent<HTMLInputElement>) {
     const arquivo = e.target.files?.[0];
     if (!arquivo) return;
     if (arquivo.size > TAMANHO_MAX_LOGO_BYTES) {
@@ -136,26 +170,85 @@ export function IdentidadeForm({
         </div>
 
         <div>
-          <p className="mb-2 text-sm font-medium">Tema da página pública</p>
+          <p className="mb-2 text-sm font-medium">Paleta de cores</p>
           <div className="grid max-w-sm grid-cols-3 gap-2">
-            {TEMAS.map((t) => (
+            {(Object.keys(PRESETS) as Exclude<Tema, "personalizado">[]).map((t) => (
               <button
-                key={t.valor}
+                key={t}
                 type="button"
-                onClick={() => setTema(t.valor)}
-                aria-pressed={tema === t.valor}
+                onClick={() => setCores(PRESETS[t])}
+                aria-pressed={temaAtivo === t}
                 className={`flex flex-col items-start gap-1.5 rounded-sm border p-2 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-latao focus-visible:ring-offset-2 ${
-                  tema === t.valor ? "border-latao ring-2 ring-latao/30" : "border-linha hover:border-latao"
+                  temaAtivo === t ? "border-latao ring-2 ring-latao/30" : "border-linha hover:border-latao"
                 }`}
               >
-                <span className="flex h-10 w-full items-center justify-center rounded-sm" style={{ background: t.bg }}>
-                  <span className="h-2 w-2 rounded-full" style={{ background: t.acento }} />
+                <span className="flex h-10 w-full items-center justify-center rounded-sm" style={{ background: PRESETS[t].bg }}>
+                  <span className="h-2 w-2 rounded-full" style={{ background: PRESETS[t].acento }} />
                 </span>
-                <span className="text-xs font-medium text-carvao">{t.label}</span>
+                <span className="text-xs font-medium text-carvao">{PRESETS_LABEL[t]}</span>
               </button>
             ))}
           </div>
-          <input type="hidden" name="tema" value={tema} />
+          <p className="mt-1 text-xs text-cinza-300">
+            {temaAtivo === "personalizado"
+              ? "Cores personalizadas — deixa a demonstração com a cara do cliente."
+              : "Escolha uma paleta pronta ou ajuste as cores individuais abaixo pra deixar exclusivo."}
+          </p>
+          <input type="hidden" name="tema" value={temaAtivo} />
+          <input type="hidden" name="bg" value={cores.bg} />
+          <input type="hidden" name="bg2" value={cores.bg2} />
+          <input type="hidden" name="fg" value={cores.fg} />
+          <input type="hidden" name="linha" value={cores.linha} />
+          <input type="hidden" name="acento" value={cores.acento} />
+          <input type="hidden" name="acentoFg" value={cores.acentoFg} />
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium">Cores individuais</p>
+          {CAMPOS.map((campo) => (
+            <div key={campo.chave} className="flex items-start gap-3">
+              <input
+                type="color"
+                value={cores[campo.chave]}
+                onChange={(e) => atualizarCor(campo.chave, e.target.value)}
+                className="h-11 w-11 shrink-0 cursor-pointer rounded-sm border border-linha p-0.5"
+                aria-label={campo.label}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-carvao">{campo.label}</p>
+                  <Input
+                    value={cores[campo.chave]}
+                    onChange={(e) => atualizarCor(campo.chave, e.target.value)}
+                    className="h-7 w-28 text-xs"
+                  />
+                </div>
+                <p className="text-xs text-cinza-600">{campo.descricao}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <p className="mb-2 text-sm font-medium">Pré-visualização</p>
+          <div className="max-w-sm overflow-hidden rounded-[20px] p-4 shadow-xl" style={{ background: cores.bg2, color: cores.fg }}>
+            <p className="text-lg font-semibold" style={{ fontFamily: "var(--font-display)" }}>
+              {nome || "Nome do estabelecimento"}
+            </p>
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: cores.acento }}>
+              Serviços
+            </p>
+            <div className="mb-3 flex items-center justify-between rounded-xl p-3" style={{ background: cores.bg }}>
+              <p className="text-sm font-semibold">Corte de cabelo</p>
+              <p className="text-sm font-bold">R$ 45,00</p>
+            </div>
+            <div className="mb-3 rounded-full border px-3 py-1.5 text-sm" style={{ borderColor: cores.linha, width: "fit-content" }}>
+              Profissional
+            </div>
+            <div className="rounded-md p-2.5 text-center text-sm font-semibold" style={{ background: cores.acento, color: cores.acentoFg }}>
+              Agendar horário
+            </div>
+          </div>
         </div>
 
         {temasGratisPremium.length > 0 && (

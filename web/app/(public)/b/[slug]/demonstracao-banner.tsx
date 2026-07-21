@@ -4,7 +4,22 @@ import { useState, useTransition } from "react";
 import { solicitarAtivacaoRascunho } from "./actions-demonstracao";
 import { BOTAO_PRIMARIO } from "./estilos";
 
-export function DemonstracaoBanner({ estabelecimentoId, nome }: { estabelecimentoId: string; nome: string }) {
+function diasRestantes(expiraEm: string | null): string {
+  if (!expiraEm) return "breve";
+  const dias = Math.max(0, Math.ceil((new Date(expiraEm).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+  if (dias === 0) return "hoje";
+  return dias === 1 ? "1 dia" : `${dias} dias`;
+}
+
+export function DemonstracaoBanner({
+  estabelecimentoId,
+  nome,
+  expiraEm,
+}: {
+  estabelecimentoId: string;
+  nome: string;
+  expiraEm: string | null;
+}) {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [nomeContato, setNomeContato] = useState("");
@@ -31,7 +46,10 @@ export function DemonstracaoBanner({ estabelecimentoId, nome }: { estabeleciment
       ) : (
         <div className="mx-auto flex max-w-[480px] flex-col items-center gap-2">
           <p className="w-full sm:truncate">
-            Demonstração feita para <span className="font-medium">{nome}</span> — ative antes que expire.
+            Demonstração feita para <span className="font-medium">{nome}</span>
+          </p>
+          <p className="w-full text-xs opacity-80 sm:truncate">
+            Expira em {diasRestantes(expiraEm)} se não for ativada.
           </p>
           {mostrarForm ? (
             <form onSubmit={enviar} className="flex w-full flex-col items-center gap-2">

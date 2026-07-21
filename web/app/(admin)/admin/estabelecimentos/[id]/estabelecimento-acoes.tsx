@@ -2,7 +2,12 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { alterarStatusEstabelecimento, liberarControleAutomatico, alterarPlanoEstabelecimento } from "./actions";
+import {
+  alterarStatusEstabelecimento,
+  liberarControleAutomatico,
+  alterarPlanoEstabelecimento,
+  acessarComoSuporte,
+} from "./actions";
 import { Button } from "@/components/ui/button";
 
 type StatusEstabelecimento = "trial" | "ativa" | "inadimplente" | "suspensa" | "cancelada";
@@ -29,6 +34,21 @@ export function EstabelecimentoAcoes({
 
   return (
     <div className="flex flex-col gap-4">
+      <div>
+        <p className="mb-2 text-sm font-medium text-cinza-600">Suporte</p>
+        <Button
+          variant="secondary"
+          disabled={pending}
+          onClick={() => startTransition(() => acessarComoSuporte(estabelecimentoId))}
+        >
+          Acessar como suporte
+        </Button>
+        <p className="mt-1 text-xs text-cinza-600">
+          Abre o painel do cliente com a mesma visão que ele tem, pra diagnosticar ou ajudar a
+          configurar. Expira sozinho em 1h; fica registrado em log de auditoria.
+        </p>
+      </div>
+
       <div>
         <p className="mb-2 text-sm font-medium text-cinza-600">Status manual</p>
         <div className="flex flex-wrap gap-2">

@@ -1,10 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { getSuperAdmin, getSuperAdminERascunho } from "@/lib/admin-guard";
+import { iniciarModoSuporte } from "@/lib/modo-suporte";
 
 type StatusEstabelecimento = "trial" | "ativa" | "inadimplente" | "suspensa" | "cancelada";
 
@@ -105,6 +107,22 @@ export async function alterarPlanoEstabelecimento(estabelecimentoId: string, pla
   });
 
   revalidatePath(`/admin/estabelecimentos/${estabelecimentoId}`);
+}
+
+export async function acessarComoSuporte(estabelecimentoId: string) {
+  const { userId } = await getSuperAdmin();
+  const supabase = await createClient();
+
+  await iniciarModoSuporte(estabelecimentoId);
+
+  await supabase.from("eventos_admin").insert({
+    estabelecimento_id: estabelecimentoId,
+    super_admin_id: userId,
+    tipo: "modo_suporte_iniciado",
+    detalhes: {},
+  });
+
+  redirect("/app");
 }
 
 export type ConvidarDonoRascunhoState = { error?: string } | undefined;

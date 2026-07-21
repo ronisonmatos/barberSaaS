@@ -31,12 +31,14 @@ export function TemplateForm({
   profissionais,
   publicKey,
   email,
+  gatewayAtivo,
 }: {
   layoutAtual: string;
   temasPremium: TemaPremium[];
   profissionais: { id: string; nome: string; fotoUrl: string | null }[];
   publicKey: string | null;
   email: string;
+  gatewayAtivo: "mercado_pago" | "asaas";
 }) {
   const [layout, setLayout] = useState(layoutAtual);
   const [erro, setErro] = useState<string | null>(null);
@@ -157,6 +159,7 @@ export function TemplateForm({
           valorCentavos={checkoutTema.precoCentavos}
           publicKey={publicKey}
           email={email}
+          gatewayAtivo={gatewayAtivo}
           onFechar={() => setCheckoutTema(null)}
         />
       )}

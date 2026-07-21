@@ -30,11 +30,14 @@ export default async function AdminPagamentosPage() {
       </p>
       <Card className="p-4">
         <PagamentoPlataformaForm
+          gatewayAtivo={config?.gateway_ativo === "asaas" ? "asaas" : "mercado_pago"}
           mercadoPagoPublicKey={config?.mercado_pago_public_key ?? ""}
           mercadoPagoTokenMascarado={mascarar(config?.mercado_pago_access_token)}
           mercadoPagoWebhookSecretMascarado={mascarar(config?.mercado_pago_webhook_secret)}
           asaasChaveMascarada={mascarar(config?.asaas_api_key)}
+          asaasWebhookTokenMascarado={mascarar(config?.asaas_webhook_token)}
           urlWebhook={`${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/mercadopago-plataforma`}
+          urlWebhookAsaas={`${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/asaas-plataforma`}
         />
       </Card>
     </div>

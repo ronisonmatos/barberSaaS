@@ -7,6 +7,7 @@ import {
   criarAgendamentoPublico,
   criarAgendamentoPix,
   criarAgendamentoCartao,
+  criarAgendamentoCartaoAsaas,
   consultarStatusPagamento,
 } from "./actions";
 import { CardPaymentBrick } from "@/components/payment/card-payment-brick";
@@ -53,6 +54,7 @@ export function AgendarWizard({
   formasPagamento,
   produtos,
   programasFidelidade,
+  initialAguardandoCartao,
 }: {
   estabelecimento: Estabelecimento;
   servicos: Servico[];
@@ -61,6 +63,7 @@ export function AgendarWizard({
   formasPagamento: FormasPagamento;
   produtos: ProdutoCarrinho[];
   programasFidelidade: ProgramaFidelidadeServico[];
+  initialAguardandoCartao?: { pagamentoId: string; token: string } | null;
 }) {
   const [passo, setPasso] = useState<Passo>("servico");
   const [servicoId, setServicoId] = useState<string | null>(null);
@@ -84,15 +87,20 @@ export function AgendarWizard({
     qrCodeBase64: string;
   } | null>(null);
   const [pixConfirmado, setPixConfirmado] = useState(false);
-  const [aguardandoCartao, setAguardandoCartao] = useState<{ pagamentoId: string; token: string } | null>(null);
+  const [aguardandoCartao, setAguardandoCartao] = useState<{ pagamentoId: string; token: string } | null>(
+    initialAguardandoCartao ?? null
+  );
   const [cartaoConfirmado, setCartaoConfirmado] = useState(false);
 
   const temProdutos = produtos.length > 0;
 
-  const gatewayMercadoPagoDisponivel =
-    formasPagamento.aceita_pagamento_antecipado && formasPagamento.gateway_ativo === "mercado_pago";
+  const gatewayAceitaPix =
+    formasPagamento.aceita_pagamento_antecipado &&
+    (formasPagamento.gateway_ativo === "mercado_pago" || formasPagamento.gateway_ativo === "asaas");
+  const gatewayAceitaCartao = formasPagamento.aceita_pagamento_antecipado;
   const opcoesPagamento: MetodoPagamento[] = [
-    ...(gatewayMercadoPagoDisponivel ? (["pix", "cartao"] as const) : []),
+    ...(gatewayAceitaPix ? (["pix"] as const) : []),
+    ...(gatewayAceitaCartao ? (["cartao"] as const) : []),
     ...(formasPagamento.aceita_pagamento_no_dia ? (["no_local"] as const) : []),
   ];
   const podeEscolherFormaPagamento = opcoesPagamento.length > 1;
@@ -215,6 +223,7 @@ export function AgendarWizard({
           nome,
           telefone,
           email,
+          cpf: pixExigeCpf ? cpf : undefined,
           itens: itensCarrinho.length > 0 ? itensCarrinho : undefined,
         });
         if (r.error || !r.qrCode || !r.qrCodeBase64 || !r.pagamentoId || !r.token) {
@@ -259,8 +268,10 @@ export function AgendarWizard({
     );
   }
 
+  const cartaoViaAsaas = metodoPagamento === "cartao" && formasPagamento.gateway_ativo === "asaas";
   const dadosCartaoCompletos =
-    metodoPagamento === "cartao" && !!nome && !!telefone && !!email && validarCPF(cpf);
+    metodoPagamento === "cartao" && !!nome && !!telefone && !!email && (cartaoViaAsaas || validarCPF(cpf));
+  const pixExigeCpf = metodoPagamento === "pix" && formasPagamento.gateway_ativo === "asaas";
 
   return (
     <div className="flex flex-col gap-5">
@@ -395,27 +406,27 @@ export function AgendarWizard({
       {passo === "pagamento" && (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-tenant-fg opacity-70">{numero("pagamento")}. Forma de pagamento</p>
-          {gatewayMercadoPagoDisponivel && (
-            <>
-              <button
-                onClick={() => {
-                  setMetodoPagamento("pix");
-                  setPasso("dados");
-                }}
-                className={CARTAO_ESCOLHA}
-              >
-                Pagar agora (Pix)
-              </button>
-              <button
-                onClick={() => {
-                  setMetodoPagamento("cartao");
-                  setPasso("dados");
-                }}
-                className={CARTAO_ESCOLHA}
-              >
-                Cartão de crédito
-              </button>
-            </>
+          {gatewayAceitaPix && (
+            <button
+              onClick={() => {
+                setMetodoPagamento("pix");
+                setPasso("dados");
+              }}
+              className={CARTAO_ESCOLHA}
+            >
+              Pagar agora (Pix)
+            </button>
+          )}
+          {gatewayAceitaCartao && (
+            <button
+              onClick={() => {
+                setMetodoPagamento("cartao");
+                setPasso("dados");
+              }}
+              className={CARTAO_ESCOLHA}
+            >
+              Cartão de crédito
+            </button>
           )}
           {formasPagamento.aceita_pagamento_no_dia && (
             <button
@@ -456,7 +467,15 @@ export function AgendarWizard({
               onChange={(e) => setEmail(e.target.value)}
             />
           )}
-          {metodoPagamento === "cartao" && (
+          {metodoPagamento === "cartao" && !cartaoViaAsaas && (
+            <Input
+              placeholder="CPF"
+              value={cpf}
+              onChange={(e) => setCpf(formatarCPF(e.target.value))}
+              maxLength={14}
+            />
+          )}
+          {pixExigeCpf && (
             <Input
               placeholder="CPF"
               value={cpf}
@@ -480,7 +499,37 @@ export function AgendarWizard({
                     : "Informe um CPF válido para continuar."}
                 </p>
               )}
-              {dadosCartaoCompletos && servicoSelecionado && formasPagamento.mercado_pago_public_key && (
+              {dadosCartaoCompletos && cartaoViaAsaas && (
+                <button
+                  disabled={pending}
+                  onClick={() => {
+                    setErro(null);
+                    startTransition(async () => {
+                      const r = await criarAgendamentoCartaoAsaas({
+                        estabelecimentoId: estabelecimento.id,
+                        profissionalId: profissionalId!,
+                        servicoId: servicoId!,
+                        inicio: slotSelecionado!,
+                        nome,
+                        telefone,
+                        email,
+                        slug: estabelecimento.slug,
+                        itens: itensCarrinho.length > 0 ? itensCarrinho : undefined,
+                      });
+                      if (r.error || !r.checkoutUrl || !r.token) {
+                        setErro(r.error ?? "Erro ao criar checkout.");
+                        return;
+                      }
+                      salvarTokenAgendamento(estabelecimento.slug, r.token);
+                      window.location.href = r.checkoutUrl;
+                    });
+                  }}
+                  className={BOTAO_PRIMARIO}
+                >
+                  {pending ? "Abrindo checkout..." : "Pagar agora (cartão, com parcelamento)"}
+                </button>
+              )}
+              {dadosCartaoCompletos && !cartaoViaAsaas && servicoSelecionado && formasPagamento.mercado_pago_public_key && (
                 <CardPaymentBrick
                   publicKey={formasPagamento.mercado_pago_public_key}
                   valorCentavos={totalCentavos}
@@ -514,7 +563,7 @@ export function AgendarWizard({
                   }}
                 />
               )}
-              {dadosCartaoCompletos && !formasPagamento.mercado_pago_public_key && (
+              {dadosCartaoCompletos && !cartaoViaAsaas && !formasPagamento.mercado_pago_public_key && (
                 <FormError>Configuração de pagamento incompleta (public key ausente).</FormError>
               )}
             </>
@@ -527,7 +576,13 @@ export function AgendarWizard({
                 Voltar
               </button>
               <button
-                disabled={pending || !nome || !telefone || (metodoPagamento === "pix" && !email)}
+                disabled={
+                  pending ||
+                  !nome ||
+                  !telefone ||
+                  (metodoPagamento === "pix" && !email) ||
+                  (pixExigeCpf && !validarCPF(cpf))
+                }
                 onClick={confirmar}
                 className={BOTAO_PRIMARIO}
               >

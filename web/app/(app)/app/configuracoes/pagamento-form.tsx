@@ -17,7 +17,9 @@ export function PagamentoForm({
   mercadoPagoPublicKey,
   mercadoPagoWebhookSecretMascarado,
   asaasChaveMascarada,
+  asaasWebhookTokenMascarado,
   urlWebhook,
+  urlWebhookAsaas,
 }: {
   gatewayAtivo: Gateway;
   aceitaPagamentoAntecipado: boolean;
@@ -26,7 +28,9 @@ export function PagamentoForm({
   mercadoPagoPublicKey: string | null;
   mercadoPagoWebhookSecretMascarado: string | null;
   asaasChaveMascarada: string | null;
+  asaasWebhookTokenMascarado: string | null;
   urlWebhook: string;
+  urlWebhookAsaas: string;
 }) {
   const [state, action, pending] = useActionState(salvarConfigPagamento, undefined);
   const [gateway, setGateway] = useState<Gateway>(gatewayAtivo);
@@ -174,9 +178,16 @@ export function PagamentoForm({
               Dentro de Integrações, abra <strong>&quot;Chave de API&quot;</strong> (ou &quot;API Key&quot;) —
               copie a chave mostrada ali e cole no campo abaixo.
             </li>
+            <li>
+              Ainda em Integrações, abra <strong>&quot;Webhooks&quot;</strong>, crie um novo apontando pra URL
+              abaixo e defina um <strong>&quot;Token de autenticação&quot;</strong> (qualquer valor forte) —
+              cole o mesmo valor no campo &quot;Webhook token&quot; abaixo.
+            </li>
           </ol>
           <p className="mt-2 text-xs text-cinza-300">
-            Use a chave do ambiente de <strong>produção</strong>, não a de testes (&quot;sandbox&quot;).
+            Tanto a chave de produção quanto a de testes (&quot;sandbox&quot;, começando com{" "}
+            <code>$aact_hmlg_</code>) funcionam — o ambiente é identificado automaticamente pelo prefixo da
+            chave.
           </p>
         </details>
 
@@ -188,6 +199,20 @@ export function PagamentoForm({
             name="asaasApiKey"
             placeholder={asaasChaveMascarada ? "Deixe em branco para manter" : "Colar API key"}
           />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm">
+            Webhook token{" "}
+            {asaasWebhookTokenMascarado ? `(atual: ${asaasWebhookTokenMascarado})` : "(não configurado)"}
+          </label>
+          <PasswordInput
+            name="asaasWebhookToken"
+            placeholder={asaasWebhookTokenMascarado ? "Deixe em branco para manter" : "Colar webhook token"}
+          />
+          <p className="text-xs text-cinza-600">
+            No painel de webhooks da Asaas, cadastre esta URL e cole aqui o mesmo token de autenticação
+            definido lá: <span className="font-medium">{urlWebhookAsaas}</span>
+          </p>
         </div>
       </div>
 

@@ -87,7 +87,9 @@ export default async function PagamentosConfigPage() {
           mercadoPagoPublicKey={pagamentoConfig?.mercado_pago_public_key ?? null}
           mercadoPagoWebhookSecretMascarado={mascarar(pagamentoConfig?.mercado_pago_webhook_secret)}
           asaasChaveMascarada={mascarar(pagamentoConfig?.asaas_api_key)}
+          asaasWebhookTokenMascarado={mascarar(pagamentoConfig?.asaas_webhook_token)}
           urlWebhook={`${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/mercadopago`}
+          urlWebhookAsaas={`${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/asaas`}
         />
       </Card>
     </div>

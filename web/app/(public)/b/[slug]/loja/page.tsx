@@ -8,10 +8,10 @@ export default async function LojaPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ adicionar?: string }>;
+  searchParams: Promise<{ adicionar?: string; asaas_pagamento_id?: string; token?: string }>;
 }) {
   const { slug } = await params;
-  const { adicionar } = await searchParams;
+  const { adicionar, asaas_pagamento_id: asaasPagamentoId, token } = await searchParams;
   const supabase = await createClient();
 
   const { data: estabelecimento } = await supabase
@@ -38,6 +38,7 @@ export default async function LojaPage({
           estabelecimento={estabelecimento}
           produtos={produtos ?? []}
           produtoInicial={adicionar ?? null}
+          initialAguardandoCartao={asaasPagamentoId && token ? { pagamentoId: asaasPagamentoId, token } : null}
           formasPagamento={
             formasPagamento ?? {
               aceita_pagamento_antecipado: false,

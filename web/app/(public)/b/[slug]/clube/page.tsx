@@ -5,8 +5,15 @@ import { PAGINA_WRAP, PAGINA_CARTAO } from "../estilos";
 
 type Regra = { servico_id: string; quantidade_mes: number };
 
-export default async function ClubePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ClubePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ asaas_pagamento_id?: string; token?: string }>;
+}) {
   const { slug } = await params;
+  const { asaas_pagamento_id: asaasPagamentoId, token } = await searchParams;
   const supabase = await createClient();
 
   const { data: estabelecimento } = await supabase
@@ -46,6 +53,7 @@ export default async function ClubePage({ params }: { params: Promise<{ slug: st
         <ClubeWizard
           estabelecimento={estabelecimento}
           planos={planosClube}
+          initialAguardandoCartao={asaasPagamentoId && token ? { pagamentoId: asaasPagamentoId, token } : null}
           formasPagamento={
             formasPagamento ?? {
               aceita_pagamento_antecipado: false,

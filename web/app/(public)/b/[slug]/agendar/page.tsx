@@ -3,8 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import { AgendarWizard } from "./agendar-wizard";
 import { PAGINA_WRAP, PAGINA_CARTAO } from "../estilos";
 
-export default async function AgendarPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function AgendarPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ asaas_pagamento_id?: string; token?: string }>;
+}) {
   const { slug } = await params;
+  const { asaas_pagamento_id: asaasPagamentoId, token } = await searchParams;
   const supabase = await createClient();
 
   const { data: estabelecimento } = await supabase
@@ -81,6 +88,7 @@ export default async function AgendarPage({ params }: { params: Promise<{ slug: 
           }
           produtos={produtos ?? []}
           programasFidelidade={programasFidelidadePorServico}
+          initialAguardandoCartao={asaasPagamentoId && token ? { pagamentoId: asaasPagamentoId, token } : null}
         />
       </div>
     </div>

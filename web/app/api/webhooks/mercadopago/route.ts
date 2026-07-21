@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { consultarPagamentoMercadoPago, verificarAssinaturaWebhookMercadoPago } from "@/lib/mercadopago";
-import { devolverEstoquePedido } from "@/lib/estoque";
+import { aplicarResultadoPagamento } from "@/lib/pagamento-webhook";
 
 export async function POST(request: NextRequest) {
   const corpo = await request.json().catch(() => null);
@@ -58,43 +58,11 @@ export async function POST(request: NextRequest) {
   const pagamentoMercadoPago = await consultarPagamentoMercadoPago(dataId, config.mercado_pago_access_token);
 
   if (pagamentoMercadoPago.status === "approved") {
-    await supabase
-      .from("pagamentos")
-      .update({ status: "pago", pago_em: new Date().toISOString() })
-      .eq("id", pagamento.id);
-    if (pagamento.agendamento_id) {
-      await supabase.from("agendamentos").update({ status: "confirmado" }).eq("id", pagamento.agendamento_id);
-    }
-    if (pagamento.pedido_id) {
-      await supabase.from("pedidos").update({ status: "aguardando_retirada" }).eq("id", pagamento.pedido_id);
-    }
-    if (pagamento.assinatura_cliente_id) {
-      const cicloFim = new Date();
-      cicloFim.setDate(cicloFim.getDate() + 30);
-      await supabase
-        .from("assinaturas_clientes")
-        .update({
-          status: "ativa",
-          ciclo_inicio: new Date().toISOString(),
-          ciclo_fim: cicloFim.toISOString(),
-          usos_ciclo: {},
-        })
-        .eq("id", pagamento.assinatura_cliente_id);
-    }
+    await aplicarResultadoPagamento(supabase, pagamento, "pago");
   } else if (["rejected", "cancelled"].includes(pagamentoMercadoPago.status)) {
-    await supabase.from("pagamentos").update({ status: "falhou" }).eq("id", pagamento.id);
-    if (pagamento.pedido_id) {
-      await devolverEstoquePedido(supabase, pagamento.pedido_id);
-      await supabase.from("pedidos").update({ status: "cancelado" }).eq("id", pagamento.pedido_id);
-    }
-    if (pagamento.assinatura_cliente_id) {
-      await supabase.from("assinaturas_clientes").update({ status: "cancelada" }).eq("id", pagamento.assinatura_cliente_id);
-    }
+    await aplicarResultadoPagamento(supabase, pagamento, "falhou");
   } else if (pagamentoMercadoPago.status === "refunded") {
-    await supabase.from("pagamentos").update({ status: "estornado" }).eq("id", pagamento.id);
-    if (pagamento.assinatura_cliente_id) {
-      await supabase.from("assinaturas_clientes").update({ status: "cancelada" }).eq("id", pagamento.assinatura_cliente_id);
-    }
+    await aplicarResultadoPagamento(supabase, pagamento, "estornado");
   }
 
   await supabase

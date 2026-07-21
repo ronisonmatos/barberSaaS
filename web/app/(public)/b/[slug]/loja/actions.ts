@@ -4,9 +4,13 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { normalizePhoneBR } from "@/lib/phone";
-import { criarCobrancaPix, criarCobrancaCartao } from "@/lib/mercadopago";
+import { criarCobrancaCartao } from "@/lib/mercadopago";
+import { criarCobrancaPixGateway } from "@/lib/gateway-pagamento";
+import { criarCheckoutAsaas } from "@/lib/asaas";
 import { validarCPF, apenasNumeros } from "@/lib/cpf";
 import { devolverEstoquePedido } from "@/lib/estoque";
+
+const MAX_PARCELAS_ASAAS = 12;
 
 const itemSchema = z.object({ produtoId: z.string().uuid(), quantidade: z.number().int().positive() });
 
@@ -49,7 +53,10 @@ export async function criarPedidoPublico(
   return { pedidoId: data.pedido_id, token: data.token_acesso };
 }
 
-const schemaPix = schema.extend({ email: z.email({ error: "Informe um e-mail válido." }) });
+const schemaPix = schema.extend({
+  email: z.email({ error: "Informe um e-mail válido." }),
+  cpf: z.string().optional(),
+});
 
 export async function criarPedidoPix(input: z.infer<typeof schemaPix>): Promise<{
   error?: string;
@@ -86,23 +93,24 @@ export async function criarPedidoPix(input: z.infer<typeof schemaPix>): Promise<
   const [{ data: config }, { data: pagamento }] = await Promise.all([
     serviceRole
       .from("estabelecimento_pagamento_config")
-      .select("mercado_pago_access_token")
+      .select("gateway_ativo, mercado_pago_access_token, asaas_api_key")
       .eq("estabelecimento_id", parsed.data.estabelecimentoId)
       .single(),
     serviceRole.from("pagamentos").select("valor_centavos").eq("id", criado.pagamento_id).single(),
   ]);
 
-  if (!config?.mercado_pago_access_token || !pagamento) {
+  if (!config || !pagamento) {
     return { error: "Configuração de pagamento indisponível." };
   }
 
   try {
-    const cobranca = await criarCobrancaPix({
-      accessToken: config.mercado_pago_access_token,
+    const cobranca = await criarCobrancaPixGateway(config, {
       idempotencyKey: criado.pedido_id,
       valorCentavos: pagamento.valor_centavos,
       descricao: "Pedido de produtos",
+      nomePagador: parsed.data.nome,
       emailPagador: parsed.data.email,
+      cpfPagador: parsed.data.cpf,
     });
 
     await serviceRole
@@ -221,5 +229,70 @@ export async function criarPedidoCartao(
     await serviceRole.from("pedidos").update({ status: "cancelado" }).eq("id", criado.pedido_id);
     await serviceRole.from("pagamentos").update({ status: "cancelado" }).eq("id", criado.pagamento_id);
     return { error: err instanceof Error ? err.message : "Erro ao processar cartão." };
+  }
+}
+
+const schemaCartaoAsaas = schemaPix.extend({ slug: z.string().min(1) });
+
+export async function criarPedidoCartaoAsaas(input: z.infer<typeof schemaCartaoAsaas>): Promise<{
+  error?: string;
+  token?: string;
+  checkoutUrl?: string;
+}> {
+  const parsed = schemaCartaoAsaas.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+
+  const telefone = normalizePhoneBR(parsed.data.telefone);
+  if (!telefone) {
+    return { error: "WhatsApp inválido. Use um número de celular brasileiro com DDD." };
+  }
+
+  const supabase = await createClient();
+  const { data: criado, error: rpcError } = await supabase
+    .rpc("criar_pedido_publico_pix", {
+      p_estabelecimento_id: parsed.data.estabelecimentoId,
+      p_itens: itensParaJsonb(parsed.data.itens),
+      p_nome: parsed.data.nome,
+      p_telefone: telefone,
+      p_email: parsed.data.email,
+      p_metodo: "cartao",
+    })
+    .single();
+
+  if (rpcError || !criado) return { error: rpcError?.message ?? "Erro ao criar pedido." };
+
+  const serviceRole = createServiceRoleClient();
+  const [{ data: config }, { data: pagamento }] = await Promise.all([
+    serviceRole
+      .from("estabelecimento_pagamento_config")
+      .select("asaas_api_key")
+      .eq("estabelecimento_id", parsed.data.estabelecimentoId)
+      .single(),
+    serviceRole.from("pagamentos").select("valor_centavos").eq("id", criado.pagamento_id).single(),
+  ]);
+
+  if (!config?.asaas_api_key || !pagamento) {
+    return { error: "Configuração de pagamento indisponível." };
+  }
+
+  try {
+    const checkout = await criarCheckoutAsaas({
+      apiKey: config.asaas_api_key,
+      valorCentavos: pagamento.valor_centavos,
+      descricao: "Pedido de produtos",
+      externalReference: criado.pagamento_id,
+      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/b/${parsed.data.slug}/loja?asaas_pagamento_id=${criado.pagamento_id}&token=${criado.token_acesso}`,
+      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/b/${parsed.data.slug}/loja`,
+      maxInstallmentCount: MAX_PARCELAS_ASAAS,
+      billingTypes: ["CREDIT_CARD"],
+    });
+    return { token: criado.token_acesso, checkoutUrl: checkout.link };
+  } catch (err) {
+    await devolverEstoquePedido(serviceRole, criado.pedido_id);
+    await serviceRole.from("pedidos").update({ status: "cancelado" }).eq("id", criado.pedido_id);
+    await serviceRole.from("pagamentos").update({ status: "cancelado" }).eq("id", criado.pagamento_id);
+    return { error: err instanceof Error ? err.message : "Erro ao criar checkout na Asaas." };
   }
 }

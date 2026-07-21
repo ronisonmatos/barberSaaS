@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { FormError } from "@/components/ui/form-error";
 import { CardPaymentBrick } from "@/components/payment/card-payment-brick";
 import { formatarCPF, apenasNumeros } from "@/lib/cpf";
-import { criarCobrancaPixPlano, criarCobrancaCartaoPlano, statusPagamentoPlano } from "./actions";
+import { criarCobrancaPixPlano, criarCobrancaCartaoPlano, criarCheckoutPlanoAsaas, statusPagamentoPlano } from "./actions";
 
 type Passo = "metodo" | "pix" | "cartao";
 
@@ -17,6 +17,7 @@ export function PlanoCheckout({
   valorCentavos,
   publicKey,
   email,
+  gatewayAtivo,
   onFechar,
 }: {
   planoId: string;
@@ -24,6 +25,7 @@ export function PlanoCheckout({
   valorCentavos: number;
   publicKey: string | null;
   email: string;
+  gatewayAtivo: "mercado_pago" | "asaas";
   onFechar: () => void;
 }) {
   const router = useRouter();
@@ -129,6 +131,35 @@ export function PlanoCheckout({
             }}
           />
         )}
+        <Button variant="ghost" onClick={onFechar}>
+          Cancelar
+        </Button>
+      </div>
+    );
+  }
+
+  if (gatewayAtivo === "asaas") {
+    return (
+      <div className="flex flex-col gap-2 rounded-md border border-linha bg-marfim p-4">
+        {erro && <FormError>{erro}</FormError>}
+        <div className="flex gap-2">
+          <Button
+            disabled={pending}
+            onClick={() => {
+              setErro(null);
+              startTransition(async () => {
+                const r = await criarCheckoutPlanoAsaas({ planoId });
+                if (r.error || !r.checkoutUrl) {
+                  setErro(r.error ?? "Erro ao criar checkout.");
+                  return;
+                }
+                window.location.href = r.checkoutUrl;
+              });
+            }}
+          >
+            {pending ? "Abrindo checkout..." : "Pagar agora (Pix ou cartão)"}
+          </Button>
+        </div>
         <Button variant="ghost" onClick={onFechar}>
           Cancelar
         </Button>

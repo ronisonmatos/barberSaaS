@@ -426,6 +426,7 @@ const schemaPagamento = z
     mercadoPagoPublicKey: z.string().trim().optional(),
     mercadoPagoWebhookSecret: z.string().trim().optional(),
     asaasApiKey: z.string().trim().optional(),
+    asaasWebhookToken: z.string().trim().optional(),
   })
   .refine((v) => v.aceitaPagamentoAntecipado || v.aceitaPagamentoNoDia, {
     error: "Marque ao menos uma forma de pagamento.",
@@ -443,6 +444,7 @@ export async function salvarConfigPagamento(_prevState: FormState, formData: For
     mercadoPagoPublicKey: formData.get("mercadoPagoPublicKey") || undefined,
     mercadoPagoWebhookSecret: formData.get("mercadoPagoWebhookSecret") || undefined,
     asaasApiKey: formData.get("asaasApiKey") || undefined,
+    asaasWebhookToken: formData.get("asaasWebhookToken") || undefined,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
@@ -464,6 +466,7 @@ export async function salvarConfigPagamento(_prevState: FormState, formData: For
       mercado_pago_webhook_secret:
         parsed.data.mercadoPagoWebhookSecret || atual?.mercado_pago_webhook_secret || null,
       asaas_api_key: parsed.data.asaasApiKey || atual?.asaas_api_key || null,
+      asaas_webhook_token: parsed.data.asaasWebhookToken || atual?.asaas_webhook_token || null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "estabelecimento_id" }

@@ -24,6 +24,7 @@ export function PlanoCard({
   podeAssinar,
   publicKey,
   email,
+  gatewayAtivo,
 }: {
   plano: Plano;
   ativo: boolean;
@@ -31,6 +32,7 @@ export function PlanoCard({
   podeAssinar: boolean;
   publicKey: string | null;
   email: string;
+  gatewayAtivo: "mercado_pago" | "asaas";
 }) {
   const [checkoutAberto, setCheckoutAberto] = useState(false);
   const valorVigente = precoVigente(plano, assinaturaAtual);
@@ -75,6 +77,7 @@ export function PlanoCard({
           valorCentavos={valorVigente}
           publicKey={publicKey}
           email={email}
+          gatewayAtivo={gatewayAtivo}
           onFechar={() => setCheckoutAberto(false)}
         />
       )}

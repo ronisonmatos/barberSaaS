@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { criarCobrancaPix, criarCobrancaCartao } from "@/lib/mercadopago";
+import { criarCheckoutAsaas } from "@/lib/asaas";
 import { validarCPF, apenasNumeros } from "@/lib/cpf";
 import { confirmarPagamentoPlataforma } from "@/lib/assinatura-plataforma";
 import { precoVigente } from "@/lib/planos";
@@ -100,6 +101,43 @@ export async function criarCobrancaPixPlano(
     return { pagamentoId, qrCode: cobranca.qrCode, qrCodeBase64: cobranca.qrCodeBase64 };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Falha ao gerar cobrança Pix." };
+  }
+}
+
+const MAX_PARCELAS_ASAAS = 12;
+
+export async function criarCheckoutPlanoAsaas(
+  input: z.infer<typeof pixSchema>
+): Promise<{ error?: string; checkoutUrl?: string }> {
+  const parsed = pixSchema.safeParse(input);
+  if (!parsed.success) return { error: "Dados inválidos." };
+
+  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
+  if (papel !== "owner") return { error: "Somente o dono do estabelecimento pode alterar o plano." };
+
+  const plano = await validarPlano(parsed.data.planoId);
+  if (!plano) return { error: "Plano não encontrado ou indisponível." };
+
+  const apiKey = (await getConfiguracaoPlataforma())?.asaas_api_key;
+  if (!apiKey) return { error: "Pagamento de assinatura ainda não configurado pela plataforma." };
+
+  const valorCentavos = await buscarValorACobrar(estabelecimento.id, plano);
+  const pagamentoId = await criarPagamentoPendente(estabelecimento.id, plano.id, valorCentavos, "pix");
+
+  try {
+    const checkout = await criarCheckoutAsaas({
+      apiKey,
+      valorCentavos,
+      descricao: `Assinatura Comptus - ${plano.nome}`,
+      externalReference: pagamentoId,
+      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/app/configuracoes/plano?asaas_pagamento_id=${pagamentoId}`,
+      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/app/configuracoes/plano`,
+      maxInstallmentCount: MAX_PARCELAS_ASAAS,
+      billingTypes: ["PIX", "CREDIT_CARD"],
+    });
+    return { checkoutUrl: checkout.link };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Falha ao criar checkout na Asaas." };
   }
 }
 

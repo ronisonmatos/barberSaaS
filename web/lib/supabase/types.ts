@@ -395,6 +395,8 @@ export type Database = {
       configuracao_plataforma: {
         Row: {
           asaas_api_key: string | null
+          asaas_webhook_token: string | null
+          gateway_ativo: string
           id: string
           mercado_pago_access_token: string | null
           mercado_pago_public_key: string | null
@@ -403,6 +405,8 @@ export type Database = {
         }
         Insert: {
           asaas_api_key?: string | null
+          asaas_webhook_token?: string | null
+          gateway_ativo?: string
           id?: string
           mercado_pago_access_token?: string | null
           mercado_pago_public_key?: string | null
@@ -411,6 +415,8 @@ export type Database = {
         }
         Update: {
           asaas_api_key?: string | null
+          asaas_webhook_token?: string | null
+          gateway_ativo?: string
           id?: string
           mercado_pago_access_token?: string | null
           mercado_pago_public_key?: string | null
@@ -462,6 +468,7 @@ export type Database = {
           aceita_pagamento_antecipado: boolean
           aceita_pagamento_no_dia: boolean
           asaas_api_key: string | null
+          asaas_webhook_token: string | null
           estabelecimento_id: string
           gateway_ativo: string
           mercado_pago_access_token: string | null
@@ -473,6 +480,7 @@ export type Database = {
           aceita_pagamento_antecipado?: boolean
           aceita_pagamento_no_dia?: boolean
           asaas_api_key?: string | null
+          asaas_webhook_token?: string | null
           estabelecimento_id: string
           gateway_ativo?: string
           mercado_pago_access_token?: string | null
@@ -484,6 +492,7 @@ export type Database = {
           aceita_pagamento_antecipado?: boolean
           aceita_pagamento_no_dia?: boolean
           asaas_api_key?: string | null
+          asaas_webhook_token?: string | null
           estabelecimento_id?: string
           gateway_ativo?: string
           mercado_pago_access_token?: string | null
@@ -1958,6 +1967,7 @@ export type Database = {
           mercado_pago_public_key: string
         }[]
       }
+      gateway_plataforma_ativo: { Args: never; Returns: string }
       incrementar_estoque_produto: {
         Args: { p_produto_id: string; p_quantidade: number }
         Returns: undefined

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { HomeClassico } from "./home-classico";
 import { HomePrestigio } from "./home-prestigio";
+import { HomeAtelier, type RitualPasso } from "./home-atelier";
 import { DemonstracaoBanner } from "./demonstracao-banner";
 
 export default async function EstabelecimentoPublicaPage({
@@ -86,6 +87,7 @@ export default async function EstabelecimentoPublicaPage({
 
   const config = (estabelecimento.config ?? {}) as Record<string, unknown>;
   const layout = typeof config.layout === "string" ? config.layout : "classico";
+  const ritual = Array.isArray(config.ritual) ? (config.ritual as RitualPasso[]) : [];
 
   return (
     <>
@@ -96,7 +98,13 @@ export default async function EstabelecimentoPublicaPage({
           expiraEm={estabelecimento.rascunho_expira_em}
         />
       )}
-      {layout === "prestigio" ? <HomePrestigio {...props} /> : <HomeClassico {...props} />}
+      {layout === "prestigio" ? (
+        <HomePrestigio {...props} />
+      ) : layout === "atelier" ? (
+        <HomeAtelier {...props} ritual={ritual} />
+      ) : (
+        <HomeClassico {...props} />
+      )}
     </>
   );
 }

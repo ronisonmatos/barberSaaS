@@ -24,7 +24,7 @@ export default async function AssinaturasPage() {
     supabase
       .from("assinaturas_clientes")
       .select(
-        "id, status, ciclo_inicio, ciclo_fim, usos_ciclo, clientes(nome, telefone), planos_estabelecimento(nome, preco_centavos, regras)"
+        "id, status, ciclo_inicio, ciclo_fim, usos_ciclo, clientes(nome, telefone, email), planos_estabelecimento(nome, preco_centavos, regras)"
       )
       .eq("estabelecimento_id", estabelecimento.id)
       .order("created_at", { ascending: false }),
@@ -73,6 +73,7 @@ export default async function AssinaturasPage() {
       usosCiclo: (a.usos_ciclo as Record<string, number> | null) ?? {},
       clienteNome: a.clientes?.nome ?? "—",
       clienteTelefone: a.clientes?.telefone ?? "—",
+      clienteEmail: a.clientes?.email ?? "",
       planoNome: a.planos_estabelecimento?.nome ?? "Plano removido",
       planoPrecoCentavos: a.planos_estabelecimento?.preco_centavos ?? 0,
       servicosCobertos: regras,

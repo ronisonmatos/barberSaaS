@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { HomePrestigio } from "../../b/[slug]/home-prestigio";
+import { HomeAtelier } from "../../b/[slug]/home-atelier";
 import type { Database } from "@/lib/supabase/types";
 
 type Estabelecimento = Database["public"]["Tables"]["estabelecimentos"]["Row"];
@@ -9,7 +10,15 @@ type Profissional = Database["public"]["Tables"]["profissionais"]["Row"];
 
 const NOMES_TEMAS: Record<string, string> = {
   prestigio: "Prestígio",
+  atelier: "Atelier",
 };
+
+const RITUAL_DEMO = [
+  { titulo: "Recepção", texto: "Café ou chá enquanto você escolhe o estilo com a gente, sem pressa." },
+  { titulo: "Diagnóstico", texto: "Conversamos sobre o corte ideal pro seu rosto, cabelo e rotina." },
+  { titulo: "Execução", texto: "Técnica clássica com navalha, tesoura e máquina, no seu ritmo." },
+  { titulo: "Finalização", texto: "Toalha quente e produtos premium pra fechar com estilo de verdade." },
+];
 
 export async function generateMetadata({
   params,
@@ -67,22 +76,35 @@ const PRODUTOS_DEMO = [
 
 export default async function TemaDemoPage({ params }: { params: Promise<{ chave: string }> }) {
   const { chave } = await params;
-  if (chave !== "prestigio") notFound();
+  if (chave !== "prestigio" && chave !== "atelier") notFound();
 
   return (
     <div data-tema="classica" className="min-h-screen bg-tenant-bg text-tenant-fg">
       <div className="border-b border-tenant-linha bg-tenant-acento px-4 py-2 text-center text-sm font-medium text-tenant-acento-fg">
         Demonstração do template — dados fictícios, nenhum estabelecimento real por trás.
       </div>
-      <HomePrestigio
-        slug="demo"
-        estabelecimento={ESTABELECIMENTO_DEMO}
-        servicos={SERVICOS_DEMO}
-        profissionais={PROFISSIONAIS_DEMO}
-        fotos={[]}
-        produtos={PRODUTOS_DEMO}
-        planos={[]}
-      />
+      {chave === "atelier" ? (
+        <HomeAtelier
+          slug="demo"
+          estabelecimento={ESTABELECIMENTO_DEMO}
+          servicos={SERVICOS_DEMO}
+          profissionais={PROFISSIONAIS_DEMO}
+          fotos={[]}
+          produtos={PRODUTOS_DEMO}
+          planos={[]}
+          ritual={RITUAL_DEMO}
+        />
+      ) : (
+        <HomePrestigio
+          slug="demo"
+          estabelecimento={ESTABELECIMENTO_DEMO}
+          servicos={SERVICOS_DEMO}
+          profissionais={PROFISSIONAIS_DEMO}
+          fotos={[]}
+          produtos={PRODUTOS_DEMO}
+          planos={[]}
+        />
+      )}
     </div>
   );
 }

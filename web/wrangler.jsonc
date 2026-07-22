@@ -1,11 +1,21 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "main": ".open-next/worker.js",
+  "main": "./custom-worker.ts",
   "name": "comptus",
   "compatibility_date": "2026-07-17",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
+  },
+  "triggers": {
+    "crons": [
+      "*/5 * * * *",
+      "0 5 * * *",
+      "0 6 * * *",
+      "30 6 * * *",
+      "0 7 * * *",
+      "0 8 * * *"
+    ]
   },
   "assets": {
     "directory": ".open-next/assets",
@@ -23,6 +33,7 @@
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://smphmeoljjgakghsnvpb.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CVweKnAmbsBvRWEYmLjcBw_RoiExHpa",
-    "NEXT_PUBLIC_APP_URL": "https://comptus.com.br"
+    "NEXT_PUBLIC_APP_URL": "https://comptus.com.br",
+    "RESEND_FROM_EMAIL": "naoresponda@comptus.com.br"
   }
 }

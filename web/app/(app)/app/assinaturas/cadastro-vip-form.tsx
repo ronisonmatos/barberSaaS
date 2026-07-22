@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { cadastrarClienteVipPix, statusAssinaturaVip } from "./actions-cadastro-vip";
 import { HorarioFixoForm } from "./horario-fixo-form";
 import { HorarioFixoCampos } from "./horario-fixo-campos";
+import { PixQrCode } from "./pix-qrcode";
 import { centavosToBRL } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,32 +123,12 @@ export function CadastroVipForm({
 
   if (pix) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-md border border-linha bg-marfim-2 p-4 text-center text-sm">
-        <p className="font-medium">Peça pro cliente pagar o Pix para confirmar a assinatura</p>
-        {/* eslint-disable-next-line @next/next/no-img-element -- imagem base64 gerada em runtime, sem otimização aplicável */}
-        <img
-          src={`data:image/png;base64,${pix.qrCodeBase64}`}
-          alt="QR code Pix"
-          className="h-56 w-56 rounded-md border border-linha"
-        />
-        <textarea
-          readOnly
-          value={pix.qrCode}
-          onClick={(e) => e.currentTarget.select()}
-          rows={3}
-          className="w-full rounded-md border border-linha bg-marfim p-2 text-xs text-carvao"
-        />
-        <p className="text-xs text-cinza-600">
-          Confirmamos automaticamente assim que o pagamento cair.
-          {horarioFixoJaIncluido
-            ? " O horário fixo já está configurado e passa a valer assim que confirmar."
-            : ""}{" "}
-          Pode deixar essa tela aberta ou voltar depois em Assinaturas.
-        </p>
-        <Button type="button" variant="secondary" onClick={onDone}>
-          Fechar
-        </Button>
-      </div>
+      <PixQrCode
+        qrCode={pix.qrCode}
+        qrCodeBase64={pix.qrCodeBase64}
+        mensagemExtra={horarioFixoJaIncluido ? "O horário fixo já está configurado e passa a valer assim que confirmar." : undefined}
+        onFechar={onDone}
+      />
     );
   }
 

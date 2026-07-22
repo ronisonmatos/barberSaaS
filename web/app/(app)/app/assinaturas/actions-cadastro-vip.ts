@@ -3,10 +3,9 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
 import { normalizePhoneBR } from "@/lib/phone";
-import { criarCobrancaPixGateway } from "@/lib/gateway-pagamento";
+import { gerarCobrancaPixAssinatura } from "@/lib/assinatura-cobranca";
 import {
   parseHorarioFixoFormData,
   validarHorarioFixo,
@@ -79,63 +78,26 @@ export async function cadastrarClienteVipPix(formData: FormData): Promise<{
     if (validacao.error) return validacao;
   }
 
-  const { data: criado, error: rpcError } = await supabase
-    .rpc("criar_assinatura_publica_pix", {
-      p_estabelecimento_id: estabelecimento.id,
-      p_plano_id: parsed.data.planoId,
-      p_nome: parsed.data.nome,
-      p_telefone: telefone,
-      p_email: parsed.data.email,
-    })
-    .single();
-  if (rpcError || !criado) return { error: rpcError?.message ?? "Erro ao criar assinatura." };
+  const resultado = await gerarCobrancaPixAssinatura(supabase, {
+    estabelecimentoId: estabelecimento.id,
+    planoId: parsed.data.planoId,
+    nome: parsed.data.nome,
+    telefone,
+    email: parsed.data.email,
+  });
+  if (resultado.error || !resultado.assinaturaId) return resultado;
 
   if (horarioFixoDados) {
     await upsertHorarioFixo(supabase, {
       estabelecimentoId: estabelecimento.id,
-      assinaturaClienteId: criado.assinatura_id,
+      assinaturaClienteId: resultado.assinaturaId,
       horarioFixoId: null,
       dados: horarioFixoDados,
     });
   }
 
-  const serviceRole = createServiceRoleClient();
-  const [{ data: config }, { data: pagamento }] = await Promise.all([
-    serviceRole
-      .from("estabelecimento_pagamento_config")
-      .select("gateway_ativo, mercado_pago_access_token, asaas_api_key")
-      .eq("estabelecimento_id", estabelecimento.id)
-      .single(),
-    serviceRole.from("pagamentos").select("valor_centavos").eq("id", criado.pagamento_id).single(),
-  ]);
-  if (!config || !pagamento) return { error: "Configuração de pagamento indisponível." };
-
-  try {
-    const cobranca = await criarCobrancaPixGateway(config, {
-      idempotencyKey: criado.pagamento_id,
-      valorCentavos: pagamento.valor_centavos,
-      descricao: "Assinatura do clube",
-      nomePagador: parsed.data.nome,
-      emailPagador: parsed.data.email,
-    });
-
-    await serviceRole
-      .from("pagamentos")
-      .update({ gateway_payment_id: cobranca.paymentId })
-      .eq("id", criado.pagamento_id);
-
-    revalidatePath("/app/assinaturas");
-    return {
-      assinaturaId: criado.assinatura_id,
-      pagamentoId: criado.pagamento_id,
-      qrCode: cobranca.qrCode,
-      qrCodeBase64: cobranca.qrCodeBase64,
-    };
-  } catch (err) {
-    await serviceRole.from("assinaturas_clientes").update({ status: "cancelada" }).eq("id", criado.assinatura_id);
-    await serviceRole.from("pagamentos").update({ status: "cancelado" }).eq("id", criado.pagamento_id);
-    return { error: err instanceof Error ? err.message : "Erro ao gerar cobrança Pix." };
-  }
+  revalidatePath("/app/assinaturas");
+  return resultado;
 }
 
 export async function statusAssinaturaVip(pagamentoId: string): Promise<{

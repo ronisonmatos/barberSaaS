@@ -218,6 +218,7 @@ export type Database = {
           estabelecimento_id: string
           gateway_subscription_id: string | null
           id: string
+          lembrete_renovacao_enviado_em: string | null
           plano_id: string
           status: Database["public"]["Enums"]["status_assinatura"]
           usos_ciclo: Json
@@ -230,6 +231,7 @@ export type Database = {
           estabelecimento_id: string
           gateway_subscription_id?: string | null
           id?: string
+          lembrete_renovacao_enviado_em?: string | null
           plano_id: string
           status?: Database["public"]["Enums"]["status_assinatura"]
           usos_ciclo?: Json
@@ -242,6 +244,7 @@ export type Database = {
           estabelecimento_id?: string
           gateway_subscription_id?: string | null
           id?: string
+          lembrete_renovacao_enviado_em?: string | null
           plano_id?: string
           status?: Database["public"]["Enums"]["status_assinatura"]
           usos_ciclo?: Json
@@ -632,6 +635,44 @@ export type Database = {
             columns: ["tema_plataforma_id"]
             isOneToOne: false
             referencedRelation: "temas_plataforma"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estabelecimento_whatsapp_config: {
+        Row: {
+          access_token: string | null
+          ativo: boolean
+          estabelecimento_id: string
+          idioma_template: string
+          nome_template_lembrete: string
+          phone_number_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          ativo?: boolean
+          estabelecimento_id: string
+          idioma_template?: string
+          nome_template_lembrete?: string
+          phone_number_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          ativo?: boolean
+          estabelecimento_id?: string
+          idioma_template?: string
+          nome_template_lembrete?: string
+          phone_number_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estabelecimento_whatsapp_config_estabelecimento_id_fkey"
+            columns: ["estabelecimento_id"]
+            isOneToOne: true
+            referencedRelation: "estabelecimentos"
             referencedColumns: ["id"]
           },
         ]

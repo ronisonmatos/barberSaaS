@@ -180,6 +180,7 @@ export async function assinarPlanoCartao(
           ciclo_inicio: new Date().toISOString(),
           ciclo_fim: cicloFim.toISOString(),
           usos_ciclo: {},
+          lembrete_renovacao_enviado_em: null,
         })
         .eq("id", criado.assinatura_id);
       return { confirmado: true, token: criado.token_acesso, pagamentoId: criado.pagamento_id };

@@ -152,3 +152,51 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Template "Atelier" (home-atelier.tsx) -- faixa de serviços em scroll infinito e o sistema de
+   revelar seções ao rolar a página. O bloco de prefers-reduced-motion acima já zera a duration de
+   qualquer animation/transition, então essas classes já saem inofensivas pra quem pediu menos
+   movimento, sem precisar de regra extra aqui. */
+@keyframes atelier-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.atelier-marquee-track {
+  animation: atelier-marquee 28s linear infinite;
+}
+
+.atelier-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.atelier-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.atelier-reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.atelier-reveal-stagger.is-visible > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+.atelier-reveal-stagger > *:nth-child(2) {
+  transition-delay: 0.1s;
+}
+.atelier-reveal-stagger > *:nth-child(3) {
+  transition-delay: 0.2s;
+}
+.atelier-reveal-stagger > *:nth-child(4) {
+  transition-delay: 0.3s;
+}

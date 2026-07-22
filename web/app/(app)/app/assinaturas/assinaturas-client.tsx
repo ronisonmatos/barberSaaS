@@ -4,6 +4,7 @@ import { Fragment, useState, useTransition } from "react";
 import { cancelarAssinatura } from "./actions";
 import { desativarHorarioFixo } from "./actions-horario-fixo";
 import { HorarioFixoForm } from "./horario-fixo-form";
+import { RenovarAssinaturaForm } from "./renovar-assinatura-form";
 import { centavosToBRL } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
@@ -30,6 +31,7 @@ export type AssinaturaDetalhada = {
   usosCiclo: Record<string, number>;
   clienteNome: string;
   clienteTelefone: string;
+  clienteEmail: string;
   planoNome: string;
   planoPrecoCentavos: number;
   servicosCobertos: { servicoId: string; servicoNome: string; quantidadeMes: number }[];
@@ -88,6 +90,7 @@ export function AssinaturasClient({
   const [gerenciando, setGerenciando] = useState<string | null>(null);
   // "novo" = criando uma entrada nova; string = editando essa entrada; null = so a lista, sem form aberto
   const [formAberto, setFormAberto] = useState<string | "novo" | null>(null);
+  const [renovando, setRenovando] = useState<string | null>(null);
 
   function cancelar(id: string) {
     setErro(null);
@@ -109,7 +112,13 @@ export function AssinaturasClient({
 
   function abrirGerenciar(assinaturaId: string) {
     setFormAberto(null);
+    setRenovando(null);
     setGerenciando(gerenciando === assinaturaId ? null : assinaturaId);
+  }
+
+  function abrirRenovar(assinaturaId: string) {
+    setGerenciando(null);
+    setRenovando(renovando === assinaturaId ? null : assinaturaId);
   }
 
   const totalUsos = (usos: Record<string, number>) => Object.values(usos).reduce((soma, n) => soma + n, 0);
@@ -170,6 +179,16 @@ export function AssinaturasClient({
                           {gerenciando === a.id ? "Fechar" : "Gerenciar horários fixos"}
                         </button>
                       )}
+                      {a.status !== "pendente" && (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => abrirRenovar(a.id)}
+                          className="text-sm text-carvao underline"
+                        >
+                          {renovando === a.id ? "Fechar" : "Renovar"}
+                        </button>
+                      )}
                       {podeCancelar && a.status !== "cancelada" && (
                         <Button variant="perigo" disabled={pending} onClick={() => cancelar(a.id)}>
                           {cancelando === a.id ? "Cancelando..." : "Cancelar"}
@@ -178,6 +197,19 @@ export function AssinaturasClient({
                     </div>
                   </td>
                 </tr>
+                {renovando === a.id && (
+                  <tr className="border-b border-linha">
+                    <td colSpan={7} className="py-3">
+                      <RenovarAssinaturaForm
+                        assinaturaId={a.id}
+                        clienteNome={a.clienteNome}
+                        clienteTelefone={a.clienteTelefone}
+                        clienteEmail={a.clienteEmail}
+                        onDone={() => setRenovando(null)}
+                      />
+                    </td>
+                  </tr>
+                )}
                 {gerenciando === a.id && (
                   <tr className="border-b border-linha">
                     <td colSpan={7} className="py-3">

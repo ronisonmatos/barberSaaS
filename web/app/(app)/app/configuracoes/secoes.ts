@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { UserRound, Store, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles, Palette, CalendarClock, LayoutTemplate, Award, Repeat } from "lucide-react";
+import { UserRound, Store, Images, QrCode, CreditCard, Users, LifeBuoy, Sparkles, Palette, CalendarClock, LayoutTemplate, Award, Repeat, MessageCircle } from "lucide-react";
 
 export type SecaoConfiguracao = {
   href: string;
@@ -87,6 +87,13 @@ export const SECOES_CONFIGURACAO: SecaoConfiguracao[] = [
     label: "Clube de assinatura",
     descricao: "Planos recorrentes vendidos aos seus clientes.",
     icon: Repeat,
+    ownerOnly: true,
+  },
+  {
+    href: "/app/configuracoes/whatsapp",
+    label: "WhatsApp",
+    descricao: "Avisos de renovação também por WhatsApp.",
+    icon: MessageCircle,
     ownerOnly: true,
   },
   {

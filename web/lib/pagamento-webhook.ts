@@ -43,6 +43,7 @@ export async function aplicarResultadoPagamento(
           ciclo_inicio: new Date().toISOString(),
           ciclo_fim: cicloFim.toISOString(),
           usos_ciclo: {},
+          lembrete_renovacao_enviado_em: null,
         })
         .eq("id", pagamento.assinatura_cliente_id);
     }

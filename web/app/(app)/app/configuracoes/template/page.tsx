@@ -52,6 +52,9 @@ export default async function TemplateConfigPage({
 
   const config = (estabelecimento.config ?? {}) as Record<string, unknown>;
   const layoutAtual = typeof config.layout === "string" ? config.layout : "classico";
+  const ritualAtual = Array.isArray(config.ritual)
+    ? (config.ritual as { titulo: string; texto: string }[])
+    : [];
   const temasComprados = new Set((compras ?? []).map((c) => c.tema_plataforma_id));
 
   return (
@@ -76,6 +79,7 @@ export default async function TemplateConfigPage({
             comprado: t.gratis || temasComprados.has(t.id),
           }))}
           profissionais={(profissionais ?? []).map((p) => ({ id: p.id, nome: p.nome, fotoUrl: p.foto_url }))}
+          ritualAtual={ritualAtual}
           publicKey={publicKey}
           email={userData.user?.email ?? ""}
           gatewayAtivo={gateway}

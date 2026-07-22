@@ -57,6 +57,47 @@ export async function salvarTemplate(input: z.infer<typeof schemaTemplate>): Pro
   return {};
 }
 
+const MAX_PASSOS_RITUAL = 4;
+
+const schemaRitual = z.object({
+  passos: z
+    .array(
+      z.object({
+        titulo: z.string().trim().min(1, { error: "Informe um título." }).max(40, { error: "Máx. 40 caracteres." }),
+        texto: z.string().trim().min(1, { error: "Informe uma descrição." }).max(160, { error: "Máx. 160 caracteres." }),
+      })
+    )
+    .max(MAX_PASSOS_RITUAL, { error: `Máximo de ${MAX_PASSOS_RITUAL} passos.` }),
+});
+
+/** "O ritual" — parâmetro específico do template Atelier (ver web/app/(public)/b/[slug]/home-atelier.tsx). */
+export async function salvarRitual(_prevState: { error?: string } | undefined, formData: FormData) {
+  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
+  if (papel !== "owner") return { error: "Somente o dono do estabelecimento pode alterar isso." };
+
+  let passos: unknown;
+  try {
+    passos = JSON.parse(String(formData.get("passos") ?? "[]"));
+  } catch {
+    return { error: "Passos inválidos." };
+  }
+
+  const parsed = schemaRitual.safeParse({ passos });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+
+  const supabase = await createClient();
+  const configAtual = (estabelecimento.config ?? {}) as Record<string, unknown>;
+  const { error } = await supabase
+    .from("estabelecimentos")
+    .update({ config: { ...configAtual, ritual: parsed.data.passos } })
+    .eq("id", estabelecimento.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/app/configuracoes/template");
+  revalidatePath(`/b/${estabelecimento.slug}`);
+  return {};
+}
+
 async function validarTema(temaId: string) {
   const supabase = await createClient();
   const { data: tema } = await supabase

@@ -9,6 +9,7 @@ import { centavosToBRL } from "@/lib/money";
 import { salvarTemplate } from "./actions";
 import { TemaCheckout } from "./tema-checkout";
 import { FotosProfissionaisForm } from "./fotos-profissionais-form";
+import { RitualForm } from "./ritual-form";
 
 type TemaPremium = {
   id: string;
@@ -22,13 +23,14 @@ type TemaPremium = {
 };
 
 // Chaves de tema que têm edições exclusivas (além de escolher/comprar) e o que cada uma precisa.
-// Só "prestigio" tem hoje (foto de profissional) — se outro template ganhar extras, entra aqui.
-const TEM_EXTRAS = new Set(["prestigio"]);
+// "prestigio" -> foto de profissional; "atelier" -> passos do ritual (ver home-atelier.tsx).
+const TEM_EXTRAS = new Set(["prestigio", "atelier"]);
 
 export function TemplateForm({
   layoutAtual,
   temasPremium,
   profissionais,
+  ritualAtual,
   publicKey,
   email,
   gatewayAtivo,
@@ -36,6 +38,7 @@ export function TemplateForm({
   layoutAtual: string;
   temasPremium: TemaPremium[];
   profissionais: { id: string; nome: string; fotoUrl: string | null }[];
+  ritualAtual: { titulo: string; texto: string }[];
   publicKey: string | null;
   email: string;
   gatewayAtivo: "mercado_pago" | "asaas";
@@ -146,6 +149,12 @@ export function TemplateForm({
                   aparece só com a inicial do nome.
                 </p>
                 <FotosProfissionaisForm profissionais={profissionais} />
+              </div>
+            )}
+
+            {editandoChave === tema.chave && tema.chave === "atelier" && (
+              <div className="mt-2 w-full border-t border-linha pt-3">
+                <RitualForm passosAtuais={ritualAtual} />
               </div>
             )}
           </div>

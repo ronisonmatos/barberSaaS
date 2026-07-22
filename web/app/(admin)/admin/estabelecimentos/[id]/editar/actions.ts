@@ -20,7 +20,7 @@ const schema = z.object({
     .trim()
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, { error: "Use apenas letras minúsculas, números e hífen." })
     .min(3, { error: "O endereço deve ter ao menos 3 caracteres." }),
-  tema: z.enum(["classica", "moderna", "delicada", "personalizado"]),
+  tema: z.enum(["classica", "moderna", "delicada", "prestigio", "atelier", "personalizado"]),
   layout: z.string().min(1),
   bg: corSchema,
   bg2: corSchema,

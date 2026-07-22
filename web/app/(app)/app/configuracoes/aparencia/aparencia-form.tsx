@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { FormError } from "@/components/ui/form-error";
 import { salvarAparencia } from "./actions";
 
-type Tema = "classica" | "moderna" | "delicada" | "personalizado";
+type Tema = "classica" | "moderna" | "delicada" | "prestigio" | "atelier" | "personalizado";
+type TemaPreset = Exclude<Tema, "personalizado">;
 
 type Cores = {
   bg: string;
@@ -17,17 +18,24 @@ type Cores = {
   acentoFg: string;
 };
 
-// Precisam ficar em sincronia com os presets [data-tema] em app/globals.css.
-const PRESETS: Record<Exclude<Tema, "personalizado">, Cores> = {
+// Precisam ficar em sincronia com os presets [data-tema] em app/globals.css. "prestigio" e
+// "atelier" são as paletas exclusivas dos templates premium de mesmo nome (ver
+// estabelecimento_temas_comprados) -- só aparecem pra quem já comprou o template correspondente,
+// controlado pela prop temasDesbloqueados.
+const PRESETS: Record<TemaPreset, Cores> = {
   classica: { bg: "#17191c", bg2: "#22262a", fg: "#f4f2ed", linha: "#2e3237", acento: "#c9a15c", acentoFg: "#17191c" },
   moderna: { bg: "#f4f2ed", bg2: "#ffffff", fg: "#17191c", linha: "#e5e1d8", acento: "#17191c", acentoFg: "#f4f2ed" },
   delicada: { bg: "#faf7f4", bg2: "#ffffff", fg: "#3a3330", linha: "#ecdfd9", acento: "#b4826e", acentoFg: "#faf7f4" },
+  prestigio: { bg: "#1b2a22", bg2: "#2f4a3a", fg: "#f4f2ed", linha: "#3f5347", acento: "#c9a15c", acentoFg: "#17191c" },
+  atelier: { bg: "#f2ece1", bg2: "#e4dcc9", fg: "#1b1815", linha: "#d8cdb6", acento: "#7a2e2a", acentoFg: "#f2ece1" },
 };
 
-const PRESETS_LABEL: Record<Exclude<Tema, "personalizado">, { label: string; desc: string }> = {
+const PRESETS_LABEL: Record<TemaPreset, { label: string; desc: string }> = {
   classica: { label: "Clássica", desc: "Padrão atual — barbearia tradicional, escura com dourado." },
   moderna: { label: "Moderna", desc: "Clara e minimalista, para barbearia/estúdio jovem." },
   delicada: { label: "Delicada", desc: "Tons suaves de terracota, para salão de beleza." },
+  prestigio: { label: "Prestígio", desc: "Verde profundo com dourado — exclusiva de quem comprou o template Prestígio." },
+  atelier: { label: "Atelier", desc: "Tinta, papel e vermelho-navalha — combina especialmente bem com o template Atelier." },
 };
 
 const CAMPOS: { chave: keyof Cores; label: string; descricao: string }[] = [
@@ -40,19 +48,30 @@ const CAMPOS: { chave: keyof Cores; label: string; descricao: string }[] = [
 ];
 
 function corEquivalenteAPreset(cores: Cores): Tema {
-  for (const [tema, preset] of Object.entries(PRESETS) as [Exclude<Tema, "personalizado">, Cores][]) {
+  for (const [tema, preset] of Object.entries(PRESETS) as [TemaPreset, Cores][]) {
     if (Object.keys(preset).every((k) => preset[k as keyof Cores] === cores[k as keyof Cores])) return tema;
   }
   return "personalizado";
 }
 
-export function AparenciaForm({ coresIniciais }: { coresIniciais: Cores }) {
+export function AparenciaForm({
+  coresIniciais,
+  temasDesbloqueados,
+}: {
+  coresIniciais: Cores;
+  temasDesbloqueados: string[];
+}) {
   const [cores, setCores] = useState<Cores>(coresIniciais);
   const [erro, setErro] = useState<string | null>(null);
   const [salvo, setSalvo] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const temaAtivo = corEquivalenteAPreset(cores);
+  // "atelier" é liberada pra qualquer estabelecimento, igual Clássica/Moderna/Delicada -- só
+  // "prestigio" continua exclusiva de quem comprou o template (decisão explícita do usuário).
+  const PRESETS_DISPONIVEIS = (Object.keys(PRESETS) as TemaPreset[]).filter(
+    (tema) => tema !== "prestigio" || temasDesbloqueados.includes(tema)
+  );
 
   function atualizarCor(chave: keyof Cores, valor: string) {
     setSalvo(false);
@@ -76,7 +95,7 @@ export function AparenciaForm({ coresIniciais }: { coresIniciais: Cores }) {
       <div>
         <p className="mb-2 text-sm font-medium text-carvao">Paletas prontas</p>
         <div className="grid grid-cols-3 gap-2">
-          {(Object.keys(PRESETS) as Exclude<Tema, "personalizado">[]).map((tema) => (
+          {PRESETS_DISPONIVEIS.map((tema) => (
             <button
               key={tema}
               type="button"

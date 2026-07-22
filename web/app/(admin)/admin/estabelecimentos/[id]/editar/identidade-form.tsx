@@ -8,22 +8,29 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
 
-type Tema = "classica" | "moderna" | "delicada" | "personalizado";
+type Tema = "classica" | "moderna" | "delicada" | "prestigio" | "atelier" | "personalizado";
+type TemaPreset = Exclude<Tema, "personalizado">;
 type Cores = { bg: string; bg2: string; fg: string; linha: string; acento: string; acentoFg: string };
 type TemaGratisPremium = { chave: string; nome: string; descricao: string | null; fotoPreviewUrl: string | null };
 
 // Precisam ficar em sincronia com os presets [data-tema] em app/globals.css (mesmos valores de
-// configuracoes/aparencia/aparencia-form.tsx, o equivalente pro estabelecimento real).
-const PRESETS: Record<Exclude<Tema, "personalizado">, Cores> = {
+// configuracoes/aparencia/aparencia-form.tsx, o equivalente pro estabelecimento real). "prestigio"
+// e "atelier" ficam liberadas sem trava aqui de propósito -- é o super_admin editando um rascunho,
+// não existe "compra" nesse fluxo (diferente da tela real, que só libera depois de comprado).
+const PRESETS: Record<TemaPreset, Cores> = {
   classica: { bg: "#17191c", bg2: "#22262a", fg: "#f4f2ed", linha: "#2e3237", acento: "#c9a15c", acentoFg: "#17191c" },
   moderna: { bg: "#f4f2ed", bg2: "#ffffff", fg: "#17191c", linha: "#e5e1d8", acento: "#17191c", acentoFg: "#f4f2ed" },
   delicada: { bg: "#faf7f4", bg2: "#ffffff", fg: "#3a3330", linha: "#ecdfd9", acento: "#b4826e", acentoFg: "#faf7f4" },
+  prestigio: { bg: "#1b2a22", bg2: "#2f4a3a", fg: "#f4f2ed", linha: "#3f5347", acento: "#c9a15c", acentoFg: "#17191c" },
+  atelier: { bg: "#f2ece1", bg2: "#e4dcc9", fg: "#1b1815", linha: "#d8cdb6", acento: "#7a2e2a", acentoFg: "#f2ece1" },
 };
 
-const PRESETS_LABEL: Record<Exclude<Tema, "personalizado">, string> = {
+const PRESETS_LABEL: Record<TemaPreset, string> = {
   classica: "Clássica",
   moderna: "Moderna",
   delicada: "Delicada",
+  prestigio: "Prestígio",
+  atelier: "Atelier",
 };
 
 const CAMPOS: { chave: keyof Cores; label: string; descricao: string }[] = [

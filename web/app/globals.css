@@ -137,6 +137,18 @@ body {
   --tenant-acento-fg: var(--carvao);
 }
 
+/* Tema premium vendido junto com o template Atelier (ver estabelecimento_temas_comprados) --
+   tinta/papel/vermelho-navalha, a paleta usada na prévia de /temas/atelier. Só aparece pra
+   escolher em Aparência depois de comprado (mesma trava do preset "prestigio" acima). */
+[data-tema="atelier"] {
+  --tenant-bg: #f2ece1;
+  --tenant-bg-2: #e4dcc9;
+  --tenant-fg: #1b1815;
+  --tenant-linha: #d8cdb6;
+  --tenant-acento: #7a2e2a;
+  --tenant-acento-fg: #f2ece1;
+}
+
 [data-tema] {
   background: var(--tenant-bg);
   color: var(--tenant-fg);
@@ -156,13 +168,17 @@ body {
 /* Template "Atelier" (home-atelier.tsx) -- faixa de serviços em scroll infinito e o sistema de
    revelar seções ao rolar a página. O bloco de prefers-reduced-motion acima já zera a duration de
    qualquer animation/transition, então essas classes já saem inofensivas pra quem pediu menos
-   movimento, sem precisar de regra extra aqui. */
+   movimento, sem precisar de regra extra aqui.
+   -12.5% = -100% / MARQUEE_REPETICOES (8, definido em home-atelier.tsx) -- desloca exatamente a
+   largura de 1 cópia da lista de serviços, então o corte do loop é sempre exato, e repetir a
+   lista 8x (em vez de só 2x) garante que sobre conteúdo suficiente mesmo em monitores largos com
+   poucos serviços cadastrados (senão sobra um vazio visível antes do loop reiniciar). */
 @keyframes atelier-marquee {
   from {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-50%);
+    transform: translateX(-12.5%);
   }
 }
 .atelier-marquee-track {

@@ -79,7 +79,7 @@ export default async function TemaDemoPage({ params }: { params: Promise<{ chave
   if (chave !== "prestigio" && chave !== "atelier") notFound();
 
   return (
-    <div data-tema="classica" className="min-h-screen bg-tenant-bg text-tenant-fg">
+    <div data-tema={chave} className="min-h-screen bg-tenant-bg text-tenant-fg">
       <div className="border-b border-tenant-linha bg-tenant-acento px-4 py-2 text-center text-sm font-medium text-tenant-acento-fg">
         Demonstração do template — dados fictícios, nenhum estabelecimento real por trás.
       </div>

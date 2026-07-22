@@ -19,6 +19,10 @@ type Plano = {
 };
 export type RitualPasso = { titulo: string; texto: string };
 
+// Ver comentário na faixa de serviços (marquee) mais abaixo — precisa bater com a % do keyframe
+// "atelier-marquee" em globals.css.
+const MARQUEE_REPETICOES = 8;
+
 export function HomeAtelier({
   slug,
   estabelecimento,
@@ -127,20 +131,30 @@ export function HomeAtelier({
         </AtelierReveal>
       </section>
 
-      {/* Marquee de serviços */}
+      {/* Marquee de serviços — repete a lista MARQUEE_REPETICOES vezes e anima
+          translateX(-100%/MARQUEE_REPETICOES) pra dar a impressão de loop infinito.
+          - Espaçamento em margin-right por item (não gap no container): com gap, um container de
+            N*REPETICOES itens tem só N*REPETICOES-1 "buracos" (número ímpar), então a fração exata
+            do loop nunca cai certo — sobra um respiro visível antes de reiniciar. Com margin em
+            cada item, todas as cópias têm exatamente a mesma largura, e o corte é sempre perfeito.
+          - REPETICOES > 2 existe pra cobrir estabelecimentos com poucos serviços (nomes curtos):
+            só 2 cópias podem ficar mais estreitas que a tela em monitores largos, deixando um
+            vazio depois que as 2 cópias passam e antes do loop reiniciar. Se mudar esse número,
+            mudar também a % do keyframe "atelier-marquee" em globals.css (-100/REPETICOES). */}
       {servicos.length > 0 && (
         <div className="overflow-hidden border-y border-tenant-linha bg-tenant-bg-2 py-3.5">
-          <div className="atelier-marquee-track flex w-max gap-10">
-            {[0, 1].map((rep) => (
-              <div key={rep} className="flex shrink-0 items-center gap-10 font-display text-lg text-tenant-fg/70">
-                {servicos.map((s) => (
-                  <span key={`${rep}-${s.id}`} className="flex items-center gap-10 whitespace-nowrap">
-                    {s.nome}
-                    <span className="text-xs text-tenant-acento">◆</span>
-                  </span>
-                ))}
-              </div>
-            ))}
+          <div className="atelier-marquee-track flex w-max items-center">
+            {Array.from({ length: MARQUEE_REPETICOES }, () => servicos)
+              .flat()
+              .map((s, i) => (
+                <span
+                  key={i}
+                  className="mr-10 flex shrink-0 items-center gap-3 whitespace-nowrap font-display text-lg text-tenant-fg/70"
+                >
+                  {s.nome}
+                  <span className="text-xs text-tenant-acento">◆</span>
+                </span>
+              ))}
           </div>
         </div>
       )}

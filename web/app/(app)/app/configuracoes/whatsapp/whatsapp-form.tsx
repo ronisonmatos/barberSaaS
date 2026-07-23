@@ -115,6 +115,11 @@ export function WhatsappForm({
               de exemplo. Confirma se o Phone number ID, o token e o template aprovado estão funcionando
               juntos.
             </p>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="helloWorld" form="teste-whatsapp" />
+              Testar com o modelo de exemplo &quot;hello_world&quot; (já vem aprovado pela Meta, sem
+              variáveis — use se o seu template ainda não foi aprovado)
+            </label>
             <div className="flex flex-wrap items-end gap-2">
               <div className="flex flex-col gap-1">
                 <label className="text-sm">Número pra teste (com DDI e DDD)</label>

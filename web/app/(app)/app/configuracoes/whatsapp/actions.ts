@@ -58,13 +58,17 @@ export type TesteFormState = { error?: string; sucesso?: string } | undefined;
 
 const testeSchema = z.object({
   telefone: z.string().trim().min(8, { error: "Informe um telefone válido, com DDD e código do país (ex: 5511999998888)." }),
+  helloWorld: z.boolean(),
 });
 
 export async function testarEnvioWhatsapp(_prevState: TesteFormState, formData: FormData): Promise<TesteFormState> {
   const { estabelecimento, papel } = await getEstabelecimentoAtivo();
   if (papel !== "owner") return { error: "Somente o dono do estabelecimento pode alterar isso." };
 
-  const parsed = testeSchema.safeParse({ telefone: formData.get("telefone") });
+  const parsed = testeSchema.safeParse({
+    telefone: formData.get("telefone"),
+    helloWorld: formData.get("helloWorld") === "on",
+  });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Telefone inválido." };
 
   const supabase = await createClient();
@@ -78,14 +82,22 @@ export async function testarEnvioWhatsapp(_prevState: TesteFormState, formData: 
     return { error: "Salve o Phone number ID e o token de acesso antes de testar." };
   }
 
+  // hello_world é o template de exemplo que a Meta já vem com aprovação automática -- sem
+  // variáveis no corpo, útil pra confirmar a credencial antes do template real ser aprovado.
+  const nomeTemplate = parsed.data.helloWorld ? "hello_world" : config.nome_template_lembrete;
+  const idioma = parsed.data.helloWorld ? "en_US" : config.idioma_template;
+  const parametrosCorpo = parsed.data.helloWorld
+    ? []
+    : [estabelecimento.nome, "Plano de teste", new Date().toLocaleDateString("pt-BR")];
+
   try {
     await enviarTemplateWhatsapp({
       phoneNumberId: config.phone_number_id,
       accessToken: config.access_token,
       paraE164: parsed.data.telefone,
-      nomeTemplate: config.nome_template_lembrete,
-      idioma: config.idioma_template,
-      parametrosCorpo: [estabelecimento.nome, "Plano de teste", new Date().toLocaleDateString("pt-BR")],
+      nomeTemplate,
+      idioma,
+      parametrosCorpo,
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Falha ao enviar mensagem de teste." };

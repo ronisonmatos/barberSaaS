@@ -47,6 +47,7 @@ export default async function WhatsappConfigPage() {
           accessTokenMascarado={mascarar(config?.access_token)}
           nomeTemplateLembrete={config?.nome_template_lembrete ?? "lembrete_renovacao"}
           idiomaTemplate={config?.idioma_template ?? "pt_BR"}
+          configurado={Boolean(config?.phone_number_id && config?.access_token)}
         />
       </Card>
     </div>

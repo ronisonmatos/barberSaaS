@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useActionState, useState } from "react";
+import Link from "next/link";
 import { salvarConfigWhatsapp, testarEnvioWhatsapp } from "./actions";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -61,10 +62,14 @@ export function WhatsappForm({
               com o produto <strong>WhatsApp</strong> adicionado.
             </li>
             <li>
-              Dentro do app, abra <strong>WhatsApp → Configuração da API</strong>. Lá está o{" "}
-              <strong>Phone number ID</strong> e um <strong>token de acesso</strong> — copie os dois nos
-              campos abaixo (o token temporário expira em 24h; pra produção, gere um token permanente
-              vinculado a um usuário do sistema).
+              Dentro do app, abra <strong>WhatsApp → Configuração da API</strong>. Existem dois
+              números lá: um <strong>de teste</strong> (grátis, mas só envia pra destinatários
+              cadastrados e só usa o template pronto <code>hello_world</code>) e, quando estiver
+              pronto pra valer, um <strong>número de produção</strong> — que precisa ser exclusivo
+              pra API (não pode estar em uso no WhatsApp comum) e do seu próprio template aprovado.
+              Copie o <strong>Phone number ID</strong> e um <strong>token de acesso</strong> (com as
+              permissões <code>whatsapp_business_management</code> e{" "}
+              <code>whatsapp_business_messaging</code>) nos campos abaixo.
             </li>
             <li>
               Em <strong>WhatsApp → Modelos de mensagem</strong>, crie um template pra esse aviso de
@@ -77,6 +82,12 @@ export function WhatsappForm({
             Sem um template aprovado, o envio por WhatsApp falha silenciosamente (o aviso por e-mail
             continua funcionando normalmente).
           </p>
+          <Link
+            href="/app/configuracoes/whatsapp/ajuda"
+            className="mt-3 inline-block text-sm font-medium text-latao-escuro underline"
+          >
+            Ver guia completo, com os erros mais comuns →
+          </Link>
         </details>
 
         <div className="flex flex-col gap-1">

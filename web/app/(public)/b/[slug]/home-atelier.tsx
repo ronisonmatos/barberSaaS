@@ -2,6 +2,7 @@ import Link from "next/link";
 import { centavosToBRL } from "@/lib/money";
 import { MeuAgendamentoLink } from "./meu-agendamento-link";
 import { AtelierReveal } from "./atelier-reveal";
+import { AtelierHeroFotos } from "./atelier-hero-fotos";
 import { BOTAO_PRIMARIO, BOTAO_GHOST, ROTULO_SECAO, CONTAINER, SECAO } from "./estilos-atelier";
 import { formatarEndereco, linkWhatsApp } from "./home-helpers";
 import type { Database } from "@/lib/supabase/types";
@@ -44,7 +45,6 @@ export function HomeAtelier({
 }) {
   const endereco = formatarEndereco(estabelecimento.endereco);
   const whatsapp = linkWhatsApp(estabelecimento.telefone_whatsapp);
-  const fotoHero = fotos[0] ?? null;
   const inicial = estabelecimento.nome.slice(0, 1).toUpperCase();
 
   const NAV = [
@@ -107,14 +107,7 @@ export function HomeAtelier({
 
         <AtelierReveal className="[transition-delay:150ms]">
           <div className="relative aspect-[4/5] overflow-hidden rounded-sm border border-tenant-linha bg-tenant-bg-2">
-            {fotoHero ? (
-              /* eslint-disable-next-line @next/next/no-img-element -- foto em bucket público, sem necessidade de otimização do next/image */
-              <img src={fotoHero.url} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <span className="font-display text-8xl text-tenant-acento/90">{inicial}</span>
-              </div>
-            )}
+            <AtelierHeroFotos fotos={fotos} inicial={inicial} />
             {(estabelecimento.horario_texto || endereco) && (
               <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-2 text-xs uppercase tracking-[0.08em] text-tenant-fg">
                 <span className="truncate rounded-sm bg-tenant-bg/85 px-2 py-1 backdrop-blur">

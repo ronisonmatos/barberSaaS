@@ -75,7 +75,7 @@ export function HomeAtelier({
               <img
                 src={estabelecimento.logo_url}
                 alt={estabelecimento.nome}
-                className="size-8 shrink-0 rounded-full border border-tenant-linha object-cover"
+                className="size-8 shrink-0 rounded-full object-cover"
               />
             ) : (
               <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-tenant-acento font-display text-sm text-tenant-acento">

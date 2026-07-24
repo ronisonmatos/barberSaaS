@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   CalendarCheck,
@@ -16,11 +15,13 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getEstabelecimentoAtivo } from "@/lib/estabelecimento-ativo";
-import { hojeNaTimezone, dataLocal, limitesDoDiaUTC, somarDias } from "@/lib/timezone";
+import { dataLocal, somarDias } from "@/lib/timezone";
 import { centavosToBRL } from "@/lib/money";
 import { StatTile } from "@/components/ui/stat-tile";
 import { EmptyState } from "@/components/ui/empty-state";
 import { GraficoStatus, GraficoVolumeDiario } from "./dashboard-charts";
+import { PERIODOS, periodoValido, calcularRangePeriodo } from "./periodo";
+import { PeriodoSeletor } from "./periodo-seletor";
 
 const METODO_INFO: Record<string, { label: string; icon: LucideIcon }> = {
   pix: { label: "Pix", icon: QrCode },
@@ -30,14 +31,6 @@ const METODO_INFO: Record<string, { label: string; icon: LucideIcon }> = {
   assinatura: { label: "Assinatura", icon: Repeat },
 };
 
-const PERIODOS = {
-  hoje: { label: "Hoje", dias: 1 },
-  "7d": { label: "7 dias", dias: 7 },
-  "30d": { label: "30 dias", dias: 30 },
-} as const;
-
-type PeriodoKey = keyof typeof PERIODOS;
-
 export default async function PainelPage({
   searchParams,
 }: {
@@ -46,12 +39,9 @@ export default async function PainelPage({
   const { estabelecimento } = await getEstabelecimentoAtivo();
   const supabase = await createClient();
   const params = await searchParams;
-  const periodo: PeriodoKey = params.periodo && params.periodo in PERIODOS ? (params.periodo as PeriodoKey) : "30d";
+  const periodo = periodoValido(params.periodo);
 
-  const hoje = hojeNaTimezone(estabelecimento.timezone);
-  const primeiroDia = somarDias(hoje, -(PERIODOS[periodo].dias - 1));
-  const rangeInicio = limitesDoDiaUTC(primeiroDia, estabelecimento.timezone).inicio;
-  const rangeFim = limitesDoDiaUTC(hoje, estabelecimento.timezone).fim;
+  const { primeiroDia, rangeInicio, rangeFim } = calcularRangePeriodo(periodo, estabelecimento.timezone);
 
   const { data: agendamentos } = await supabase
     .from("agendamentos")
@@ -104,20 +94,7 @@ export default async function PainelPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-2xl text-carvao">Painel</h1>
-        <div className="flex gap-1 rounded-md border border-linha bg-marfim-2 p-1 text-sm">
-          {(Object.keys(PERIODOS) as PeriodoKey[]).map((chave) => (
-            <Link
-              key={chave}
-              href={`/app?periodo=${chave}`}
-              aria-current={periodo === chave ? "page" : undefined}
-              className={`rounded-sm px-3 py-1.5 transition-colors duration-150 ${
-                periodo === chave ? "bg-latao text-carvao" : "text-cinza-600 hover:text-carvao"
-              }`}
-            >
-              {PERIODOS[chave].label}
-            </Link>
-          ))}
-        </div>
+        <PeriodoSeletor periodo={periodo} basePath="/app" />
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">

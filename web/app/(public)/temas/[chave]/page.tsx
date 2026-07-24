@@ -55,6 +55,7 @@ const ESTABELECIMENTO_DEMO: Estabelecimento = {
   config: {},
   rascunho: false,
   rascunho_expira_em: null,
+  pagina_demonstracao: false,
   created_at: new Date().toISOString(),
 };
 

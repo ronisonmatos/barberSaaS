@@ -692,6 +692,7 @@ export type Database = {
           instagram_url: string | null
           logo_url: string | null
           nome: string
+          pagina_demonstracao: boolean
           plano_plataforma_id: string | null
           rascunho: boolean
           rascunho_expira_em: string | null
@@ -716,6 +717,7 @@ export type Database = {
           instagram_url?: string | null
           logo_url?: string | null
           nome: string
+          pagina_demonstracao?: boolean
           plano_plataforma_id?: string | null
           rascunho?: boolean
           rascunho_expira_em?: string | null
@@ -740,6 +742,7 @@ export type Database = {
           instagram_url?: string | null
           logo_url?: string | null
           nome?: string
+          pagina_demonstracao?: boolean
           plano_plataforma_id?: string | null
           rascunho?: boolean
           rascunho_expira_em?: string | null
@@ -1811,6 +1814,7 @@ export type Database = {
           instagram_url: string | null
           logo_url: string | null
           nome: string
+          pagina_demonstracao: boolean
           plano_plataforma_id: string | null
           rascunho: boolean
           rascunho_expira_em: string | null
@@ -1844,6 +1848,7 @@ export type Database = {
           instagram_url: string | null
           logo_url: string | null
           nome: string
+          pagina_demonstracao: boolean
           plano_plataforma_id: string | null
           rascunho: boolean
           rascunho_expira_em: string | null
@@ -1877,6 +1882,7 @@ export type Database = {
           instagram_url: string | null
           logo_url: string | null
           nome: string
+          pagina_demonstracao: boolean
           plano_plataforma_id: string | null
           rascunho: boolean
           rascunho_expira_em: string | null
@@ -1913,6 +1919,10 @@ export type Database = {
         }[]
       }
       aplicar_limites_plano: {
+        Args: { p_estabelecimento_id: string }
+        Returns: undefined
+      }
+      assert_nao_e_pagina_demonstracao: {
         Args: { p_estabelecimento_id: string }
         Returns: undefined
       }
@@ -2067,6 +2077,10 @@ export type Database = {
         Args: { p_estabelecimento_id: string }
         Returns: boolean
       }
+      estabelecimento_permite_relatorios: {
+        Args: { p_estabelecimento_id: string }
+        Returns: boolean
+      }
       estabelecimentos_que_possuo: { Args: never; Returns: string[] }
       fidelidade_status_cliente: {
         Args: { p_cliente_id: string }
@@ -2128,6 +2142,7 @@ export type Database = {
           instagram_url: string | null
           logo_url: string | null
           nome: string
+          pagina_demonstracao: boolean
           plano_plataforma_id: string | null
           rascunho: boolean
           rascunho_expira_em: string | null

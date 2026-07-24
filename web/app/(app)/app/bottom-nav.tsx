@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Users, UserSquare2, MoreHorizontal, Scissors, Ban, LogOut, LayoutDashboard, Settings, ShoppingBag, Package, Award, Repeat } from "lucide-react";
+import { Calendar, Users, UserSquare2, MoreHorizontal, Scissors, Ban, LogOut, LayoutDashboard, Settings, ShoppingBag, Package, Award, Repeat, FileBarChart } from "lucide-react";
 import { papelLabel } from "@/lib/papel-label";
 
 const PRINCIPAIS = [
@@ -19,6 +19,7 @@ const MAIS = [
   { href: "/app/pedidos", label: "Pedidos", icon: Package },
   { href: "/app/fidelidade", label: "Fidelidade", icon: Award },
   { href: "/app/assinaturas", label: "Assinaturas", icon: Repeat },
+  { href: "/app/relatorios", label: "Relatórios", icon: FileBarChart },
   { href: "/app/bloqueios", label: "Bloqueios", icon: Ban },
   { href: "/app/configuracoes", label: "Configurações", icon: Settings },
 ];

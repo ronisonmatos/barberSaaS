@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { centavosToBRL } from "@/lib/money";
 import { MeuAgendamentoLink } from "./meu-agendamento-link";
+import { ServicosListaPrestigio } from "./servicos-lista-prestigio";
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, BOTAO_GHOST, ROTULO_SECAO, CONTAINER_LARGO, SECAO } from "./estilos-prestigio";
 import { formatarEndereco, linkWhatsApp } from "./home-helpers";
 import type { Database } from "@/lib/supabase/types";
@@ -120,17 +121,7 @@ export function HomePrestigio({
         <section id="servicos" className={`${CONTAINER_LARGO} ${SECAO} border-t border-tenant-linha`}>
           <p className={`${ROTULO_SECAO} mb-2`}>Serviços</p>
           <h2 className="mb-8 font-display text-2xl">O que fazemos</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {servicos.map((s) => (
-              <div key={s.id} className="flex flex-col gap-2 rounded-2xl border border-tenant-linha bg-tenant-bg-2 p-5">
-                <p className="text-lg font-semibold">{s.nome}</p>
-                <p className="text-sm opacity-60">{s.duracao_minutos} min</p>
-                <p className="mt-2 text-xl font-bold tabular-nums text-tenant-acento">
-                  {centavosToBRL(s.preco_centavos)}
-                </p>
-              </div>
-            ))}
-          </div>
+          <ServicosListaPrestigio servicos={servicos} />
         </section>
       )}
 
@@ -179,7 +170,9 @@ export function HomePrestigio({
               Ver planos
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            className={`grid grid-cols-1 gap-4 ${planos.length === 1 ? "sm:grid-cols-1" : planos.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}
+          >
             {planos.map((p) => (
               <div key={p.id} className="flex flex-col gap-2 rounded-2xl border border-tenant-linha bg-tenant-bg-2 p-5">
                 <p className="text-lg font-semibold">{p.nome}</p>

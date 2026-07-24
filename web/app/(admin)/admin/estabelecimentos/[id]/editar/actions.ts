@@ -20,6 +20,7 @@ const schema = z.object({
     .trim()
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, { error: "Use apenas letras minúsculas, números e hífen." })
     .min(3, { error: "O endereço deve ter ao menos 3 caracteres." }),
+  descricao: z.string().trim().max(140, { error: "Máx. 140 caracteres." }).optional(),
   tema: z.enum(["classica", "moderna", "delicada", "prestigio", "atelier", "personalizado"]),
   layout: z.string().min(1),
   bg: corSchema,
@@ -35,6 +36,7 @@ export async function salvarIdentidadeRascunho(_prevState: FormState, formData: 
     estabelecimentoId: formData.get("estabelecimentoId"),
     nome: formData.get("nome"),
     slug: formData.get("slug"),
+    descricao: formData.get("descricao") || undefined,
     tema: formData.get("tema"),
     layout: formData.get("layout"),
     bg: formData.get("bg"),
@@ -71,6 +73,7 @@ export async function salvarIdentidadeRascunho(_prevState: FormState, formData: 
     .update({
       nome: parsed.data.nome,
       slug: parsed.data.slug,
+      descricao: parsed.data.descricao || null,
       config: {
         ...configAtual,
         tema: parsed.data.tema,

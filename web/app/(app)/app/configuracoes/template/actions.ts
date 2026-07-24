@@ -98,6 +98,33 @@ export async function salvarRitual(_prevState: { error?: string } | undefined, f
   return {};
 }
 
+const schemaFraseCurta = z.object({
+  descricao: z.string().trim().max(140, { error: "Máx. 140 caracteres." }).optional(),
+});
+
+/** Frase curta do hero — mesmo campo/coluna de Perfil, editável aqui também porque no template
+ * Atelier ela aparece em destaque no topo da home e cai num fallback genérico ("Bem-vindo à ...")
+ * se ficar vazia (ver web/app/(public)/b/[slug]/home-atelier.tsx). */
+export async function salvarFraseCurta(_prevState: { error?: string } | undefined, formData: FormData) {
+  const { estabelecimento, papel } = await getEstabelecimentoAtivo();
+  if (papel !== "owner") return { error: "Somente o dono do estabelecimento pode alterar isso." };
+
+  const parsed = schemaFraseCurta.safeParse({ descricao: formData.get("descricao") || undefined });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("estabelecimentos")
+    .update({ descricao: parsed.data.descricao || null })
+    .eq("id", estabelecimento.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/app/configuracoes/template");
+  revalidatePath("/app/configuracoes/perfil");
+  revalidatePath(`/b/${estabelecimento.slug}`);
+  return {};
+}
+
 async function validarTema(temaId: string) {
   const supabase = await createClient();
   const { data: tema } = await supabase

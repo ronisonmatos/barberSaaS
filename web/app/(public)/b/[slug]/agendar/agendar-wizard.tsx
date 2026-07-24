@@ -16,6 +16,7 @@ import { salvarTokenAgendamento } from "../meu-agendamento-link";
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, BOTAO_GHOST } from "../estilos";
 import { ResultadoPagamento } from "../resultado-pagamento";
 import { CarrinhoProdutos, type ProdutoCarrinho } from "../carrinho-produtos";
+import { ServicosFiltro } from "../servicos-filtro";
 import { centavosToBRL } from "@/lib/money";
 import { hojeNaTimezone } from "@/lib/timezone";
 import { validarCPF, formatarCPF, apenasNumeros } from "@/lib/cpf";
@@ -280,26 +281,33 @@ export function AgendarWizard({
       {passo === "servico" && (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-tenant-fg opacity-70">1. Escolha o serviço</p>
-          {servicos.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => {
-                setServicoId(s.id);
-                setProfissionalEscolha(null);
-                setSlotSelecionado(null);
-                setPasso("profissional");
-              }}
-              className={CARTAO_ESCOLHA}
-            >
-              <span className="flex flex-col items-start gap-0.5">
-                <span>{s.nome}</span>
-                {programasFidelidade.some((p) => p.servicoId === s.id) && (
-                  <span className="text-xs text-tenant-acento">Participa do cartão fidelidade</span>
-                )}
-              </span>
-              <span className="tabular-nums">{centavosToBRL(s.preco_centavos)}</span>
-            </button>
-          ))}
+          <ServicosFiltro
+            servicos={servicos}
+            renderLista={(lista) => (
+              <div className="flex flex-col gap-2">
+                {lista.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setServicoId(s.id);
+                      setProfissionalEscolha(null);
+                      setSlotSelecionado(null);
+                      setPasso("profissional");
+                    }}
+                    className={CARTAO_ESCOLHA}
+                  >
+                    <span className="flex flex-col items-start gap-0.5">
+                      <span>{s.nome}</span>
+                      {programasFidelidade.some((p) => p.servicoId === s.id) && (
+                        <span className="text-xs text-tenant-acento">Participa do cartão fidelidade</span>
+                      )}
+                    </span>
+                    <span className="tabular-nums">{centavosToBRL(s.preco_centavos)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          />
         </div>
       )}
 

@@ -10,6 +10,7 @@ import { salvarTemplate } from "./actions";
 import { TemaCheckout } from "./tema-checkout";
 import { FotosProfissionaisForm } from "./fotos-profissionais-form";
 import { RitualForm } from "./ritual-form";
+import { FraseCurtaForm } from "./frase-curta-form";
 
 type TemaPremium = {
   id: string;
@@ -31,6 +32,7 @@ export function TemplateForm({
   temasPremium,
   profissionais,
   ritualAtual,
+  descricaoAtual,
   publicKey,
   email,
   gatewayAtivo,
@@ -39,6 +41,7 @@ export function TemplateForm({
   temasPremium: TemaPremium[];
   profissionais: { id: string; nome: string; fotoUrl: string | null }[];
   ritualAtual: { titulo: string; texto: string }[];
+  descricaoAtual: string | null;
   publicKey: string | null;
   email: string;
   gatewayAtivo: "mercado_pago" | "asaas";
@@ -153,7 +156,8 @@ export function TemplateForm({
             )}
 
             {editandoChave === tema.chave && tema.chave === "atelier" && (
-              <div className="mt-2 w-full border-t border-linha pt-3">
+              <div className="mt-2 flex w-full flex-col gap-4 border-t border-linha pt-3">
+                <FraseCurtaForm descricaoAtual={descricaoAtual} />
                 <RitualForm passosAtuais={ritualAtual} />
               </div>
             )}

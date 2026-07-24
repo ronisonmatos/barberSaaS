@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { centavosToBRL } from "@/lib/money";
 import { MeuAgendamentoLink } from "./meu-agendamento-link";
+import { ServicosListaClassico } from "./servicos-lista-classico";
 import { BOTAO_PRIMARIO, BOTAO_GHOST, ROTULO_SECAO, PAGINA_WRAP, PAGINA_CARTAO } from "./estilos";
 import { formatarEndereco, linkWhatsApp } from "./home-helpers";
 import type { Database } from "@/lib/supabase/types";
@@ -100,20 +101,7 @@ export function HomeClassico({
 
           <section>
             <p className={`${ROTULO_SECAO} mb-2`}>Serviços</p>
-            <ul className="flex flex-col gap-2">
-              {servicos.map((s) => (
-                <li
-                  key={s.id}
-                  className="flex items-center justify-between rounded-xl border border-tenant-linha bg-tenant-bg p-4"
-                >
-                  <div>
-                    <p className="text-[15px] font-semibold">{s.nome}</p>
-                    <p className="mt-0.5 text-[13px] opacity-60">{s.duracao_minutos}min</p>
-                  </div>
-                  <p className="text-base font-bold tabular-nums">{centavosToBRL(s.preco_centavos)}</p>
-                </li>
-              ))}
-            </ul>
+            <ServicosListaClassico servicos={servicos} />
           </section>
 
           {produtos.length > 0 && (

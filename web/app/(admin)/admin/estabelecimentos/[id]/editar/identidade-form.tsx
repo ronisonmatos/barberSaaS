@@ -57,6 +57,7 @@ export function IdentidadeForm({
   estabelecimentoId,
   nomeAtual,
   slugAtual,
+  descricaoAtual,
   temaAtual,
   layoutAtual,
   coresAtuais,
@@ -66,6 +67,7 @@ export function IdentidadeForm({
   estabelecimentoId: string;
   nomeAtual: string;
   slugAtual: string;
+  descricaoAtual: string | null;
   temaAtual: string;
   layoutAtual: string;
   coresAtuais: Cores | null;
@@ -174,6 +176,20 @@ export function IdentidadeForm({
             />
           </div>
           <p className="text-xs text-cinza-300">Mudar o endereço muda o link que você já enviou pro cliente.</p>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="descricao" className="text-sm font-medium">
+            Frase curta (aparece abaixo do nome na página pública)
+          </label>
+          <Input
+            id="descricao"
+            name="descricao"
+            maxLength={140}
+            placeholder="Agende seu horário em poucos cliques"
+            defaultValue={descricaoAtual ?? ""}
+            className="max-w-sm"
+          />
         </div>
 
         <div>

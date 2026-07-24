@@ -80,6 +80,7 @@ export default async function TemplateConfigPage({
           }))}
           profissionais={(profissionais ?? []).map((p) => ({ id: p.id, nome: p.nome, fotoUrl: p.foto_url }))}
           ritualAtual={ritualAtual}
+          descricaoAtual={estabelecimento.descricao}
           publicKey={publicKey}
           email={userData.user?.email ?? ""}
           gatewayAtivo={gateway}

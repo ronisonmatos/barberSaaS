@@ -28,6 +28,7 @@ export default async function EditarIdentidadeRascunhoPage({ params }: { params:
         estabelecimentoId={id}
         nomeAtual={estabelecimento.nome}
         slugAtual={estabelecimento.slug}
+        descricaoAtual={estabelecimento.descricao}
         temaAtual={tema}
         layoutAtual={layout}
         coresAtuais={cores ?? null}

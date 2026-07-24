@@ -3,6 +3,7 @@ import { centavosToBRL } from "@/lib/money";
 import { MeuAgendamentoLink } from "./meu-agendamento-link";
 import { AtelierReveal } from "./atelier-reveal";
 import { AtelierHeroFotos } from "./atelier-hero-fotos";
+import { ServicosListaAtelier } from "./servicos-lista-atelier";
 import { BOTAO_PRIMARIO, BOTAO_GHOST, ROTULO_SECAO, CONTAINER, SECAO } from "./estilos-atelier";
 import { formatarEndereco, linkWhatsApp } from "./home-helpers";
 import type { Database } from "@/lib/supabase/types";
@@ -23,6 +24,14 @@ export type RitualPasso = { titulo: string; texto: string };
 // Ver comentário na faixa de serviços (marquee) mais abaixo — precisa bater com a % do keyframe
 // "atelier-marquee" em globals.css.
 const MARQUEE_REPETICOES = 8;
+
+// A largura da faixa cresce com a quantidade de serviços (mesma % do keyframe percorrida sobre
+// uma faixa maior), então uma duração fixa faz estabelecimentos com muitos serviços passarem
+// visivelmente mais rápido. Duração escala com a quantidade pra manter a velocidade (px/s)
+// aproximadamente constante — calibrado pra um catálogo de ~9 serviços continuar em 28s, como
+// antes dessa mudança.
+const MARQUEE_SEGUNDOS_POR_SERVICO = 3.1;
+const MARQUEE_DURACAO_MIN_SEGUNDOS = 20;
 
 export function HomeAtelier({
   slug,
@@ -46,6 +55,7 @@ export function HomeAtelier({
   const endereco = formatarEndereco(estabelecimento.endereco);
   const whatsapp = linkWhatsApp(estabelecimento.telefone_whatsapp);
   const inicial = estabelecimento.nome.slice(0, 1).toUpperCase();
+  const marqueeDuracaoSegundos = Math.max(MARQUEE_DURACAO_MIN_SEGUNDOS, servicos.length * MARQUEE_SEGUNDOS_POR_SERVICO);
 
   const NAV = [
     ritual.length > 0 ? { href: "#ritual", label: "O ritual" } : null,
@@ -95,7 +105,10 @@ export function HomeAtelier({
             <p className={ROTULO_SECAO}>{estabelecimento.nome}</p>
           </div>
           <h1 className="font-display text-[2.75rem] leading-[0.98] sm:text-6xl">
-            {estabelecimento.descricao ? estabelecimento.descricao : `Bem-vindo à ${estabelecimento.nome}`}
+            {/* Sem crase/concordância de gênero com o nome do estabelecimento aqui de propósito
+                ("à"/"ao" dependeria de adivinhar o gênero gramatical de um nome livre, ex: "o
+                Studio" vs "a Barbearia") — o nome já aparece como rótulo logo acima. */}
+            {estabelecimento.descricao ? estabelecimento.descricao : "Bem-vindo(a)!"}
           </h1>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href={`/b/${slug}/agendar`} className={BOTAO_PRIMARIO}>
@@ -136,7 +149,10 @@ export function HomeAtelier({
             mudar também a % do keyframe "atelier-marquee" em globals.css (-100/REPETICOES). */}
       {servicos.length > 0 && (
         <div className="overflow-hidden border-y border-tenant-linha bg-tenant-bg-2 py-3.5">
-          <div className="atelier-marquee-track flex w-max items-center">
+          <div
+            className="atelier-marquee-track flex w-max items-center"
+            style={{ animationDuration: `${marqueeDuracaoSegundos}s` }}
+          >
             {Array.from({ length: MARQUEE_REPETICOES }, () => servicos)
               .flat()
               .map((s, i) => (
@@ -187,22 +203,8 @@ export function HomeAtelier({
             <p className={`${ROTULO_SECAO} mb-2`}>Serviços</p>
             <h2 className="mb-10 font-display text-3xl">O que fazemos</h2>
           </AtelierReveal>
-          <AtelierReveal stagger className="flex flex-col">
-            {servicos.map((s, i) => (
-              <div
-                key={s.id}
-                className={`flex items-baseline gap-3 py-5 transition-[padding] duration-300 hover:pl-2 ${
-                  i === 0 ? "border-y border-tenant-linha" : "border-b border-tenant-linha"
-                }`}
-              >
-                <span className="shrink-0 font-display text-xl">{s.nome}</span>
-                <span className="shrink-0 text-xs text-tenant-fg/60">{s.duracao_minutos} min</span>
-                <span className="mb-1 h-px flex-1 border-b border-dotted border-tenant-linha" />
-                <span className="shrink-0 font-display text-lg tabular-nums text-tenant-acento">
-                  {centavosToBRL(s.preco_centavos)}
-                </span>
-              </div>
-            ))}
+          <AtelierReveal>
+            <ServicosListaAtelier servicos={servicos} />
           </AtelierReveal>
         </section>
       )}
@@ -282,7 +284,10 @@ export function HomeAtelier({
               Ver planos
             </Link>
           </AtelierReveal>
-          <AtelierReveal stagger className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <AtelierReveal
+            stagger
+            className={`grid grid-cols-1 gap-4 ${planos.length === 1 ? "sm:grid-cols-1" : planos.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}
+          >
             {planos.map((p) => (
               <div key={p.id} className="rounded-sm border border-tenant-linha bg-tenant-bg-2 p-5">
                 <p className="font-display text-lg">{p.nome}</p>
